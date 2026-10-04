@@ -116,9 +116,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <ShoppingBag className={`w-4 h-4 ${activeTab === 'kanban' ? 'text-[#1E60F8]' : 'text-[#94A3B8]'}`} />
                 <span>Commandes</span>
               </div>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669]">
-                {newOrdersCount > 0 ? newOrdersCount : '46'}
-              </span>
+              {newOrdersCount > 0 && (
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669]">
+                  {newOrdersCount}
+                </span>
+              )}
             </button>
 
             {/* Products / Wizard */}

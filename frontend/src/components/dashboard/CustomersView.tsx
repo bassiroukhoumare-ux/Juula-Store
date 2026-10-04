@@ -30,7 +30,7 @@ interface CustomersViewProps {
 
 export const CustomersView: React.FC<CustomersViewProps> = ({
   orders,
-  storeName = 'Boutique Dakar Élégance',
+  storeName = 'Ma Boutique',
 }) => {
   const [search, setSearch] = useState('');
 
@@ -98,7 +98,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
               CRM Marchand
             </span>
             <span className="text-xs text-[#64748B]">
-              {customersList.length} clients enregistrés
+              {customersList.length} client{customersList.length > 1 ? 's' : ''} enregistré{customersList.length > 1 ? 's' : ''}
             </span>
           </div>
           <h2 className="text-2xl font-black text-[#0F172A] tracking-tight mt-1">
@@ -134,7 +134,18 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F1F5F9]">
-              {filtered.map((customer, idx) => {
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-[#94A3B8]">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Users className="w-8 h-8 text-[#CBD5E1]" />
+                      <p className="text-sm font-bold text-[#64748B]">Aucun client enregistré pour le moment</p>
+                      <p className="text-xs text-[#94A3B8]">Vos futurs clients s'afficheront ici automatiquement dès leurs premières commandes.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((customer, idx) => {
                 const initials = customer.name
                   .split(' ')
                   .map((n) => n[0])
@@ -229,7 +240,8 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                     </td>
                   </tr>
                 );
-              })}
+              })
+            )}
             </tbody>
           </table>
         </div>

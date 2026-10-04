@@ -50,7 +50,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
 }) => {
   const [provider, setProvider] = useState<'wave' | 'orange_money'>('wave');
   const [amount, setAmount] = useState<number>(Math.min(availableBalance, 100000));
-  const [phone, setPhone] = useState('77 412 89 30');
+  const [phone, setPhone] = useState('');
 
   // 6-digit PIN entry state
   const [pinDigits, setPinDigits] = useState<string[]>(['', '', '', '', '', '']);

@@ -22,7 +22,7 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
 }) => {
   const [provider, setProvider] = useState<'wave' | 'orange_money'>('wave');
   const [amount, setAmount] = useState<number>(Math.min(availableBalance, 100000));
-  const [phone, setPhone] = useState('77 412 89 30');
+  const [phone, setPhone] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 

@@ -103,40 +103,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   // Review modal state
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewsList, setReviewsList] = useState<CustomerReview[]>(
-    config.reviews && config.reviews.length > 0
-      ? config.reviews
-      : [
-          {
-            id: 'rev-1',
-            authorName: 'Moussa Ba',
-            city: 'Mermoz',
-            rating: 5,
-            comment:
-              'Reçu en 2h chrono à Mermoz ! J’ai pu essayer la montre devant le coursier avant de payer en Wave. La finition saphir est juste magnifique, identique aux photos.',
-            date: 'Hier',
-            verified: true,
-          },
-          {
-            id: 'rev-2',
-            authorName: 'Aminata Traoré',
-            city: 'Sacré-Cœur',
-            rating: 5,
-            comment:
-              'Cadeau pour mon mari, il a adoré. Très bon contact WhatsApp avec le support pour caler l’heure exacte de livraison à mon bureau.',
-            date: 'Il y a 2 jours',
-            verified: true,
-          },
-          {
-            id: 'rev-3',
-            authorName: 'Ibrahima Ndiaye',
-            city: 'Point E',
-            rating: 5,
-            comment:
-              'Paiement Wave en ligne sécurisé, livreur très poli. Le packaging et la boîte cadeau sont top qualité.',
-            date: 'Il y a 3 jours',
-            verified: true,
-          },
-        ]
+    config.reviews && config.reviews.length > 0 ? config.reviews : []
   );
 
   // New review form
@@ -154,57 +121,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   const proofAudioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
 
-  const defaultProofItems: ProofItem[] = [
-    {
-      id: 'prf-1',
-      type: 'audio',
-      url: 'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3',
-      title: 'Note Vocale WhatsApp — Colis reçu en 2h à Dakar',
-      authorName: 'Mamadou Diallo',
-      city: 'Almadies',
-      duration: '0:38',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-    },
-    {
-      id: 'prf-2',
-      type: 'image',
-      url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=720&q=80',
-      title: 'Montre portée après essayage',
-      authorName: 'Cheikh Tidiane',
-      city: 'Plateau',
-    },
-    {
-      id: 'prf-3',
-      type: 'video',
-      url: 'https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-man-adjusting-a-luxury-wristwatch-43405-large.mp4',
-      title: 'Vidéo unboxing du coffret luxe',
-      authorName: 'Fatou Bintou Diop',
-      city: 'Mermoz',
-      duration: '0:18',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=720&q=80',
-    },
-    {
-      id: 'prf-4',
-      type: 'audio',
-      url: 'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3',
-      title: 'Note Vocale — Validation et remerciements',
-      authorName: 'Ousmane Cissé',
-      city: 'Guédiawaye',
-      duration: '0:45',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
-    },
-    {
-      id: 'prf-5',
-      type: 'image',
-      url: 'https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=720&q=80',
-      title: 'Confirmation WhatsApp de livraison',
-      authorName: 'Aminata Traoré',
-      city: 'Sacré-Cœur',
-    },
-  ];
-
-  const allProofItems: ProofItem[] =
-    config.proofItems && config.proofItems.length > 0 ? config.proofItems : defaultProofItems;
+  const allProofItems: ProofItem[] = config.proofItems && config.proofItems.length > 0 ? config.proofItems : [];
 
   const filteredProofItems =
     activeProofFilter === 'all'
@@ -562,12 +479,13 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
   // ========================================================
   // PAGE DÉSACTIVÉE PAR LE MARCHAND (LIEN COUPÉ)
-  // ========================================================
   if (config.status === 'inactive') {
-    const cleanPhone = (config.whatsappSupportNumber || '+221 77 412 89 30').replace(/[^0-9+]/g, '');
-    const whatsappUrl = `https://wa.me/${cleanPhone.replace('+', '')}?text=${encodeURIComponent(
-      `Bonjour ${config.storeName || 'Juula Store'} ! J'aimerais me renseigner sur vos produits disponibles.`
-    )}`;
+    const cleanPhone = (config.whatsappSupportNumber || '').replace(/[^0-9+]/g, '');
+    const whatsappUrl = cleanPhone
+      ? `https://wa.me/${cleanPhone.replace('+', '')}?text=${encodeURIComponent(
+          `Bonjour ${config.storeName || 'Ma Boutique'} ! J'aimerais me renseigner sur vos produits disponibles.`
+        )}`
+      : '#';
 
     return (
       <div
@@ -1308,7 +1226,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             </div>
             <div>
               <span className="font-extrabold text-sm text-[#0F172A] tracking-tight block">
-                {config.storeName || 'Boutique Dakar Élégance'}
+                {config.storeName || 'Ma Boutique'}
               </span>
               <span className="text-[10px] text-[#64748B] flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -1470,7 +1388,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               </span>
 
               <span className="text-[11px] font-bold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-1 rounded-full">
-                {config.storeName || 'Boutique Dakar Élégance'}
+                {config.storeName || 'Ma Boutique'}
               </span>
             </div>
 

@@ -87,32 +87,16 @@ export const Header: React.FC<HeaderProps> = ({
   const [isPeriodOpen, setIsPeriodOpen] = useState(false);
   const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
 
-  const notifications = [
-    {
-      id: 1,
-      title: 'Nouvelle commande #CMD-BDE-000008',
-      desc: 'Fatou Diop • 26 400 FCFA payé en ligne via Wave Sénégal',
-      time: 'Il y a 12 min',
-      type: 'order',
-      unread: true,
-    },
-    {
-      id: 2,
-      title: 'Colis #CMD-BDE-000005 pris en charge',
-      desc: 'Livreur Moussa assigné pour livraison à Point E',
-      time: 'Il y a 2h',
-      type: 'delivery',
-      unread: true,
-    },
-    {
-      id: 3,
-      title: 'Retrait Wave complété avec succès',
-      desc: '150 000 FCFA transférés vers le +221 77 412 89 30',
-      time: 'Hier',
-      type: 'payout',
-      unread: false,
-    },
-  ];
+  interface NotificationItem {
+    id: number;
+    title: string;
+    desc: string;
+    time: string;
+    type: string;
+    unread: boolean;
+  }
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const unreadCount = notifications.filter((n) => n.unread).length;
 
   const getPageTitle = () => {
     switch (activeTab) {
@@ -219,7 +203,9 @@ export const Header: React.FC<HeaderProps> = ({
               className="p-2 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] border border-[#E2E8F0] transition-colors cursor-pointer relative"
             >
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#10B981] ring-2 ring-white" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#10B981] ring-2 ring-white" />
+              )}
             </button>
 
             {/* Notifications Popover */}
@@ -228,9 +214,15 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                   <div className="flex items-center gap-2">
                     <span className="font-extrabold text-xs text-[#0F172A]">Notifications</span>
-                    <span className="text-[10px] font-black bg-[#EFF4FF] text-[#1E60F8] px-2 py-0.5 rounded-full">
-                      2 non lues
-                    </span>
+                    {unreadCount > 0 ? (
+                      <span className="text-[10px] font-black bg-[#EFF4FF] text-[#1E60F8] px-2 py-0.5 rounded-full">
+                        {unreadCount} non lue{unreadCount > 1 ? 's' : ''}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-[#94A3B8] bg-[#F1F5F9] px-2 py-0.5 rounded-full">
+                        0 nouvelle
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={() => setIsNotificationsOpen(false)}
@@ -241,30 +233,42 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 <div className="divide-y divide-[#F1F5F9] max-h-72 overflow-y-auto">
-                  {notifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      className={`py-3 px-1 space-y-1 transition-colors ${
-                        notif.unread ? 'bg-[#FAFCFF]' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-[#0F172A]">{notif.title}</span>
-                        <span className="text-[10px] text-[#94A3B8]">{notif.time}</span>
-                      </div>
-                      <p className="text-[11px] text-[#64748B] leading-tight">{notif.desc}</p>
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-[#94A3B8] space-y-1">
+                      <p className="font-semibold text-[#64748B]">Aucune notification</p>
+                      <p className="text-[11px]">Les alertes de commandes et retraits s'afficheront ici en direct.</p>
                     </div>
-                  ))}
+                  ) : (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`py-3 px-1 space-y-1 transition-colors ${
+                          notif.unread ? 'bg-[#FAFCFF]' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-[#0F172A]">{notif.title}</span>
+                          <span className="text-[10px] text-[#94A3B8]">{notif.time}</span>
+                        </div>
+                        <p className="text-[11px] text-[#64748B] leading-tight">{notif.desc}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
 
-                <div className="pt-2 border-t border-[#F1F5F9]">
-                  <button
-                    onClick={() => setIsNotificationsOpen(false)}
-                    className="w-full py-1.5 text-center text-xs font-bold text-[#1E60F8] hover:underline cursor-pointer"
-                  >
-                    Marquer tout comme lu
-                  </button>
-                </div>
+                {notifications.length > 0 && (
+                  <div className="pt-2 border-t border-[#F1F5F9]">
+                    <button
+                      onClick={() => {
+                        setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+                        setIsNotificationsOpen(false);
+                      }}
+                      className="w-full py-1.5 text-center text-xs font-bold text-[#1E60F8] hover:underline cursor-pointer"
+                    >
+                      Marquer tout comme lu
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

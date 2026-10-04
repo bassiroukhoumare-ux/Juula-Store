@@ -18,7 +18,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
 }) => {
   const [selectedPack, setSelectedPack] = useState<number>(150);
   const [paymentProvider, setPaymentProvider] = useState<'wave' | 'orange'>('wave');
-  const [phoneNumber, setPhoneNumber] = useState('77 412 89 30');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 

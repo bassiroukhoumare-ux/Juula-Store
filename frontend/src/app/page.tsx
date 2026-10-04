@@ -50,10 +50,10 @@ export default function JuulaStoreApp() {
   const [isRechargeOpen, setIsRechargeOpen] = useState(false);
   const [isPayoutPageOpen, setIsPayoutPageOpen] = useState(false);
   const [payoutSecurity, setPayoutSecurity] = useState({
-    isPinSet: true,
-    pinCode: '741289',
-    maskedPin: '•••• 89',
-    recoveryEmail: 'contact@boutiquedakar.sn',
+    isPinSet: false,
+    pinCode: '',
+    maskedPin: 'Non configuré',
+    recoveryEmail: '',
   });
 
   // Funnel pages operations
@@ -247,7 +247,7 @@ export default function JuulaStoreApp() {
       amount,
       provider,
       phoneNumber: `+221 ${phoneNumber}`,
-      recipientName: 'Boutique Dakar Élégance',
+      recipientName: funnelConfig.storeName || 'Ma Boutique',
       date: "À l'instant",
       status: 'completed',
       reference: `${provider === 'wave' ? 'WAV-SN' : 'OM-SN'}-${Math.floor(1000000 + Math.random() * 9000000)}`,

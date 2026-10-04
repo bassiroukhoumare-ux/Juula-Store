@@ -55,36 +55,36 @@ export const WalletView: React.FC<WalletViewProps> = ({
       case 'day':
         return {
           label: "Recette d'Aujourd'hui",
-          amount: wallet.todayRevenue ?? 89700,
-          growth: '+18.4% vs hier',
+          amount: wallet.todayRevenue ?? 0,
+          growth: (wallet.todayRevenue ?? 0) > 0 ? '+100%' : '0%',
           periodSubtitle: 'Chiffre d’affaires encaissé en 24h',
         };
       case 'week':
         return {
           label: 'Recette des 7 Derniers Jours',
-          amount: 342500,
-          growth: '+22.1% vs semaine passée',
+          amount: wallet.monthRevenue ?? 0,
+          growth: (wallet.monthRevenue ?? 0) > 0 ? '+100%' : '0%',
           periodSubtitle: 'Cumul des ventes sur les 7 derniers jours',
         };
       case '2weeks':
         return {
           label: 'Recette des 14 Derniers Jours',
-          amount: 580000,
-          growth: '+15.6% vs période précédente',
+          amount: wallet.monthRevenue ?? 0,
+          growth: (wallet.monthRevenue ?? 0) > 0 ? '+100%' : '0%',
           periodSubtitle: 'Activité commerciale sur 2 semaines',
         };
       case 'month':
         return {
-          label: 'Recette Totale du Mois (Octobre)',
-          amount: wallet.monthRevenue ?? 845000,
-          growth: '+28.5% vs mois précédent',
-          periodSubtitle: 'Volume global encaissé depuis le 1er octobre',
+          label: 'Recette Totale du Mois',
+          amount: wallet.monthRevenue ?? 0,
+          growth: (wallet.monthRevenue ?? 0) > 0 ? '+100%' : '0%',
+          periodSubtitle: 'Volume global encaissé ce mois',
         };
     }
   };
 
   const periodData = getRevenueForFilter();
-  const monthTotal = wallet.monthRevenue ?? 845000;
+  const monthTotal = wallet.monthRevenue || 0;
 
   // Real-time calculation of delivered COD from orders if present
   const deliveredCodOrders = orders.filter(
@@ -95,71 +95,10 @@ export const WalletView: React.FC<WalletViewProps> = ({
     0
   );
   const effectiveCodCollected =
-    deliveredCodTotal > 0 ? deliveredCodTotal : wallet.codCollectedAmount ?? 595200;
+    deliveredCodTotal > 0 ? deliveredCodTotal : (wallet.codCollectedAmount || 0);
 
   // Inflows list
-  const rawInflows: InflowRecord[] = wallet.inflowHistory ?? [
-    {
-      id: 'ENC-008',
-      orderId: 'CMD-BDE-000008',
-      customerName: 'Fatou Diop',
-      neighborhood: 'Almadies',
-      source: 'online_wave',
-      amount: 26400,
-      date: 'Aujourd’hui à 11h20',
-      status: 'confirmed',
-    },
-    {
-      id: 'ENC-005',
-      orderId: 'CMD-BDE-000005',
-      customerName: 'Ibrahima Ndiaye',
-      neighborhood: 'Point E',
-      source: 'online_orange',
-      amount: 26400,
-      date: 'Aujourd’hui à 09h40',
-      status: 'confirmed',
-    },
-    {
-      id: 'ENC-003',
-      orderId: 'CMD-BDE-000003',
-      customerName: 'Ousmane Cissé',
-      neighborhood: 'Guédiawaye Hamo 4',
-      source: 'cod_cash',
-      amount: 26900,
-      date: 'Aujourd’hui à 10h15',
-      status: 'confirmed',
-    },
-    {
-      id: 'ENC-002',
-      orderId: 'CMD-BDE-000002',
-      customerName: 'Khady Seck',
-      neighborhood: 'Yoff Virage',
-      source: 'online_wave',
-      amount: 39900,
-      date: 'Aujourd’hui à 09h30',
-      status: 'confirmed',
-    },
-    {
-      id: 'ENC-001',
-      orderId: 'CMD-BDE-000007',
-      customerName: 'Moussa Ba',
-      neighborhood: 'Mermoz',
-      source: 'cod_cash',
-      amount: 39900,
-      date: 'Hier à 17h10',
-      status: 'confirmed',
-    },
-    {
-      id: 'ENC-000',
-      orderId: 'CMD-BDE-000004',
-      customerName: 'Mariama Sarr',
-      neighborhood: 'Plateau',
-      source: 'cod_cash',
-      amount: 29900,
-      date: 'Hier à 14h25',
-      status: 'confirmed',
-    },
-  ];
+  const rawInflows: InflowRecord[] = wallet.inflowHistory || [];
 
   const filteredInflows = rawInflows.filter((item) => {
     if (inflowFilter === 'all') return true;
@@ -591,7 +530,14 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F8FAFC]">
-                  {wallet.payoutHistory.map((payout) => (
+                  {wallet.payoutHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-[#94A3B8]">
+                        Aucun virement ou retrait effectué pour le moment.
+                      </td>
+                    </tr>
+                  ) : (
+                    wallet.payoutHistory.map((payout) => (
                     <tr key={payout.id} className="hover:bg-[#F8FAFC] transition-colors">
                       <td className="py-3.5 px-4 font-mono font-bold text-[#0F172A] whitespace-nowrap">
                         {payout.reference}
@@ -634,7 +580,8 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                )}
                 </tbody>
               </table>
             </div>

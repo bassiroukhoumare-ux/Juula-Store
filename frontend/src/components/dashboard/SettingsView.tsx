@@ -36,10 +36,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   funnelConfig,
   onSaveConfig,
   payoutSecurity = {
-    isPinSet: true,
-    pinCode: '741289',
-    maskedPin: '•••• 89',
-    recoveryEmail: 'contact@boutiquedakar.sn',
+    isPinSet: false,
+    pinCode: '',
+    maskedPin: 'Non configuré',
+    recoveryEmail: '',
   },
   onUpdateSecurityPin,
 }) => {
@@ -50,18 +50,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinSuccess, setPinSuccess] = useState<string | null>(null);
 
-  const [storeName, setStoreName] = useState(funnelConfig.storeName || 'Boutique Dakar Élégance');
-  const [storeCode, setStoreCode] = useState(funnelConfig.storeCode || 'BDE');
+  const [storeName, setStoreName] = useState(funnelConfig.storeName || 'Ma Boutique');
+  const [storeCode, setStoreCode] = useState(funnelConfig.storeCode || 'CMD');
   const [whatsappNumber, setWhatsappNumber] = useState(
-    funnelConfig.whatsappSupportNumber || '+221 77 412 89 30'
+    funnelConfig.whatsappSupportNumber || ''
   );
   const [deliveryFree, setDeliveryFree] = useState(funnelConfig.deliveryFree ?? false);
-  const [deliveryFee, setDeliveryFee] = useState(funnelConfig.deliveryFee ?? 1500);
+  const [deliveryFee, setDeliveryFee] = useState(funnelConfig.deliveryFee ?? 0);
   const [deliveryNotice, setDeliveryNotice] = useState(
-    funnelConfig.deliveryNotice || 'Expédition locale sous 2h à 4h à Dakar'
+    funnelConfig.deliveryNotice || ''
   );
-  const [waveMerchantNumber, setWaveMerchantNumber] = useState('+221 77 412 89 30');
-  const [orangeMerchantNumber, setOrangeMerchantNumber] = useState('+221 78 521 14 02');
+  const [waveMerchantNumber, setWaveMerchantNumber] = useState('');
+  const [orangeMerchantNumber, setOrangeMerchantNumber] = useState('');
   const [codEnabled, setCodEnabled] = useState(funnelConfig.codEnabled ?? true);
   const [mobileMoneyEnabled, setMobileMoneyEnabled] = useState(
     funnelConfig.mobileMoneyEnabled ?? true
