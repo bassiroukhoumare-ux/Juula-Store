@@ -1,27 +1,20 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   GripVertical,
-  Clock,
   MapPin,
   Package,
   PhoneCall,
   Play,
   Pause,
   Volume2,
-  ArrowRight,
   ArrowLeft,
   X,
-  CreditCard,
-  Banknote,
-  Smartphone,
   MessageSquare,
   ChevronRight,
   CheckCircle2,
   Check,
-  RotateCcw,
-  Truck,
 } from 'lucide-react';
 import { OrderLead, OrderStatus } from '@/types/juula';
 import { formatNumber, formatFCFA } from '@/lib/orderUtils';
@@ -35,11 +28,21 @@ const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3
 interface KanbanCardProps {
   order: OrderLead;
   onMoveStatus: (orderId: string, nextStatus: OrderStatus) => void;
+  /** Open this order's detail modal on mount (email "Voir la commande" link). */
+  autoOpen?: boolean;
 }
 
-export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) => {
+export const KanbanCard: React.FC<KanbanCardProps> = ({
+  order,
+  onMoveStatus,
+  autoOpen = false,
+}) => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(autoOpen);
+
+  useEffect(() => {
+    if (autoOpen) setShowDetailModal(true);
+  }, [autoOpen]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const isPaidOnline = order.paymentStatus === 'paid';
@@ -68,7 +71,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) =
       isPaidOnline
         ? 'Votre paiement Mobile Money est bien validé. '
         : 'Le règlement se fera en espèces ou Wave à la réception. '
-    }Pouvez-vous nous confirmer votre disponibilité à ${order.neighborhood} ?`
+    }Pouvez-vous nous confirmer votre disponibilité à ${order.neighborhood} ?`,
   );
 
   const whatsappUrl = `https://wa.me/${order.whatsappNumber || cleanPhone}?text=${whatsappMessage}`;
@@ -115,9 +118,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) =
 
   // Clean address or note text preview (single line)
   const messagePreview =
-    order.deliveryNotes ||
-    order.deliveryAddress?.split(',')[0] ||
-    'Aucune consigne particulière';
+    order.deliveryNotes || order.deliveryAddress?.split(',')[0] || 'Aucune consigne particulière';
 
   return (
     <>
@@ -143,9 +144,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) =
             <span className="font-mono font-bold text-[#1E60F8] bg-[#EFF4FF] px-2 py-0.5 rounded-md text-[11px] shrink-0">
               {order.id}
             </span>
-            <span className="text-[11px] text-[#94A3B8] truncate">
-              {order.createdAt}
-            </span>
+            <span className="text-[11px] text-[#94A3B8] truncate">{order.createdAt}</span>
           </div>
 
           {/* Payment Pill Minimalist (Wave / Orange / COD) */}
@@ -176,7 +175,10 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) =
         {/* ======================================================== */}
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <span className="text-sm font-extrabold text-[#0F172A] truncate block leading-tight" title={order.customerName}>
+            <span
+              className="text-sm font-extrabold text-[#0F172A] truncate block leading-tight"
+              title={order.customerName}
+            >
               {order.customerName}
             </span>
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#475569] mt-0.5">
@@ -226,7 +228,10 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) =
           )}
 
           <div className="min-w-0 flex-1">
-            <span className="text-xs font-bold text-[#0F172A] block truncate" title={order.productName}>
+            <span
+              className="text-xs font-bold text-[#0F172A] block truncate"
+              title={order.productName}
+            >
               {order.productName}
             </span>
             <div className="flex items-center justify-between text-xs mt-1">
@@ -240,9 +245,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) =
                   </span>
                 )}
               </div>
-              <span className="font-black text-[#0F172A] text-xs">
-                {formatFCFA(totalDisplay)}
-              </span>
+              <span className="font-black text-[#0F172A] text-xs">{formatFCFA(totalDisplay)}</span>
             </div>
           </div>
         </div>
@@ -392,9 +395,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) =
                 <span className="font-mono text-xs font-bold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-0.5 rounded-md">
                   {order.id}
                 </span>
-                <h3 className="text-base font-black text-[#0F172A] mt-1">
-                  {order.customerName}
-                </h3>
+                <h3 className="text-base font-black text-[#0F172A] mt-1">{order.customerName}</h3>
               </div>
               <button
                 type="button"
@@ -420,12 +421,17 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) =
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <span className="font-extrabold text-[#0F172A] block truncate">{order.productName}</span>
+                  <span className="font-extrabold text-[#0F172A] block truncate">
+                    {order.productName}
+                  </span>
                   <div className="flex items-center justify-between text-[11px] text-[#64748B] mt-1">
                     <span className="font-bold bg-white px-2 py-0.5 rounded border border-[#E2E8F0]">
-                      Quantité commandée : <strong className="text-[#0F172A]">{order.quantity || 1}</strong>
+                      Quantité commandée :{' '}
+                      <strong className="text-[#0F172A]">{order.quantity || 1}</strong>
                     </span>
-                    <span className="text-[#1E60F8] font-black text-sm">{formatFCFA(totalDisplay)}</span>
+                    <span className="text-[#1E60F8] font-black text-sm">
+                      {formatFCFA(totalDisplay)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -440,8 +446,8 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) =
                   {order.paymentType === 'online_wave'
                     ? 'Wave (Payé en ligne)'
                     : order.paymentType === 'online_orange'
-                    ? 'Orange Money (Payé en ligne)'
-                    : 'Espèces à la livraison (COD)'}
+                      ? 'Orange Money (Payé en ligne)'
+                      : 'Espèces à la livraison (COD)'}
                 </span>
               </div>
             </div>
@@ -456,9 +462,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({ order, onMoveStatus }) =
                 {order.deliveryAddress || order.neighborhood}
               </p>
               {order.deliveryNotes && (
-                <p className="italic text-[#64748B] text-[11px] px-1">
-                  « {order.deliveryNotes} »
-                </p>
+                <p className="italic text-[#64748B] text-[11px] px-1">« {order.deliveryNotes} »</p>
               )}
             </div>
 

@@ -3,9 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { Check, Copy, ExternalLink, Link2, Rocket, Share2 } from 'lucide-react';
 import type { FunnelPageStatus } from '@/types/juula';
+import { storeProductUrl } from '@/lib/store/subdomain';
 
 interface ShareLinkBarProps {
   slug: string;
+  /** Store subdomain: links become <shop>.juula.store/<slug>. */
+  subdomain?: string | null;
   status: FunnelPageStatus;
   productTitle: string;
   onPublish: () => void;
@@ -14,6 +17,7 @@ interface ShareLinkBarProps {
 /** Public link of the product being edited: copy, open, share, publish. */
 export const ShareLinkBar: React.FC<ShareLinkBarProps> = ({
   slug,
+  subdomain = null,
   status,
   productTitle,
   onPublish,
@@ -27,8 +31,10 @@ export const ShareLinkBar: React.FC<ShareLinkBarProps> = ({
     setCanShare(typeof navigator.share === 'function');
   }, []);
 
-  const url = `${origin}/p/${slug}`;
+  const url = subdomain ? storeProductUrl(subdomain, slug) : `${origin}/p/${slug}`;
   const isPublished = status === 'published';
+  // Drafts only render for their owner, on the platform domain (/p preview).
+  const openHref = isPublished ? url : `/p/${slug}`;
 
   const handleCopy = async () => {
     try {
@@ -70,7 +76,7 @@ export const ShareLinkBar: React.FC<ShareLinkBarProps> = ({
             )}
           </p>
           <p className="text-xs font-mono font-semibold text-[#0F172A] truncate" title={url}>
-            {origin ? url : `/p/${slug}`}
+            {origin || subdomain ? url : `/p/${slug}`}
           </p>
           {!isPublished && (
             <p className="text-[10px] text-[#94A3B8]">
@@ -108,7 +114,7 @@ export const ShareLinkBar: React.FC<ShareLinkBarProps> = ({
           </button>
         )}
         <a
-          href={`/p/${slug}`}
+          href={openHref}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] text-xs font-bold transition-colors"

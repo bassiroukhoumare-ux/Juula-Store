@@ -6,7 +6,7 @@
 export const runtime = 'nodejs';
 
 import 'server-only';
-import { after, NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
@@ -20,8 +20,8 @@ import {
   toFunnelPageItem,
 } from '@/lib/server/store/products';
 import { defaultFunnelConfig } from '@/data/mockData';
-import { sendWelcomeEmailOnce } from '@/lib/server/store/notify';
 import type { FunnelPageConfig } from '@/types/juula';
+import { getStoreCode } from '@/lib/orderUtils';
 
 const MAX_PRODUCTS_PER_MERCHANT = 200;
 
@@ -34,10 +34,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   return withRequestContext(ctx, async () => {
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
-
-    // First dashboard load after sign-up: welcome email (sent once, atomic claim).
-    const userId = auth.user.sub;
-    after(() => sendWelcomeEmailOnce(userId));
 
     const products = await prisma.product.findMany({
       where: { userId: auth.user.sub },
@@ -86,7 +82,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       where: { userId },
       orderBy: { updatedAt: 'desc' },
     });
-    const inherited = latest ? pickStoreWide(productConfig(latest)) : {};
+    const inherited: Partial<FunnelPageConfig> = latest ? pickStoreWide(productConfig(latest)) : {};
+    // The store name chosen at onboarding wins (it is also the order prefix).
+    const store = await prisma.store.findUnique({ where: { userId }, select: { name: true } });
+    if (store?.name) {
+      inherited.storeName = store.name;
+      inherited.storeCode = getStoreCode(store.name);
+    }
 
     const config: FunnelPageConfig = {
       ...defaultFunnelConfig,

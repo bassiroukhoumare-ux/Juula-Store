@@ -43,7 +43,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       facebookPixelId: store?.facebookPixelId ?? null,
       tiktokPixelId: store?.tiktokPixelId ?? null,
     };
-    return NextResponse.json({ store: pixels }, { headers: { 'x-request-id': ctx.requestId } });
+    return NextResponse.json(
+      { store: { ...pixels, name: store?.name ?? null, subdomain: store?.subdomain ?? null } },
+      { headers: { 'x-request-id': ctx.requestId } },
+    );
   });
 }
 

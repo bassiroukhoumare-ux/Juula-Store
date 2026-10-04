@@ -352,15 +352,30 @@ model Withdrawal {
 // Amounts are integers in FCFA.
 // ───────────────────────────────────────────────────────────────────────
 model Store {
-  id                 String    @id @default(cuid())
-  userId             String    @unique
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String       @id @default(cuid())
+  userId             String       @unique
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Public storefront: https://<subdomain>.juula.store — chosen at onboarding,
+  // editable in Paramètres. Previous subdomains live in StoreAlias so links
+  // already shared keep redirecting to the current one.
+  name               String?
+  subdomain          String?      @unique
   facebookPixelId    String?
   tiktokPixelId      String?
-  orderCounter       Int       @default(0) // last allocated StoreOrder.number
+  orderCounter       Int          @default(0) // last allocated StoreOrder.number
   welcomeEmailSentAt DateTime? // set once when the welcome email is claimed
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  aliases            StoreAlias[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+}
+
+model StoreAlias {
+  subdomain String   @id
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([storeId])
 }
 
 model Product {

@@ -29,8 +29,15 @@ const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' })
 );
 
 // After Google sign-in the OAuth callback redirects to `next` (same-origin
-// only, validated server-side) — the merchant dashboard.
-const GOOGLE_START_URL = '/api/auth/oauth/google/start?next=/dashboard';
+// only, validated again server-side): the dashboard, or the page that sent
+// the user to /login (e.g. an order opened from an email link).
+function nextPath(): string {
+  if (typeof window === 'undefined') return '/dashboard';
+  const next = new URLSearchParams(window.location.search).get('next') ?? '';
+  return next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\')
+    ? next
+    : '/dashboard';
+}
 
 interface GoogleAuthScreenProps {
   mode: 'login' | 'signup';
@@ -46,7 +53,7 @@ export const GoogleAuthScreen: React.FC<GoogleAuthScreenProps> = ({ mode }) => {
     let cancelled = false;
     api('/api/auth/me')
       .then(() => {
-        if (!cancelled) router.replace('/dashboard');
+        if (!cancelled) router.replace(nextPath());
       })
       .catch(() => {
         if (!cancelled) setChecking(false);
@@ -61,7 +68,7 @@ export const GoogleAuthScreen: React.FC<GoogleAuthScreenProps> = ({ mode }) => {
     // The callback issues a fresh CSRF cookie; drop any token cached by a
     // previous session so the next mutation doesn't send a stale one.
     clearCsrfToken();
-    window.location.href = GOOGLE_START_URL;
+    window.location.href = `/api/auth/oauth/google/start?next=${encodeURIComponent(nextPath())}`;
   };
 
   const isSignup = mode === 'signup';

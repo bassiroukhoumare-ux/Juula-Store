@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { platformOrigin, subdomainFromHost } from '@/lib/store/subdomain';
 
 // Silent-refresh gate for protected pages.
 //
@@ -12,6 +13,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 // Protected paths are configured via AUTH_PROTECTED_PREFIXES (comma-separated,
 // e.g. "/dashboard,/account"). Empty by default — the API surface is the only
 // thing shipped, so out-of-the-box this middleware is a no-op.
+//
+// Store subdomains: a request to https://<shop>.juula.store/<path> is
+// rewritten to /boutique/<shop>/<path> (storefront home or product page).
+// Platform pages (dashboard, login…) always live on www and are redirected.
 //
 // Edge runtime: no DB, no bcrypt, no Prisma. We only inspect cookies and
 // build redirects — the heavy lifting happens in /api/auth/refresh-and-return
@@ -31,7 +36,23 @@ function isAuthedPath(pathname: string): boolean {
   return AUTHED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+const PLATFORM_ONLY =
+  /^\/(dashboard|login|signup|auth|settings|vitrine|conditions|confidentialite|boutique|p)(\/|$)/;
+
+function storefront(req: NextRequest, shop: string): NextResponse {
+  const { pathname, search } = req.nextUrl;
+  if (PLATFORM_ONLY.test(pathname)) {
+    return NextResponse.redirect(`${platformOrigin()}${pathname}${search}`, 308);
+  }
+  const url = req.nextUrl.clone();
+  url.pathname = `/boutique/${shop}${pathname === '/' ? '' : pathname}`;
+  return NextResponse.rewrite(url);
+}
+
 export function middleware(req: NextRequest): NextResponse {
+  const shop = subdomainFromHost(req.headers.get('host'));
+  if (shop) return storefront(req, shop);
+
   if (AUTHED_PREFIXES.length === 0) return NextResponse.next();
 
   const { pathname, search } = req.nextUrl;

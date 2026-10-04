@@ -13,6 +13,7 @@ interface KanbanColumnProps {
   accentColor: string;
   badgeBg: string;
   badgeText: string;
+  focusOrderId?: string | null | undefined;
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -23,11 +24,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   accentColor,
   badgeBg,
   badgeText,
+  focusOrderId,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const totalAmount = orders.reduce(
     (sum, o) => sum + (o.totalAmount || o.amount + (o.deliveryFee || 0)),
-    0
+    0,
   );
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -70,9 +72,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
             style={{ backgroundColor: accentColor }}
           />
-          <h3 className="text-sm font-extrabold text-[#0F172A] tracking-tight">
-            {title}
-          </h3>
+          <h3 className="text-sm font-extrabold text-[#0F172A] tracking-tight">{title}</h3>
         </div>
 
         <span
@@ -86,9 +86,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       {/* Sub-header with total amount */}
       <div className="flex items-center justify-between text-[11px] text-[#64748B] px-1 mb-3">
         <span>Total de l'étape :</span>
-        <span className="font-extrabold text-[#0F172A]">
-          {formatFCFA(totalAmount)}
-        </span>
+        <span className="font-extrabold text-[#0F172A]">{formatFCFA(totalAmount)}</span>
       </div>
 
       {/* Card List Scrollable */}
@@ -106,7 +104,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           </div>
         ) : (
           orders.map((order) => (
-            <KanbanCard key={order.id} order={order} onMoveStatus={onMoveStatus} />
+            <KanbanCard
+              key={order.id}
+              order={order}
+              onMoveStatus={onMoveStatus}
+              autoOpen={order.id === focusOrderId}
+            />
           ))
         )}
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Search,
   LayoutGrid,
@@ -16,16 +16,11 @@ import {
   Banknote,
   Smartphone,
   ChevronDown,
-  ArrowRight,
-  ArrowLeft,
-  MessageSquare,
-  Clock,
-  CheckCircle2,
 } from 'lucide-react';
 import { OrderLead, OrderStatus } from '@/types/juula';
 import { KanbanColumn } from './KanbanColumn';
 import { Input } from '@/components/ui/Input';
-import { formatNumber, formatFCFA } from '@/lib/orderUtils';
+import { formatFCFA } from '@/lib/orderUtils';
 
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -37,12 +32,14 @@ interface KanbanViewProps {
   orders: OrderLead[];
   onOrdersChange: (orders: OrderLead[]) => void;
   onOpenStorefrontPreview: () => void;
+  /** Order to open/expand on arrival (deep link from the "new order" email). */
+  focusOrderId?: string | null;
 }
 
 export const KanbanView: React.FC<KanbanViewProps> = ({
   orders,
   onOrdersChange,
-  onOpenStorefrontPreview,
+  focusOrderId = null,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'online' | 'cod'>('all');
@@ -69,11 +66,21 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   };
 
   const handleMoveStatus = (orderId: string, nextStatus: OrderStatus) => {
-    const updated = orders.map((o) =>
-      o.id === orderId ? { ...o, status: nextStatus } : o
-    );
+    const updated = orders.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o));
     onOrdersChange(updated);
   };
+
+  // Deep link: expand the order (mobile list) and bring it into view.
+  useEffect(() => {
+    if (!focusOrderId) return;
+    setExpandedOrders((prev) => ({ ...prev, [focusOrderId]: true }));
+    const t = setTimeout(() => {
+      document
+        .getElementById(`order-${focusOrderId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+    return () => clearTimeout(t);
+  }, [focusOrderId]);
 
   const toggleExpand = (orderId: string) => {
     setExpandedOrders((prev) => ({
@@ -99,8 +106,8 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
       paymentFilter === 'all'
         ? true
         : paymentFilter === 'online'
-        ? order.paymentType === 'online_wave' || order.paymentType === 'online_orange'
-        : order.paymentType === 'cod';
+          ? order.paymentType === 'online_wave' || order.paymentType === 'online_orange'
+          : order.paymentType === 'cod';
 
     return matchesQuery && matchesNeighborhood && matchesPayment;
   });
@@ -143,22 +150,18 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   ];
 
   const onlineOrdersCount = orders.filter(
-    (o) => o.paymentType === 'online_wave' || o.paymentType === 'online_orange'
+    (o) => o.paymentType === 'online_wave' || o.paymentType === 'online_orange',
   ).length;
   const codOrdersCount = orders.filter((o) => o.paymentType === 'cod').length;
 
   const mobileOrders = filteredOrders.filter((o) =>
-    mobileStatusTab === 'all' ? true : o.status === mobileStatusTab
+    mobileStatusTab === 'all' ? true : o.status === mobileStatusTab,
   );
 
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
       {/* Hidden audio player for list/table view playback */}
-      <audio
-        ref={audioPlayerRef}
-        onEnded={() => setActiveAudioOrderId(null)}
-        className="hidden"
-      />
+      <audio ref={audioPlayerRef} onEnded={() => setActiveAudioOrderId(null)} className="hidden" />
 
       {/* ======================================================== */}
       {/* 1. TOP HEADER & KPI FILTERS (ÉPURÉ, CONTEMPORAIN)        */}
@@ -214,7 +217,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             <span className="text-[10px] uppercase font-bold tracking-wider">En Ligne</span>
             <span
               className={`text-xs font-black px-2 py-0.5 rounded-full ${
-                paymentFilter === 'online' ? 'bg-[#1E60F8] text-white' : 'bg-[#EFF4FF] text-[#1E60F8]'
+                paymentFilter === 'online'
+                  ? 'bg-[#1E60F8] text-white'
+                  : 'bg-[#EFF4FF] text-[#1E60F8]'
               }`}
             >
               {onlineOrdersCount}
@@ -230,7 +235,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                 : 'bg-white border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]'
             }`}
           >
-            <span className="text-[10px] uppercase font-bold tracking-wider truncate">COD Espèces</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider truncate">
+              COD Espèces
+            </span>
             <span
               className={`text-xs font-black px-2 py-0.5 rounded-full ${
                 paymentFilter === 'cod' ? 'bg-[#0F172A] text-white' : 'bg-[#F1F5F9] text-[#334155]'
@@ -340,6 +347,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                 accentColor={col.accentColor}
                 badgeBg={col.badgeBg}
                 badgeText={col.badgeText}
+                focusOrderId={focusOrderId}
               />
             );
           })}
@@ -360,7 +368,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             filteredOrders.map((order) => {
               const cleanPhone = (order.phone || '').replace(/[^0-9+]/g, '');
               const waMsg = encodeURIComponent(
-                `Bonjour ${order.customerName} ! Boutique concernant votre commande #${order.id} (${order.productName} - ${formatFCFA(order.totalAmount || order.amount)}). Pouvez-vous nous confirmer votre disponibilité à ${order.neighborhood} ?`
+                `Bonjour ${order.customerName} ! Boutique concernant votre commande #${order.id} (${order.productName} - ${formatFCFA(order.totalAmount || order.amount)}). Pouvez-vous nous confirmer votre disponibilité à ${order.neighborhood} ?`,
               );
               const totalVal = order.totalAmount || order.amount + (order.deliveryFee || 0);
               const isPlaying = activeAudioOrderId === order.id;
@@ -381,10 +389,10 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                         order.status === 'new'
                           ? 'bg-[#1E60F8]'
                           : order.status === 'confirmed'
-                          ? 'bg-[#0EA5E9]'
-                          : order.status === 'delivered'
-                          ? 'bg-[#10B981]'
-                          : 'bg-rose-500'
+                            ? 'bg-[#0EA5E9]'
+                            : order.status === 'delivered'
+                              ? 'bg-[#10B981]'
+                              : 'bg-rose-500'
                       }`}
                     />
                     <div>
@@ -398,22 +406,27 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                         {order.status === 'new'
                           ? 'Nouvelle'
                           : order.status === 'confirmed'
-                          ? 'En route'
-                          : order.status === 'delivered'
-                          ? 'Livré & Payé'
-                          : 'Annulé'}
+                            ? 'En route'
+                            : order.status === 'delivered'
+                              ? 'Livré & Payé'
+                              : 'Annulé'}
                       </span>
                     </div>
                   </div>
 
                   {/* Section 2 : Client & Quartier (Strictement 1 ligne) */}
                   <div className="w-52 shrink-0 min-w-0">
-                    <span className="font-extrabold text-sm text-[#0F172A] block truncate" title={order.customerName}>
+                    <span
+                      className="font-extrabold text-sm text-[#0F172A] block truncate"
+                      title={order.customerName}
+                    >
                       {order.customerName}
                     </span>
                     <span className="inline-flex items-center gap-1 text-[11px] text-[#1E60F8] font-semibold truncate max-w-full">
                       <MapPin className="w-3 h-3 shrink-0" />
-                      <span className="truncate">{(order.neighborhood.split('(')[0] ?? '').trim()}</span>
+                      <span className="truncate">
+                        {(order.neighborhood.split('(')[0] ?? '').trim()}
+                      </span>
                     </span>
                   </div>
 
@@ -473,7 +486,10 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                           x{order.quantity || 1}
                         </span>
                       </div>
-                      <span className="text-[11px] text-[#64748B] block truncate" title={order.productName}>
+                      <span
+                        className="text-[11px] text-[#64748B] block truncate"
+                        title={order.productName}
+                      >
                         {order.productName}
                       </span>
                     </div>
@@ -570,7 +586,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   filteredOrders.map((order) => {
                     const cleanPhone = (order.phone || '').replace(/[^0-9+]/g, '');
                     const waMsg = encodeURIComponent(
-                      `Bonjour ${order.customerName} ! Concernant votre commande #${order.id} (${order.productName} - ${formatFCFA(order.totalAmount || order.amount)}). Pouvez-vous nous confirmer votre disponibilité ?`
+                      `Bonjour ${order.customerName} ! Concernant votre commande #${order.id} (${order.productName} - ${formatFCFA(order.totalAmount || order.amount)}). Pouvez-vous nous confirmer votre disponibilité ?`,
                     );
                     const totalVal = order.totalAmount || order.amount + (order.deliveryFee || 0);
                     const isPlaying = activeAudioOrderId === order.id;
@@ -600,7 +616,11 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                               onClick={() => handlePlayAudio(order.id, order.voiceNoteUrl!)}
                               className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-[#1E60F8] bg-[#EFF4FF] hover:bg-[#DBEAFE] px-2 py-0.5 rounded-full cursor-pointer"
                             >
-                              {isPlaying ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+                              {isPlaying ? (
+                                <Pause className="w-3 h-3 fill-current" />
+                              ) : (
+                                <Play className="w-3 h-3 fill-current" />
+                              )}
                               <span>Note vocale (0:38)</span>
                             </button>
                           ) : (
@@ -623,11 +643,15 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                               </div>
                             )}
                             <div className="min-w-0 flex-1">
-                              <span className="text-xs font-bold text-[#0F172A] block truncate" title={order.productName}>
+                              <span
+                                className="text-xs font-bold text-[#0F172A] block truncate"
+                                title={order.productName}
+                              >
                                 {order.productName}
                               </span>
                               <span className="text-[10px] font-semibold text-[#64748B]">
-                                Qté : <strong className="text-[#0F172A]">{order.quantity || 1}</strong>
+                                Qté :{' '}
+                                <strong className="text-[#0F172A]">{order.quantity || 1}</strong>
                               </span>
                             </div>
                           </div>
@@ -658,7 +682,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <select
                             value={order.status}
-                            onChange={(e) => handleMoveStatus(order.id, e.target.value as OrderStatus)}
+                            onChange={(e) =>
+                              handleMoveStatus(order.id, e.target.value as OrderStatus)
+                            }
                             aria-label="Statut de la commande"
                             className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-2 py-1 text-xs font-bold text-[#334155] cursor-pointer focus:outline-none focus:border-[#1E60F8]"
                           >
@@ -742,7 +768,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
               <span>{tab.label}</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  mobileStatusTab === tab.id ? 'bg-white/20 text-white' : 'bg-[#F1F5F9] text-[#0F172A]'
+                  mobileStatusTab === tab.id
+                    ? 'bg-white/20 text-white'
+                    : 'bg-[#F1F5F9] text-[#0F172A]'
                 }`}
               >
                 {tab.count}
@@ -760,16 +788,20 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
           ) : (
             mobileOrders.map((order) => {
               const isExpanded = !!expandedOrders[order.id];
-              const isPaidOnline = order.paymentStatus === 'paid' || order.paymentType === 'online_wave' || order.paymentType === 'online_orange';
+              const isPaidOnline =
+                order.paymentStatus === 'paid' ||
+                order.paymentType === 'online_wave' ||
+                order.paymentType === 'online_orange';
               const cleanPhone = (order.phone || '').replace(/[^0-9+]/g, '');
               const whatsappUrl = `https://wa.me/${order.whatsappNumber || cleanPhone}?text=${encodeURIComponent(
-                `Bonjour ${order.customerName} ! Boutique concernant votre commande #${order.id} (${order.productName}). Pouvez-vous nous confirmer votre heure de livraison à ${order.neighborhood} ?`
+                `Bonjour ${order.customerName} ! Boutique concernant votre commande #${order.id} (${order.productName}). Pouvez-vous nous confirmer votre heure de livraison à ${order.neighborhood} ?`,
               )}`;
 
               return (
                 <div
                   key={order.id}
-                  className={`bg-white rounded-2xl border shadow-xs overflow-hidden transition-all ${
+                  id={`order-${order.id}`}
+                  className={`bg-white rounded-2xl border shadow-xs overflow-hidden transition-all ${order.id === focusOrderId ? 'ring-2 ring-[#235BF7] ' : ''}${
                     isPaidOnline
                       ? 'border-2 border-[#FF7900] ring-2 ring-[#FF7900]/15'
                       : 'border-[#E5E9F0]'
@@ -789,9 +821,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                             Payé
                           </span>
                         )}
-                        <span className="text-[11px] text-[#94A3B8]">
-                          {order.createdAt}
-                        </span>
+                        <span className="text-[11px] text-[#94A3B8]">{order.createdAt}</span>
                       </div>
 
                       <div className="flex items-center justify-between gap-2 mt-1">
@@ -805,7 +835,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
                       <div className="flex items-center gap-1.5 text-[11px] text-[#64748B] mt-0.5">
                         <MapPin className="w-3 h-3 text-[#1E60F8] shrink-0" />
-                        <span className="truncate">{(order.neighborhood.split('(')[0] ?? '').trim()}</span>
+                        <span className="truncate">
+                          {(order.neighborhood.split('(')[0] ?? '').trim()}
+                        </span>
                       </div>
                     </div>
 
@@ -839,11 +871,15 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                         )}
                         <div className="flex-1 min-w-0 space-y-1">
                           <div className="flex items-center justify-between gap-1">
-                            <span className="font-bold text-[#0F172A] text-xs truncate" title={order.productName}>
+                            <span
+                              className="font-bold text-[#0F172A] text-xs truncate"
+                              title={order.productName}
+                            >
                               {order.productName}
                             </span>
                             <span className="text-[10px] font-bold text-[#475569] bg-[#F1F5F9] px-1.5 py-0.5 rounded border border-[#E2E8F0] shrink-0">
-                              Qté : <strong className="text-[#0F172A]">{order.quantity || 1}</strong>
+                              Qté :{' '}
+                              <strong className="text-[#0F172A]">{order.quantity || 1}</strong>
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-[11px] text-[#64748B]">
@@ -852,8 +888,8 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                               {order.paymentType === 'online_wave'
                                 ? 'Wave (En ligne)'
                                 : order.paymentType === 'online_orange'
-                                ? 'Orange (En ligne)'
-                                : 'Espèces (COD)'}
+                                  ? 'Orange (En ligne)'
+                                  : 'Espèces (COD)'}
                             </span>
                           </div>
                         </div>
@@ -912,7 +948,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                       <div className="pt-1">
                         <select
                           value={order.status}
-                          onChange={(e) => handleMoveStatus(order.id, e.target.value as OrderStatus)}
+                          onChange={(e) =>
+                            handleMoveStatus(order.id, e.target.value as OrderStatus)
+                          }
                           aria-label="Statut de la commande"
                           className="w-full bg-white border border-[#CBD5E1] rounded-xl py-2 px-3 text-xs font-bold text-[#0F172A] cursor-pointer"
                         >

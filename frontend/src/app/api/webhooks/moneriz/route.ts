@@ -23,7 +23,7 @@ import {
   verifyMonerizSignature,
 } from '@/lib/server/payments/moneriz';
 import { verifyOrderPayment } from '@/lib/server/store/payments';
-import { sendWithdrawalFailedEmail } from '@/lib/server/store/notify';
+import { sendWithdrawalCompletedEmail, sendWithdrawalFailedEmail } from '@/lib/server/store/notify';
 
 interface MonerizEvent {
   id?: unknown;
@@ -58,10 +58,17 @@ async function syncWithdrawal(providerPayoutId: string): Promise<void> {
   };
   const status = typeof payout?.status === 'string' ? payout.status.toLowerCase() : '';
   if (COMPLETED.has(status)) {
-    await prisma.withdrawal.updateMany({
+    const done = await prisma.withdrawal.updateMany({
       where: { providerPayoutId, status: { in: ['PENDING', 'PROCESSING'] } },
       data: { status: 'COMPLETED', completedAt: new Date() },
     });
+    if (done.count > 0) {
+      const row = await prisma.withdrawal.findFirst({
+        where: { providerPayoutId },
+        select: { id: true },
+      });
+      if (row) after(() => sendWithdrawalCompletedEmail(row.id));
+    }
   } else if (FAILED.has(status)) {
     // FAILED releases the reserved amount back to the merchant's balance.
     const failed = await prisma.withdrawal.updateMany({

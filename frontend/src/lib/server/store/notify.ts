@@ -10,7 +10,7 @@
 // Every value coming from a customer or merchant (names, addresses, product
 // titles) is HTML-escaped before being placed in a template.
 import 'server-only';
-import type { Withdrawal } from '@prisma/client';
+import type { StoreOrder, Withdrawal } from '@prisma/client';
 import { createMailer, type Mailer } from '@/lib/server/email';
 import { log } from '@/lib/server/observability/log';
 import { prisma } from '@/lib/server/prisma';
@@ -20,8 +20,32 @@ import { formatNumber } from '@/lib/orderUtils';
 // Assets and links always point at the production site: emails are read
 // outside the app, possibly long after they were sent.
 const SITE = LEGAL.siteUrl;
-const LOGO_URL = `${SITE}/email/juula-icon.png`;
+const LOGO_URL = `${SITE}/email/juula-logo.png`;
 const DASHBOARD_URL = `${SITE}/dashboard`;
+
+/** Deep link that opens a given order in the dashboard (login first if needed). */
+export function orderUrl(reference: string): string {
+  return `${DASHBOARD_URL}?commande=${encodeURIComponent(reference)}`;
+}
+
+// Brand palette (from the Juula logo).
+const C = {
+  blue: '#235BF7',
+  blueSoft: '#EEF3FF',
+  ink: '#201D1D',
+  text: '#3F4654',
+  muted: '#6B7280',
+  line: '#E6EAF2',
+  bg: '#F4F6FB',
+  green: '#16A34A',
+  greenSoft: '#ECFDF3',
+  amber: '#B45309',
+  amberSoft: '#FFF7E6',
+  red: '#DC2626',
+  redSoft: '#FEF2F2',
+};
+
+const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif`;
 
 let mailer: Mailer | null | undefined;
 
@@ -43,79 +67,217 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-const fcfa = (n: number) => `${formatNumber(n)} FCFA`;
+// Non-breaking spaces: "32 000 FCFA" never wraps across two lines.
+const NBSP = '\u00A0';
+const fcfa = (n: number) => `${formatNumber(n)} FCFA`.replace(/[ \u202F]/g, NBSP);
+
+const dateFmt = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Africa/Dakar',
+});
 
 /** +221 77 ••• 45 67 — enough to recognise the number, not to reuse it. */
 function maskPhone(phone: string): string {
   const d = phone.replace(/[^\d]/g, '').replace(/^221/, '');
-  return d.length === 9 ? `+221 ${d.slice(0, 2)} ••• ${d.slice(5, 7)} ${d.slice(7)}` : phone;
+  return d.length === 9
+    ? [`+221`, d.slice(0, 2), '•••', d.slice(5, 7), d.slice(7)].join(NBSP)
+    : phone;
 }
 
-interface Row {
+// ─────────────────────────────────────────────────────────────────────────
+// Layout
+// ─────────────────────────────────────────────────────────────────────────
+
+type Tone = 'blue' | 'green' | 'amber' | 'red';
+const TONES: Record<Tone, { fg: string; bg: string }> = {
+  blue: { fg: C.blue, bg: C.blueSoft },
+  green: { fg: C.green, bg: C.greenSoft },
+  amber: { fg: C.amber, bg: C.amberSoft },
+  red: { fg: C.red, bg: C.redSoft },
+};
+
+export interface EmailRow {
   label: string;
   value: string; // already-escaped HTML
 }
 
-interface LayoutInput {
-  preheader: string;
+export interface EmailSection {
   title: string;
-  intro: string; // already-escaped HTML
-  rows?: Row[];
-  cta?: { label: string; url: string };
-  outro?: string; // already-escaped HTML
-  accent?: string;
+  rows: EmailRow[];
 }
 
-/** Table-based layout: renders in Gmail, Outlook, Apple Mail and on mobile. */
-export function renderEmail(input: LayoutInput): string {
-  const accent = input.accent ?? '#1E60F8';
-  const rows = (input.rows ?? [])
+export interface EmailButton {
+  label: string;
+  url: string;
+}
+
+export interface EmailLayout {
+  preheader: string;
+  /** Small label top-right of the header (e.g. "Commande"). */
+  label: string;
+  badge?: { text: string; tone: Tone };
+  title: string;
+  intro: string; // already-escaped HTML
+  /** Big highlighted amount under the intro. */
+  amount?: { value: number; caption: string; tone?: Tone };
+  steps?: { title: string; text: string }[];
+  sections?: EmailSection[];
+  /** Price breakdown with a bold total line. */
+  summary?: { rows: EmailRow[]; total: EmailRow };
+  cta?: EmailButton;
+  secondary?: EmailButton & { color?: string };
+  note?: string; // already-escaped HTML
+}
+
+function badgeHtml(b: NonNullable<EmailLayout['badge']>): string {
+  const t = TONES[b.tone];
+  return `<span style="display:inline-block;background:${t.bg};color:${t.fg};font-size:12px;font-weight:700;letter-spacing:.2px;padding:6px 12px;border-radius:999px;">${escapeHtml(b.text)}</span>`;
+}
+
+function rowsHtml(rows: EmailRow[]): string {
+  return rows
     .map(
-      (r) => `<tr>
-        <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;color:#64748B;font-size:13px;width:42%;vertical-align:top;">${r.label}</td>
-        <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;color:#0F172A;font-size:14px;font-weight:600;vertical-align:top;">${r.value}</td>
+      (r, i) => `<tr>
+        <td style="padding:11px 0;${i ? `border-top:1px solid ${C.line};` : ''}color:${C.muted};font-size:13px;width:40%;vertical-align:top;">${r.label}</td>
+        <td style="padding:11px 0;${i ? `border-top:1px solid ${C.line};` : ''}color:${C.ink};font-size:14px;font-weight:600;vertical-align:top;text-align:right;">${r.value}</td>
       </tr>`,
     )
     .join('');
-  const cta = input.cta
-    ? `<tr><td style="padding:24px 0 4px;">
-        <a href="${input.cta.url}" style="display:inline-block;background:${accent};color:#FFFFFF;text-decoration:none;font-weight:800;font-size:14px;padding:14px 26px;border-radius:14px;">${input.cta.label}</a>
+}
+
+function sectionHtml(s: EmailSection): string {
+  return `<tr><td style="padding-top:16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.line};border-radius:16px;">
+      <tr><td style="padding:14px 18px 4px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:${C.blue};">${escapeHtml(s.title)}</td></tr>
+      <tr><td style="padding:0 18px 6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rowsHtml(s.rows)}</table></td></tr>
+    </table>
+  </td></tr>`;
+}
+
+function buttonHtml(b: EmailButton, primary: boolean, color = C.blue): string {
+  const style = primary
+    ? `background:${color};color:#FFFFFF;border:2px solid ${color};`
+    : `background:#FFFFFF;color:${color};border:2px solid ${color};`;
+  return `<a class="j-btn" href="${b.url}" style="${style}display:inline-block;text-decoration:none;font-weight:800;font-size:14px;line-height:20px;padding:13px 24px;border-radius:14px;margin:0 6px 8px 0;font-family:${FONT};">${escapeHtml(b.label)}</a>`;
+}
+
+/** Table-based layout: renders in Gmail, Outlook, Apple Mail and on mobile. */
+export function renderEmail(e: EmailLayout): string {
+  let amount = '';
+  if (e.amount) {
+    const t = TONES[e.amount.tone ?? 'blue'];
+    amount = `<tr><td style="padding-top:18px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${t.bg};border-radius:16px;">
+        <tr><td style="padding:18px 20px;">
+          <div style="font-size:12px;font-weight:700;color:${C.muted};text-transform:uppercase;letter-spacing:.8px;">${escapeHtml(e.amount.caption)}</div>
+          <div class="j-amount" style="font-size:30px;font-weight:900;color:${t.fg};letter-spacing:-.5px;padding-top:4px;">${fcfa(e.amount.value)}</div>
+        </td></tr>
+      </table>
+    </td></tr>`;
+  }
+
+  const steps = e.steps
+    ? `<tr><td style="padding-top:18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${e.steps
+        .map(
+          (s, i) => `<tr>
+            <td style="width:44px;vertical-align:top;padding:8px 0;">
+              <div style="width:32px;height:32px;line-height:32px;border-radius:10px;background:${C.blue};color:#FFFFFF;font-weight:800;font-size:14px;text-align:center;">${i + 1}</div>
+            </td>
+            <td style="vertical-align:top;padding:8px 0;">
+              <div style="font-size:15px;font-weight:800;color:${C.ink};">${escapeHtml(s.title)}</div>
+              <div style="font-size:14px;line-height:1.55;color:${C.text};padding-top:2px;">${escapeHtml(s.text)}</div>
+            </td>
+          </tr>`,
+        )
+        .join('')}</table></td></tr>`
+    : '';
+
+  const summary = e.summary
+    ? `<tr><td style="padding-top:16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};border-radius:16px;">
+          <tr><td style="padding:6px 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rowsHtml(e.summary.rows)}
+            <tr>
+              <td style="padding:14px 0 12px;border-top:2px solid ${C.ink};color:${C.ink};font-size:15px;font-weight:900;">${e.summary.total.label}</td>
+              <td style="padding:14px 0 12px;border-top:2px solid ${C.ink};color:${C.blue};font-size:20px;font-weight:900;text-align:right;">${e.summary.total.value}</td>
+            </tr>
+          </table></td></tr>
+        </table>
       </td></tr>`
     : '';
+
+  const buttons =
+    e.cta || e.secondary
+      ? `<tr><td style="padding-top:24px;">${e.cta ? buttonHtml(e.cta, true) : ''}${
+          e.secondary ? buttonHtml(e.secondary, false, e.secondary.color) : ''
+        }</td></tr>`
+      : '';
+
+  const year = new Date().getFullYear();
 
   return `<!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light">
-<title>${escapeHtml(input.title)}</title>
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light">
+<style>
+  @media only screen and (max-width: 520px) {
+    .j-outer { padding: 14px 8px 4px !important; }
+    .j-head { padding: 18px 20px 14px !important; }
+    .j-body { padding: 22px 20px 24px !important; }
+    .j-title { font-size: 22px !important; }
+    .j-btn { display: block !important; width: 100% !important; box-sizing: border-box; text-align: center; margin: 0 0 10px 0 !important; }
+    .j-amount { font-size: 26px !important; }
+    .j-label { display: none !important; }
+  }
+</style>
+<title>${escapeHtml(e.title)}</title>
 </head>
-<body style="margin:0;padding:0;background:#F2F4F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;">
-<span style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(input.preheader)}</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F4F7;">
-  <tr><td align="center" style="padding:28px 12px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
-      <tr><td style="padding:0 4px 18px;">
-        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-          <td><img src="${LOGO_URL}" width="40" height="40" alt="Juula" style="display:block;border-radius:10px;border:0;"></td>
-          <td style="padding-left:10px;font-size:20px;font-weight:900;color:#0F172A;letter-spacing:-0.3px;">Juula</td>
+<body style="margin:0;padding:0;background:${C.bg};font-family:${FONT};-webkit-font-smoothing:antialiased;">
+<span style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(e.preheader)}</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};">
+  <tr><td class="j-outer" align="center" style="padding:28px 12px 8px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border:1px solid ${C.line};border-radius:24px;overflow:hidden;">
+      <tr><td style="height:6px;background:${C.blue};font-size:0;line-height:0;">&nbsp;</td></tr>
+      <tr><td class="j-head" style="padding:22px 28px 18px;border-bottom:1px solid ${C.line};">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td><a href="${SITE}" style="text-decoration:none;"><img src="${LOGO_URL}" width="118" height="45" alt="Juula" style="display:block;border:0;width:118px;height:45px;"></a></td>
+          <td class="j-label" align="right" style="font-size:12px;font-weight:700;color:${C.muted};text-transform:uppercase;letter-spacing:1px;">${escapeHtml(e.label)}</td>
         </tr></table>
       </td></tr>
-      <tr><td style="background:#FFFFFF;border:1px solid #E5E9F0;border-radius:24px;padding:28px 26px;">
+      <tr><td class="j-body" style="padding:26px 28px 30px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-          <tr><td style="font-size:22px;line-height:1.25;font-weight:900;color:#0F172A;padding-bottom:10px;">${escapeHtml(input.title)}</td></tr>
-          <tr><td style="font-size:15px;line-height:1.6;color:#334155;">${input.intro}</td></tr>
-          ${rows ? `<tr><td style="padding-top:14px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table></td></tr>` : ''}
-          ${cta}
-          ${input.outro ? `<tr><td style="padding-top:18px;font-size:13px;line-height:1.6;color:#64748B;">${input.outro}</td></tr>` : ''}
+          ${e.badge ? `<tr><td style="padding-bottom:14px;">${badgeHtml(e.badge)}</td></tr>` : ''}
+          <tr><td class="j-title" style="font-size:25px;line-height:1.25;font-weight:900;color:${C.ink};letter-spacing:-.4px;">${escapeHtml(e.title)}</td></tr>
+          <tr><td style="padding-top:10px;font-size:15px;line-height:1.65;color:${C.text};">${e.intro}</td></tr>
+          ${amount}
+          ${steps}
+          ${(e.sections ?? []).map(sectionHtml).join('')}
+          ${summary}
+          ${buttons}
+          ${e.note ? `<tr><td style="padding-top:22px;font-size:13px;line-height:1.6;color:${C.muted};">${e.note}</td></tr>` : ''}
         </table>
       </td></tr>
-      <tr><td style="padding:18px 6px;font-size:12px;line-height:1.6;color:#94A3B8;text-align:center;">
-        Juula Store · Dakar, ${LEGAL.country}<br>
-        Besoin d'aide ? <a href="${LEGAL.whatsappLink}" style="color:#64748B;">Support WhatsApp ${LEGAL.whatsapp}</a>
-        · <a href="${SITE}/confidentialite" style="color:#64748B;">Confidentialité</a>
+    </table>
+  </td></tr>
+  <tr><td align="center" style="padding:18px 20px 34px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+      <tr><td style="font-size:12px;line-height:1.7;color:${C.muted};text-align:center;">
+        Vous recevez cet e-mail car vous êtes inscrit sur <strong style="color:${C.ink};">Juula Store</strong> et qu'une activité a eu lieu sur votre compte (boutique, commande ou retrait).
       </td></tr>
+      <tr><td style="padding-top:12px;font-size:12px;text-align:center;">
+        <a href="${SITE}/conditions" style="color:${C.blue};text-decoration:none;font-weight:700;">Conditions d'utilisation</a>
+        <span style="color:#C7CDD8;">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
+        <a href="${SITE}/confidentialite" style="color:${C.blue};text-decoration:none;font-weight:700;">Politique de confidentialité</a>
+        <span style="color:#C7CDD8;">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
+        <a href="${LEGAL.whatsappLink}" style="color:${C.blue};text-decoration:none;font-weight:700;">Support</a>
+      </td></tr>
+      <tr><td style="padding-top:12px;font-size:11px;color:#9CA3AF;text-align:center;">© ${year} Juula Store · juula.store</td></tr>
     </table>
   </td></tr>
 </table>
@@ -141,6 +303,225 @@ async function send(
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Templates (pure: data → { subject, html, text }) — previewable and testable
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface RenderedEmail {
+  subject: string;
+  html: string;
+  text: string;
+}
+
+export function welcomeEmail(name: string | null): RenderedEmail {
+  const first = (name ?? '').trim().split(/\s+/)[0] || '';
+  const title = first ? `Bienvenue sur Juula, ${first} !` : 'Bienvenue sur Juula !';
+  return {
+    subject: 'Bienvenue sur Juula — votre boutique est prête',
+    html: renderEmail({
+      preheader: 'Votre boutique est prête : créez et partagez votre première page produit.',
+      label: 'Bienvenue',
+      badge: { text: 'Compte créé', tone: 'green' },
+      title,
+      intro:
+        'Votre boutique Juula est prête. Voici comment recevoir vos premières commandes en quelques minutes :',
+      steps: [
+        {
+          title: 'Créez votre page produit',
+          text: 'Photos, prix, avantages et avis clients, dans l’éditeur.',
+        },
+        { title: 'Publiez-la', text: 'Votre produit reçoit un lien unique, prêt à partager.' },
+        { title: 'Partagez le lien', text: 'Sur Facebook, TikTok, Instagram et WhatsApp.' },
+        { title: 'Encaissez', text: 'À la livraison, ou en ligne par Wave et Orange Money.' },
+      ],
+      cta: { label: 'Créer ma première page', url: DASHBOARD_URL },
+      note: 'Astuce : ajoutez vos Pixels Facebook et TikTok dans <strong>Paramètres</strong> pour mesurer vos publicités.',
+    }),
+    text: `${title}\n\n1. Créez votre page produit\n2. Publiez-la\n3. Partagez le lien\n4. Encaissez\n\nVotre tableau de bord : ${DASHBOARD_URL}`,
+  };
+}
+
+const PAYMENT_LABEL: Record<string, string> = {
+  cod: 'Paiement à la livraison',
+  online_wave: 'Wave — paiement en ligne',
+  online_orange: 'Orange Money — paiement en ligne',
+};
+
+export function newOrderEmail(order: StoreOrder): RenderedEmail {
+  const isCod = order.paymentType === 'cod';
+  const paid = order.paymentStatus === 'paid';
+  const sections: EmailSection[] = [
+    {
+      title: 'Commande',
+      rows: [
+        { label: 'Référence', value: escapeHtml(order.reference) },
+        { label: 'Date', value: escapeHtml(dateFmt.format(order.createdAt)) },
+        { label: 'Produit', value: escapeHtml(order.productName) },
+        { label: 'Quantité', value: String(order.quantity) },
+        ...(order.selectedColor
+          ? [{ label: 'Couleur', value: escapeHtml(order.selectedColor) }]
+          : []),
+      ],
+    },
+    {
+      title: 'Client & livraison',
+      rows: [
+        { label: 'Nom', value: escapeHtml(order.customerName) },
+        {
+          label: 'WhatsApp',
+          value: `<a href="https://wa.me/${escapeHtml(order.whatsappNumber)}" style="color:${C.blue};text-decoration:none;">${escapeHtml(order.phone)}</a>`,
+        },
+        ...(order.neighborhood
+          ? [{ label: 'Quartier', value: escapeHtml(order.neighborhood) }]
+          : []),
+        { label: 'Adresse', value: escapeHtml(order.deliveryAddress || '—') },
+        ...(order.city ? [{ label: 'Ville', value: escapeHtml(order.city) }] : []),
+      ],
+    },
+  ];
+  return {
+    subject: `Nouvelle commande ${order.reference} — ${fcfa(order.totalAmount)}`,
+    html: renderEmail({
+      preheader: `${order.customerName} a commandé ${order.productName} pour ${fcfa(order.totalAmount)}.`,
+      label: 'Nouvelle commande',
+      badge: isCod
+        ? { text: 'À confirmer avec le client', tone: 'amber' }
+        : paid
+          ? { text: 'Payée en ligne', tone: 'green' }
+          : { text: 'Paiement en ligne en cours', tone: 'blue' },
+      title: `Nouvelle commande de ${fcfa(order.totalAmount)}`,
+      intro: `<strong style="color:${C.ink};">${escapeHtml(order.customerName)}</strong> vient de commander sur votre page. Confirmez rapidement avec votre client sur WhatsApp pour sécuriser la livraison.`,
+      sections,
+      summary: {
+        rows: [
+          { label: 'Sous-total', value: fcfa(order.amount) },
+          { label: 'Livraison', value: order.deliveryFee ? fcfa(order.deliveryFee) : 'Offerte' },
+          {
+            label: 'Mode de paiement',
+            value: escapeHtml(PAYMENT_LABEL[order.paymentType] ?? order.paymentType),
+          },
+        ],
+        total: { label: 'Total', value: fcfa(order.totalAmount) },
+      },
+      cta: { label: 'Voir la commande', url: orderUrl(order.reference) },
+    }),
+    text: `Nouvelle commande ${order.reference}\nProduit : ${order.productName} (×${order.quantity})\nClient : ${order.customerName} — ${order.phone}\nAdresse : ${order.deliveryAddress ?? '—'}\nTotal : ${fcfa(order.totalAmount)} (${PAYMENT_LABEL[order.paymentType] ?? order.paymentType})\n\nVoir la commande : ${orderUrl(order.reference)}`,
+  };
+}
+
+function destinationOf(w: Withdrawal): { method: string; phone: string } {
+  const d = (w.destination ?? {}) as { method?: string; phone?: string };
+  return {
+    method: d.method === 'ORANGE_MONEY' ? 'Orange Money' : 'Wave',
+    phone: maskPhone(d.phone ?? ''),
+  };
+}
+
+export function withdrawalSentEmail(w: Withdrawal): RenderedEmail {
+  const dest = destinationOf(w);
+  return {
+    subject: `Retrait de ${fcfa(w.amount)} envoyé`,
+    html: renderEmail({
+      preheader: `${fcfa(w.amount)} en route vers votre compte ${dest.method}.`,
+      label: 'Portefeuille',
+      badge: { text: 'Virement en cours', tone: 'blue' },
+      title: 'Votre retrait est en route',
+      intro: `Nous avons transmis votre retrait à ${dest.method}. Les fonds arrivent en général en quelques minutes.`,
+      amount: { value: w.amount, caption: 'Montant envoyé', tone: 'blue' },
+      sections: [
+        {
+          title: 'Détails du virement',
+          rows: [
+            { label: 'Destination', value: `${dest.method} · ${escapeHtml(dest.phone)}` },
+            { label: 'Date', value: escapeHtml(dateFmt.format(w.requestedAt)) },
+            { label: 'Référence', value: escapeHtml(w.providerPayoutId ?? w.id) },
+          ],
+        },
+      ],
+      cta: { label: 'Voir mon portefeuille', url: DASHBOARD_URL },
+      note: `<strong style="color:${C.ink};">Vous n’êtes pas à l’origine de ce retrait ?</strong> Contactez immédiatement le <a href="${LEGAL.whatsappLink}" style="color:${C.blue};">support WhatsApp</a>.`,
+    }),
+    text: `Votre retrait de ${fcfa(w.amount)} vers ${dest.method} ${dest.phone} est en route.\n${DASHBOARD_URL}`,
+  };
+}
+
+export function withdrawalCompletedEmail(w: Withdrawal): RenderedEmail {
+  const dest = destinationOf(w);
+  const when = w.completedAt ?? w.processedAt ?? w.requestedAt;
+  return {
+    subject: `Retrait de ${fcfa(w.amount)} confirmé`,
+    html: renderEmail({
+      preheader: `${fcfa(w.amount)} ont bien été versés sur votre compte ${dest.method}.`,
+      label: 'Portefeuille',
+      badge: { text: 'Virement confirmé', tone: 'green' },
+      title: 'Votre retrait est confirmé',
+      intro: `L’argent est arrivé : ${dest.method} a confirmé le versement sur votre compte ${escapeHtml(dest.phone)}.`,
+      amount: { value: w.amount, caption: 'Montant versé', tone: 'green' },
+      sections: [
+        {
+          title: 'Détails du virement',
+          rows: [
+            { label: 'Destination', value: `${dest.method} · ${escapeHtml(dest.phone)}` },
+            { label: 'Confirmé le', value: escapeHtml(dateFmt.format(when)) },
+            { label: 'Référence', value: escapeHtml(w.providerPayoutId ?? w.id) },
+          ],
+        },
+      ],
+      cta: { label: 'Voir mon portefeuille', url: DASHBOARD_URL },
+    }),
+    text: `Votre retrait de ${fcfa(w.amount)} vers ${dest.method} ${dest.phone} est confirmé.\n${DASHBOARD_URL}`,
+  };
+}
+
+/** Provider failure codes → explanation a merchant can act on. */
+export function failureReasonText(code: string | null): string {
+  const c = (code ?? '').toLowerCase();
+  if (/phone|destination|recipient|account|msisdn|number|invalid_param/.test(c)) {
+    return 'Le numéro de destination est invalide ou n’est pas un compte actif.';
+  }
+  if (/limit|ceiling|plafond|max/.test(c))
+    return 'Le plafond du compte destinataire a été atteint.';
+  if (/insufficient|balance|fund/.test(c)) {
+    return 'Le service de paiement n’a pas pu débloquer les fonds pour le moment.';
+  }
+  if (/kyc|blocked|suspend|frozen|restrict/.test(c))
+    return 'Le compte destinataire est bloqué ou restreint par l’opérateur.';
+  if (/timeout|unavailable|network|server|5\d\d/.test(c))
+    return 'L’opérateur était momentanément indisponible.';
+  return 'L’opérateur a refusé le virement.';
+}
+
+export function withdrawalFailedEmail(w: Withdrawal): RenderedEmail {
+  const dest = destinationOf(w);
+  return {
+    subject: `Retrait de ${fcfa(w.amount)} non effectué`,
+    html: renderEmail({
+      preheader: `Votre retrait de ${fcfa(w.amount)} n’a pas abouti — le montant est recrédité.`,
+      label: 'Portefeuille',
+      badge: { text: 'Retrait refusé', tone: 'red' },
+      title: 'Votre retrait n’a pas pu être effectué',
+      intro: `${dest.method} a refusé le virement vers ${escapeHtml(dest.phone)}. <strong style="color:${C.ink};">Pas d’inquiétude : le montant a été recrédité</strong> sur votre portefeuille.`,
+      amount: { value: w.amount, caption: 'Montant recrédité', tone: 'green' },
+      sections: [
+        {
+          title: 'Détails',
+          rows: [
+            { label: 'Destination', value: `${dest.method} · ${escapeHtml(dest.phone)}` },
+            { label: 'Date', value: escapeHtml(dateFmt.format(w.requestedAt)) },
+            { label: 'Motif', value: escapeHtml(failureReasonText(w.failureReason)) },
+            ...(w.failureReason ? [{ label: 'Code', value: escapeHtml(w.failureReason) }] : []),
+          ],
+        },
+      ],
+      cta: { label: 'Réessayer le retrait', url: DASHBOARD_URL },
+      note: 'Vérifiez que le numéro correspond bien à un compte actif, puis réessayez. Notre support WhatsApp peut vous aider.',
+    }),
+    text: `Votre retrait de ${fcfa(w.amount)} n'a pas pu être effectué. Le montant a été recrédité sur votre portefeuille.\n${DASHBOARD_URL}`,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Senders
+// ─────────────────────────────────────────────────────────────────────────
 
 /**
  * Welcome email, sent exactly once per merchant: the Store row's
@@ -155,44 +536,14 @@ export async function sendWelcomeEmailOnce(userId: string): Promise<void> {
     data: { welcomeEmailSentAt: new Date() },
   });
   if (claim.count === 0) return;
-
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true, name: true },
   });
   if (!user) return;
-  const firstName = escapeHtml((user.name ?? '').split(' ')[0] || 'et bienvenue');
-
-  const html = renderEmail({
-    preheader: 'Votre boutique Juula est prête : créez et partagez votre première page produit.',
-    title: `Bienvenue sur Juula, ${firstName} !`,
-    intro:
-      'Votre boutique est créée. Voici comment recevoir vos premières commandes en quelques minutes :',
-    rows: [
-      {
-        label: '1. Créez',
-        value: 'Ajoutez photos, prix et avantages de votre produit dans l’éditeur.',
-      },
-      { label: '2. Publiez', value: 'Cliquez sur « Publier » : votre page reçoit un lien unique.' },
-      {
-        label: '3. Partagez',
-        value: 'Copiez le lien sur Facebook, TikTok, Instagram ou WhatsApp.',
-      },
-      { label: '4. Encaissez', value: 'Paiement à la livraison, Wave ou Orange Money.' },
-    ],
-    cta: { label: 'Créer ma première page', url: DASHBOARD_URL },
-    outro:
-      'Astuce : ajoutez vos Pixels Facebook et TikTok dans Paramètres pour mesurer vos publicités.',
-  });
-  const text = `Bienvenue sur Juula !\n\n1. Créez votre page produit\n2. Publiez-la\n3. Partagez son lien\n4. Encaissez\n\nVotre tableau de bord : ${DASHBOARD_URL}`;
-  await send(user.email, 'Bienvenue sur Juula — votre boutique est prête', html, text, 'welcome');
+  const mail = welcomeEmail(user.name);
+  await send(user.email, mail.subject, mail.html, mail.text, 'welcome');
 }
-
-const PAYMENT_LABEL: Record<string, string> = {
-  cod: 'Paiement à la livraison',
-  online_wave: 'Wave (paiement en ligne en cours)',
-  online_orange: 'Orange Money (paiement en ligne en cours)',
-};
 
 export async function sendNewOrderEmail(orderId: string): Promise<void> {
   if (!getMailer()) return;
@@ -201,51 +552,8 @@ export async function sendNewOrderEmail(orderId: string): Promise<void> {
     include: { merchant: { select: { email: true } } },
   });
   if (!order) return;
-
-  const rows: Row[] = [
-    { label: 'Produit', value: escapeHtml(order.productName) },
-    ...(order.selectedColor ? [{ label: 'Couleur', value: escapeHtml(order.selectedColor) }] : []),
-    { label: 'Client', value: escapeHtml(order.customerName) },
-    {
-      label: 'WhatsApp',
-      value: `<a href="https://wa.me/${escapeHtml(order.whatsappNumber)}" style="color:#1E60F8;">${escapeHtml(order.phone)}</a>`,
-    },
-    {
-      label: 'Livraison',
-      value: escapeHtml(
-        [order.neighborhood, order.deliveryAddress].filter(Boolean).join(' — ') || '—',
-      ),
-    },
-    { label: 'Paiement', value: escapeHtml(PAYMENT_LABEL[order.paymentType] ?? order.paymentType) },
-    {
-      label: 'Total',
-      value: `<span style="font-size:16px;font-weight:900;">${fcfa(order.totalAmount)}</span>`,
-    },
-  ];
-  const html = renderEmail({
-    preheader: `${order.customerName} a commandé ${order.productName} (${fcfa(order.totalAmount)}).`,
-    title: 'Nouvelle commande !',
-    intro: `Vous avez reçu la commande <strong>${escapeHtml(order.reference)}</strong>. Confirmez-la vite avec votre client sur WhatsApp pour sécuriser la livraison.`,
-    rows,
-    cta: { label: 'Voir la commande', url: DASHBOARD_URL },
-    accent: '#10B981',
-  });
-  const text = `Nouvelle commande ${order.reference}\nProduit : ${order.productName}\nClient : ${order.customerName} (${order.phone})\nTotal : ${fcfa(order.totalAmount)}\n\n${DASHBOARD_URL}`;
-  await send(
-    order.merchant.email,
-    `Nouvelle commande ${order.reference} — ${fcfa(order.totalAmount)}`,
-    html,
-    text,
-    'new_order',
-  );
-}
-
-function destinationOf(w: Withdrawal): { method: string; phone: string } {
-  const d = (w.destination ?? {}) as { method?: string; phone?: string };
-  return {
-    method: d.method === 'ORANGE_MONEY' ? 'Orange Money' : 'Wave',
-    phone: maskPhone(d.phone ?? ''),
-  };
+  const mail = newOrderEmail(order);
+  await send(order.merchant.email, mail.subject, mail.html, mail.text, 'new_order');
 }
 
 export async function sendWithdrawalSentEmail(withdrawalId: string): Promise<void> {
@@ -255,22 +563,19 @@ export async function sendWithdrawalSentEmail(withdrawalId: string): Promise<voi
     include: { user: { select: { email: true } } },
   });
   if (!w) return;
-  const dest = destinationOf(w);
-  const html = renderEmail({
-    preheader: `${fcfa(w.amount)} en route vers votre compte ${dest.method}.`,
-    title: 'Retrait envoyé',
-    intro: `Votre retrait de <strong>${fcfa(w.amount)}</strong> a été transmis. Les fonds arrivent en général en quelques minutes.`,
-    rows: [
-      { label: 'Montant', value: fcfa(w.amount) },
-      { label: 'Vers', value: `${dest.method} · ${escapeHtml(dest.phone)}` },
-      { label: 'Référence', value: escapeHtml(w.providerPayoutId ?? w.id) },
-    ],
-    cta: { label: 'Voir mon portefeuille', url: DASHBOARD_URL },
-    outro:
-      'Vous n’êtes pas à l’origine de ce retrait ? Contactez immédiatement le support WhatsApp.',
+  const mail = withdrawalSentEmail(w);
+  await send(w.user.email, mail.subject, mail.html, mail.text, 'withdrawal_sent');
+}
+
+export async function sendWithdrawalCompletedEmail(withdrawalId: string): Promise<void> {
+  if (!getMailer()) return;
+  const w = await prisma.withdrawal.findUnique({
+    where: { id: withdrawalId },
+    include: { user: { select: { email: true } } },
   });
-  const text = `Retrait envoyé : ${fcfa(w.amount)} vers ${dest.method} ${dest.phone}.\n${DASHBOARD_URL}`;
-  await send(w.user.email, `Retrait de ${fcfa(w.amount)} envoyé`, html, text, 'withdrawal_sent');
+  if (!w) return;
+  const mail = withdrawalCompletedEmail(w);
+  await send(w.user.email, mail.subject, mail.html, mail.text, 'withdrawal_completed');
 }
 
 export async function sendWithdrawalFailedEmail(withdrawalId: string): Promise<void> {
@@ -280,26 +585,6 @@ export async function sendWithdrawalFailedEmail(withdrawalId: string): Promise<v
     include: { user: { select: { email: true } } },
   });
   if (!w) return;
-  const dest = destinationOf(w);
-  const html = renderEmail({
-    preheader: `Votre retrait de ${fcfa(w.amount)} n’a pas abouti — le montant est recrédité.`,
-    title: 'Retrait non effectué',
-    intro: `Votre retrait de <strong>${fcfa(w.amount)}</strong> vers ${dest.method} (${escapeHtml(dest.phone)}) a été refusé par l’opérateur. <strong>Le montant a été recrédité</strong> sur votre portefeuille.`,
-    rows: [
-      { label: 'Montant', value: fcfa(w.amount) },
-      { label: 'Raison', value: escapeHtml(w.failureReason ?? 'Refus de l’opérateur') },
-    ],
-    cta: { label: 'Réessayer le retrait', url: DASHBOARD_URL },
-    outro:
-      'Vérifiez que le numéro est bien un compte actif, puis réessayez. Le support WhatsApp peut vous aider.',
-    accent: '#0F172A',
-  });
-  const text = `Retrait non effectué : ${fcfa(w.amount)} recrédité sur votre portefeuille.\n${DASHBOARD_URL}`;
-  await send(
-    w.user.email,
-    `Retrait de ${fcfa(w.amount)} non effectué`,
-    html,
-    text,
-    'withdrawal_failed',
-  );
+  const mail = withdrawalFailedEmail(w);
+  await send(w.user.email, mail.subject, mail.html, mail.text, 'withdrawal_failed');
 }

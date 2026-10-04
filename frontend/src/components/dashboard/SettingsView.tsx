@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { FunnelPageConfig } from '@/types/juula';
 import { TrackingPixelsCard } from './TrackingPixelsCard';
+import { StoreAddressCard } from '@/components/store/StoreAddressCard';
+import type { StoreProfile } from '@/components/store/OnboardingScreen';
 
 interface SettingsViewProps {
   funnelConfig: FunnelPageConfig;
@@ -25,6 +27,8 @@ interface SettingsViewProps {
     recoveryEmail: string;
   };
   onUpdateSecurityPin?: (newPin: string) => void;
+  storeProfile?: StoreProfile;
+  onStoreProfileSaved?: (profile: StoreProfile) => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -37,6 +41,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     recoveryEmail: '',
   },
   onUpdateSecurityPin,
+  storeProfile,
+  onStoreProfileSaved,
 }) => {
   // Local PIN editor state
   const [isEditingPin, setIsEditingPin] = useState(false);
@@ -45,7 +51,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinSuccess, setPinSuccess] = useState<string | null>(null);
 
-  const [storeName, setStoreName] = useState(funnelConfig.storeName || 'Ma Boutique');
   const [storeCode, setStoreCode] = useState(funnelConfig.storeCode || 'CMD');
   const [whatsappNumber, setWhatsappNumber] = useState(funnelConfig.whatsappSupportNumber || '');
   const [deliveryFree, setDeliveryFree] = useState(funnelConfig.deliveryFree ?? false);
@@ -61,7 +66,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     e.preventDefault();
     onSaveConfig({
       ...funnelConfig,
-      storeName,
       storeCode,
       whatsappSupportNumber: whatsappNumber,
       deliveryFree,
@@ -112,6 +116,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </button>
       </div>
 
+      {storeProfile && onStoreProfileSaved && (
+        <StoreAddressCard profile={storeProfile} onSaved={onStoreProfileSaved} />
+      )}
+
       <TrackingPixelsCard />
 
       <form onSubmit={handleSave} className="space-y-6">
@@ -131,19 +139,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-[#0F172A] mb-1">
-                Nom officiel de la boutique *
-              </label>
-              <input
-                type="text"
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-semibold text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white"
-                placeholder="Ex: Boutique Dakar Élégance"
-              />
-            </div>
-
             <div>
               <label className="block text-xs font-bold text-[#0F172A] mb-1">
                 Code Préfixe Commande (ex: BDE) *

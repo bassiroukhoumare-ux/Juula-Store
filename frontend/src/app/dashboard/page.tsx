@@ -17,8 +17,10 @@ import { CustomersView } from '@/components/dashboard/CustomersView';
 import { AnalyticsView } from '@/components/dashboard/AnalyticsView';
 import { SettingsView } from '@/components/dashboard/SettingsView';
 import { ShareLinkBar } from '@/components/dashboard/ShareLinkBar';
+import { OnboardingScreen, type StoreProfile } from '@/components/store/OnboardingScreen';
 import { api, ApiError, clearCsrfToken } from '@/lib/api';
 import { pickStoreWide } from '@/lib/store/store-fields';
+import { getStoreCode } from '@/lib/orderUtils';
 import { useToast } from '@/contexts/ToastContext';
 import {
   DashboardTab,
@@ -67,7 +69,10 @@ function errorMessage(err: unknown, fallback: string): string {
 export default function JuulaStoreApp() {
   const router = useRouter();
   const { toast } = useToast();
-  const [session, setSession] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [session, setSession] = useState<'loading' | 'onboarding' | 'ready' | 'error'>('loading');
+  const [storeProfile, setStoreProfile] = useState<StoreProfile>({ name: null, subdomain: null });
+  // Order opened from the "new order" email link (?commande=CMD-…).
+  const [focusOrderId, setFocusOrderId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
 
@@ -110,6 +115,60 @@ export default function JuulaStoreApp() {
   // ---------------------------------------------------------------------
   // Session + initial load. Not signed in → /login.
   // ---------------------------------------------------------------------
+  const failBoot = useCallback(
+    (err: unknown) => {
+      if (err instanceof ApiError && err.status === 401) {
+        // Come back to the same place (e.g. a specific order) after login.
+        const back = window.location.pathname + window.location.search;
+        router.replace(`/login?next=${encodeURIComponent(back)}`);
+        return;
+      }
+      setLoadError(
+        errorMessage(err, 'Impossible de charger votre boutique. Vérifiez votre connexion.'),
+      );
+      setSession('error');
+    },
+    [router],
+  );
+
+  /** Products, orders and wallet — once the store has its name/address. */
+  const loadStoreData = useCallback(async () => {
+    const [{ products }, { orders: loadedOrders }] = await Promise.all([
+      api<{ products: FunnelPageItem[] }>('/api/products'),
+      api<{ orders: OrderLead[] }>('/api/store/orders'),
+      loadWallet(),
+    ]);
+    let pages = products;
+    if (pages.length === 0) {
+      // New store: start the merchant with one draft product.
+      const created = await api<{ product: FunnelPageItem }>('/api/products', {
+        method: 'POST',
+        body: { internalName: 'Mon Premier Produit' },
+      });
+      pages = [created.product];
+    }
+    setFunnelPages(pages);
+    setActivePageId(pages[0]!.id);
+    setFunnelConfig(pages[0]!.config);
+    setOrders(loadedOrders);
+
+    const wanted = new URLSearchParams(window.location.search).get('commande');
+    if (wanted) {
+      if (loadedOrders.some((o) => o.id === wanted)) {
+        setActiveTab('kanban');
+        setFocusOrderId(wanted);
+      } else {
+        toast('Commande introuvable sur cette boutique.', 'error');
+      }
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    setSession('ready');
+  }, [loadWallet, setOrders, toast]);
+
+  // ---------------------------------------------------------------------
+  // Session + initial load. Not signed in → /login. No store address yet →
+  // onboarding (name + <shop>.juula.store) before anything else.
+  // ---------------------------------------------------------------------
   const bootStarted = useRef(false);
   useEffect(() => {
     if (bootStarted.current) return;
@@ -119,37 +178,24 @@ export default function JuulaStoreApp() {
         const me = await api<{ user: { email: string } }>('/api/auth/me');
         setUserEmail(me.user.email);
         setPayoutSecurity((prev) => ({ ...prev, recoveryEmail: me.user.email }));
-        const [{ products }, { orders: loadedOrders }] = await Promise.all([
-          api<{ products: FunnelPageItem[] }>('/api/products'),
-          api<{ orders: OrderLead[] }>('/api/store/orders'),
-          loadWallet(),
-        ]);
-        let pages = products;
-        if (pages.length === 0) {
-          // First sign-in: start the merchant with one draft product.
-          const created = await api<{ product: FunnelPageItem }>('/api/products', {
-            method: 'POST',
-            body: { internalName: 'Mon Premier Produit' },
-          });
-          pages = [created.product];
-        }
-        setFunnelPages(pages);
-        setActivePageId(pages[0]!.id);
-        setFunnelConfig(pages[0]!.config);
-        setOrders(loadedOrders);
-        setSession('ready');
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 401) {
-          router.replace('/login');
+        const { store } = await api<{ store: StoreProfile }>('/api/store');
+        setStoreProfile({ name: store.name, subdomain: store.subdomain });
+        if (!store.subdomain) {
+          setSession('onboarding');
           return;
         }
-        setLoadError(
-          errorMessage(err, 'Impossible de charger votre boutique. Vérifiez votre connexion.'),
-        );
-        setSession('error');
+        await loadStoreData();
+      } catch (err) {
+        failBoot(err);
       }
     })();
-  }, [router, setOrders, loadWallet]);
+  }, [loadStoreData, failBoot]);
+
+  const handleOnboarded = (profile: StoreProfile) => {
+    setStoreProfile(profile);
+    setSession('loading');
+    loadStoreData().catch(failBoot);
+  };
 
   // New orders arrive from public product pages: refresh periodically and
   // whenever the merchant comes back to the tab.
@@ -328,6 +374,16 @@ export default function JuulaStoreApp() {
     for (const page of nextPages) persistConfig(page.config, true);
   };
 
+  // Paramètres → name / address saved server-side (the server already wrote
+  // the name into every product); mirror it locally.
+  const handleStoreProfileSaved = (profile: StoreProfile) => {
+    setStoreProfile(profile);
+    if (!profile.name) return;
+    const patch = { storeName: profile.name, storeCode: getStoreCode(profile.name) };
+    setFunnelPages((prev) => prev.map((p) => ({ ...p, config: { ...p.config, ...patch } })));
+    setFunnelConfig((prev) => ({ ...prev, ...patch }));
+  };
+
   // Kanban moves: persist every order whose status changed.
   const handleOrdersChange = (next: OrderLead[]) => {
     const previous = orders;
@@ -375,6 +431,10 @@ export default function JuulaStoreApp() {
   };
 
   const newOrdersCount = orders.filter((o) => o.status === 'new').length;
+
+  if (session === 'onboarding') {
+    return <OnboardingScreen email={userEmail} onDone={handleOnboarded} />;
+  }
 
   if (session !== 'ready') {
     return (
@@ -572,6 +632,7 @@ export default function JuulaStoreApp() {
                       orders={orders}
                       onOrdersChange={handleOrdersChange}
                       onOpenStorefrontPreview={() => setViewMode('vitrine')}
+                      focusOrderId={focusOrderId}
                     />
                   )}
 
@@ -587,6 +648,7 @@ export default function JuulaStoreApp() {
                     <>
                       <ShareLinkBar
                         slug={funnelConfig.slug}
+                        subdomain={storeProfile.subdomain}
                         status={funnelConfig.status ?? 'draft'}
                         productTitle={funnelConfig.productTitle}
                         onPublish={() => handleTogglePageStatus(funnelConfig.id, 'published')}
@@ -627,6 +689,8 @@ export default function JuulaStoreApp() {
                       onSaveConfig={handleSaveStoreSettings}
                       payoutSecurity={payoutSecurity}
                       onUpdateSecurityPin={(newPin) => void handleSetWithdrawalPin(newPin)}
+                      storeProfile={storeProfile}
+                      onStoreProfileSaved={handleStoreProfileSaved}
                     />
                   )}
                 </>
