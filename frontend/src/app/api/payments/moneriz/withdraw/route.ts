@@ -16,7 +16,7 @@
 export const runtime = 'nodejs';
 
 import 'server-only';
-import { NextResponse, type NextRequest } from 'next/server';
+import { after, NextResponse, type NextRequest } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { verifyCsrf } from '@/lib/server/auth';
@@ -28,6 +28,7 @@ import { makeRequestContext, withRequestContext } from '@/lib/server/observabili
 import { prisma } from '@/lib/server/prisma';
 import { createMonerizWithdrawal, MonerizApiError } from '@/lib/server/payments/moneriz';
 import { isMonerizConfigured, storeBalanceComputer } from '@/lib/server/store/payments';
+import { sendWithdrawalFailedEmail, sendWithdrawalSentEmail } from '@/lib/server/store/notify';
 import { lockUserTx } from '@/lib/server/withdrawals/lock';
 import { loadGuardConfigFromEnv, validateWithdrawalRequest } from '@/lib/server/withdrawals/guards';
 
@@ -183,6 +184,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         data: { status: 'PROCESSING', processedAt: new Date(), providerPayoutId: payoutId },
       });
       log.info('store.withdrawal.sent', { userId, withdrawalId: withdrawal.id, amount });
+      after(() => sendWithdrawalSentEmail(withdrawal.id));
       return NextResponse.json(
         { withdrawalId: withdrawal.id, status: 'PROCESSING', reference: payoutId ?? withdrawal.id },
         { status: 201, headers },
@@ -201,6 +203,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           where: { id: withdrawal.id },
           data: { status: 'FAILED', failureReason: (err as MonerizApiError).code },
         });
+        after(() => sendWithdrawalFailedEmail(withdrawal.id));
         return fail(
           400,
           'PAYOUT_REJECTED',

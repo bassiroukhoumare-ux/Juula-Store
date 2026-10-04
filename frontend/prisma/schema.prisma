@@ -352,14 +352,15 @@ model Withdrawal {
 // Amounts are integers in FCFA.
 // ───────────────────────────────────────────────────────────────────────
 model Store {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  facebookPixelId String?
-  tiktokPixelId   String?
-  orderCounter    Int      @default(0) // last allocated StoreOrder.number
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  facebookPixelId    String?
+  tiktokPixelId      String?
+  orderCounter       Int       @default(0) // last allocated StoreOrder.number
+  welcomeEmailSentAt DateTime? // set once when the welcome email is claimed
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 model Product {

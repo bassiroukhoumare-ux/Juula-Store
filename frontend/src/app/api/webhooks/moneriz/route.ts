@@ -13,7 +13,7 @@
 export const runtime = 'nodejs';
 
 import 'server-only';
-import { NextResponse, type NextRequest } from 'next/server';
+import { after, NextResponse, type NextRequest } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { log } from '@/lib/server/observability/log';
 import { prisma } from '@/lib/server/prisma';
@@ -23,6 +23,7 @@ import {
   verifyMonerizSignature,
 } from '@/lib/server/payments/moneriz';
 import { verifyOrderPayment } from '@/lib/server/store/payments';
+import { sendWithdrawalFailedEmail } from '@/lib/server/store/notify';
 
 interface MonerizEvent {
   id?: unknown;
@@ -63,10 +64,18 @@ async function syncWithdrawal(providerPayoutId: string): Promise<void> {
     });
   } else if (FAILED.has(status)) {
     // FAILED releases the reserved amount back to the merchant's balance.
-    await prisma.withdrawal.updateMany({
+    const failed = await prisma.withdrawal.updateMany({
       where: { providerPayoutId, status: { in: ['PENDING', 'PROCESSING'] } },
       data: { status: 'FAILED', failureReason: str(payout?.failureCode) ?? 'Rejeté par Moneriz' },
     });
+    // Only the first FAILED transition notifies (webhooks can be redelivered).
+    if (failed.count > 0) {
+      const row = await prisma.withdrawal.findFirst({
+        where: { providerPayoutId },
+        select: { id: true },
+      });
+      if (row) after(() => sendWithdrawalFailedEmail(row.id));
+    }
   }
 }
 

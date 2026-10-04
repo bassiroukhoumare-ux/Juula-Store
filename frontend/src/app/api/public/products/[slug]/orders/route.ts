@@ -11,13 +11,14 @@
 export const runtime = 'nodejs';
 
 import 'server-only';
-import { NextResponse, type NextRequest } from 'next/server';
+import { after, NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { prisma } from '@/lib/server/prisma';
 import { productConfig } from '@/lib/server/store/products';
 import { nextOrderNumber, publicOrderRateLimit } from '@/lib/server/store/orders';
 import { computeOrderPricing } from '@/lib/store/pricing';
+import { sendNewOrderEmail } from '@/lib/server/store/notify';
 import { formatOrderId, getStoreCode } from '@/lib/orderUtils';
 
 const Body = z.object({
@@ -132,6 +133,9 @@ export async function POST(
         },
       });
     });
+
+    // Email the merchant once the response is sent (never blocks the customer).
+    after(() => sendNewOrderEmail(order.id));
 
     return NextResponse.json(
       {
