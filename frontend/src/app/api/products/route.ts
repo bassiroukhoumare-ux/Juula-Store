@@ -69,7 +69,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const userId = auth.user.sub;
     const { internalName } = parsed.data;
 
+    const store = await prisma.store.findUnique({
+      where: { userId },
+      select: { name: true, whatsapp: true, plan: true, planExpiresAt: true },
+    });
+    const isPro =
+      store?.plan === 'PRO' && (!store.planExpiresAt || store.planExpiresAt > new Date());
+
     const count = await prisma.product.count({ where: { userId } });
+    if (!isPro && count >= 1) {
+      return NextResponse.json(
+        {
+          error: 'PRODUCT_LIMIT_REACHED',
+          message:
+            'Le Plan Gratuit est limité à 1 produit actif. Passez au Plan Juula Pro pour publier des produits illimités.',
+          upgradeRequired: true,
+        },
+        { status: 403, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
     if (count >= MAX_PRODUCTS_PER_MERCHANT) {
       return NextResponse.json(
         { error: 'PRODUCT_LIMIT_REACHED', message: 'Nombre maximum de produits atteint' },
@@ -85,10 +103,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
     const inherited: Partial<FunnelPageConfig> = latest ? pickStoreWide(productConfig(latest)) : {};
     // The store name chosen at onboarding wins (it is also the order prefix).
-    const store = await prisma.store.findUnique({
-      where: { userId },
-      select: { name: true, whatsapp: true },
-    });
     if (store?.name) {
       inherited.storeName = store.name;
       inherited.storeCode = getStoreCode(store.name);

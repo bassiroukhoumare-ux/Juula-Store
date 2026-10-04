@@ -178,8 +178,33 @@ export default function JuulaStoreApp() {
         const me = await api<{ user: { email: string } }>('/api/auth/me');
         setUserEmail(me.user.email);
         setPayoutSecurity((prev) => ({ ...prev, recoveryEmail: me.user.email }));
+
+        // Check if returning from Moneriz subscription payment
+        if (typeof window !== 'undefined') {
+          const params = new URLSearchParams(window.location.search);
+          const subId = params.get('sub_id');
+          const subStatus = params.get('sub_status');
+          if (subStatus === 'success' && subId) {
+            try {
+              const verified = await api<{ status: string; plan: 'FREE' | 'PRO' }>(
+                '/api/store/subscription/verify',
+                {
+                  method: 'POST',
+                  body: { subscriptionId: subId },
+                },
+              );
+              if (verified.status === 'active') {
+                toast('🎉 Félicitations ! Votre Plan Juula Pro est désormais actif.', 'success');
+              }
+            } catch {
+              // Webhook or background verify handles it
+            }
+            window.history.replaceState({}, '', '/dashboard');
+          }
+        }
+
         const { store } = await api<{ store: StoreProfile }>('/api/store');
-        setStoreProfile({ name: store.name, subdomain: store.subdomain });
+        setStoreProfile(store);
         if (!store.subdomain) {
           setSession('onboarding');
           return;
@@ -189,7 +214,7 @@ export default function JuulaStoreApp() {
         failBoot(err);
       }
     })();
-  }, [loadStoreData, failBoot]);
+  }, [loadStoreData, failBoot, toast]);
 
   const handleOnboarded = (profile: StoreProfile) => {
     setStoreProfile(profile);
@@ -556,6 +581,8 @@ export default function JuulaStoreApp() {
             currency={wallet.currency}
             userEmail={userEmail}
             onLogout={handleLogout}
+            plan={storeProfile.plan || 'FREE'}
+            planExpiresAt={storeProfile.planExpiresAt}
           />
 
           {/* Main Content Area */}
@@ -711,11 +738,13 @@ export default function JuulaStoreApp() {
         </div>
       )}
 
-      {/* Recharge Modal */}
+      {/* Recharge / Plan Upgrade Modal */}
       <RechargeModal
         isOpen={isRechargeOpen}
         onClose={() => setIsRechargeOpen(false)}
         onRecharged={handleRecharged}
+        currentPlan={storeProfile.plan || 'FREE'}
+        planExpiresAt={storeProfile.planExpiresAt}
       />
     </div>
   );

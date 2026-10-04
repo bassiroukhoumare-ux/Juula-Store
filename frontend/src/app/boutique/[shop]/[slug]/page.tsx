@@ -11,6 +11,7 @@ import {
 } from '@/lib/server/store/public';
 import { PublicProductView } from '@/components/showcase/PublicProductView';
 import { storeProductUrl } from '@/lib/store/subdomain';
+import { isStorePro } from '@/lib/store/plans';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,9 @@ async function load(shop: string, slug: string, search = '') {
   const found = await loadStoreBySubdomain(shop.toLowerCase());
   if (found.kind === 'moved') redirect(`${storeProductUrl(found.subdomain, slug)}${search}`);
   if (found.kind === 'none') notFound();
+  if (!isStorePro(found.store)) {
+    redirect(`/p/${slug}${search}`);
+  }
   const product = await loadProductBySlug(slug);
   if (!product || product.isPreview || product.product.userId !== found.store.userId) notFound();
   return { store: found.store, product: product.product };

@@ -10,9 +10,17 @@ import { productConfig } from '@/lib/server/store/products';
 import type { StorePixels } from '@/lib/store/pixels';
 import { storeOrigin, storeProductUrl } from '@/lib/store/subdomain';
 
+import { isStorePro } from '@/lib/store/plans';
+
 export function pixelsOf(
-  store: Pick<Store, 'facebookPixelId' | 'tiktokPixelId'> | null,
+  store:
+    | (Pick<Store, 'facebookPixelId' | 'tiktokPixelId'> &
+        Partial<Pick<Store, 'plan' | 'planExpiresAt'>>)
+    | null,
 ): StorePixels {
+  if (!isStorePro(store)) {
+    return { facebookPixelId: null, tiktokPixelId: null };
+  }
   return {
     facebookPixelId: store?.facebookPixelId ?? null,
     tiktokPixelId: store?.tiktokPixelId ?? null,

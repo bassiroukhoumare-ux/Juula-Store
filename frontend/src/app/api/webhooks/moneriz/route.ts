@@ -23,14 +23,21 @@ import {
   verifyMonerizSignature,
 } from '@/lib/server/payments/moneriz';
 import { verifyOrderPayment } from '@/lib/server/store/payments';
+import { verifyStoreSubscription } from '@/lib/server/store/subscription';
 import { sendWithdrawalCompletedEmail, sendWithdrawalFailedEmail } from '@/lib/server/store/notify';
 
 interface MonerizEvent {
   id?: unknown;
   type?: unknown;
   data?: {
-    payment?: { reference?: unknown; metadata?: { orderId?: unknown } };
-    checkoutSession?: { reference?: unknown; metadata?: { orderId?: unknown } };
+    payment?: {
+      reference?: unknown;
+      metadata?: { orderId?: unknown; subscriptionId?: unknown; type?: unknown };
+    };
+    checkoutSession?: {
+      reference?: unknown;
+      metadata?: { orderId?: unknown; subscriptionId?: unknown; type?: unknown };
+    };
     withdrawal?: { id?: unknown };
   };
 }
@@ -43,8 +50,22 @@ function str(v: unknown): string | null {
 function orderIdFrom(event: MonerizEvent): string | null {
   const p = event.data?.payment;
   const s = event.data?.checkoutSession;
+  if (p?.metadata?.type === 'store_subscription' || s?.metadata?.type === 'store_subscription') {
+    return null;
+  }
   return (
     str(p?.metadata?.orderId) ?? str(p?.reference) ?? str(s?.metadata?.orderId) ?? str(s?.reference)
+  );
+}
+
+function subscriptionIdFrom(event: MonerizEvent): string | null {
+  const p = event.data?.payment;
+  const s = event.data?.checkoutSession;
+  return (
+    str(p?.metadata?.subscriptionId) ??
+    str(s?.metadata?.subscriptionId) ??
+    (p?.metadata?.type === 'store_subscription' ? str(p?.reference) : null) ??
+    (s?.metadata?.type === 'store_subscription' ? str(s?.reference) : null)
   );
 }
 
@@ -125,6 +146,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           log.info('moneriz.webhook.payment', { eventId, orderId, result: result.status });
           // Moneriz not reachable right now: ask for a redelivery.
           if (result.status === 'unavailable') {
+            return NextResponse.json({ error: 'RETRY_LATER' }, { status: 503 });
+          }
+        }
+        const subId = subscriptionIdFrom(event);
+        if (subId) {
+          const subResult = await verifyStoreSubscription(subId);
+          log.info('moneriz.webhook.subscription', { eventId, subId, status: subResult.status });
+          if (subResult.status === 'unavailable') {
             return NextResponse.json({ error: 'RETRY_LATER' }, { status: 503 });
           }
         }

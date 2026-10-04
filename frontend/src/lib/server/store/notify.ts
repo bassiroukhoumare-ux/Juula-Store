@@ -23,7 +23,9 @@ export function safeAfter(fn: () => unknown | Promise<unknown>): void {
   try {
     after(fn);
   } catch {
-    void Promise.resolve().then(fn).catch(() => {});
+    void Promise.resolve()
+      .then(fn)
+      .catch(() => {});
   }
 }
 
@@ -767,4 +769,89 @@ export async function sendWithdrawalFailedEmail(withdrawalId: string): Promise<v
   if (!w) return;
   const mail = withdrawalFailedEmail(w);
   await send(w.user.email, mail.subject, mail.html, mail.text, 'withdrawal_failed');
+}
+
+export async function sendProSubscriptionActivatedEmail(
+  userId: string,
+  expiresAt: Date,
+): Promise<void> {
+  if (!getMailer()) return;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, name: true, store: { select: { name: true, subdomain: true } } },
+  });
+  if (!user?.email) return;
+
+  const expiryFmt = new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(expiresAt);
+
+  const greeting = user.name ? `Bonjour ${user.name},` : 'Bonjour,';
+  const storeLabel = user.store?.name || 'Votre boutique';
+
+  const html = `
+    <div style="background-color: ${C.bg}; font-family: ${FONT}; padding: 32px 16px;">
+      <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid ${C.line}; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+        <div style="background: linear-gradient(135deg, #0F172A, #1E3A8A); padding: 32px 24px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.5px;">Bienvenue dans Juula Pro 🚀</h1>
+          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 8px 0 0 0;">Votre boutique ${escapeHtml(storeLabel)} est prête à scaler.</p>
+        </div>
+        <div style="padding: 28px 24px; color: ${C.text}; font-size: 14px; line-height: 1.6;">
+          <p style="margin-top: 0;">${greeting}</p>
+          <p>Nous vous confirmons l'activation immédiate de votre abonnement <strong>Plan Juula Pro</strong> (6 000 FCFA/mois).</p>
+          
+          <div style="background: ${C.blueSoft}; border-left: 4px solid ${C.blue}; padding: 14px 16px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; color: ${C.blue}; font-weight: bold; font-size: 13px;">Tous vos avantages sont désormais débloqués :</p>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 13px; color: #1E293B;">
+              <li><strong>Produits & pages de vente illimités</strong></li>
+              <li><strong>Paiement à la livraison (Espèces) débloqué</strong></li>
+              <li><strong>0% de commission Juula</strong> (0 F sur le cash, seuls 5% télécom sur Wave/OM)</li>
+              <li><strong>Pixels de conversion Facebook & TikTok actifs</strong></li>
+              <li><strong>Sous-domaine personnalisé</strong></li>
+              <li><strong>Support VIP prioritaire 7j/7</strong></li>
+            </ul>
+          </div>
+
+          <p style="font-size: 13px; color: ${C.muted};">
+            Abonnement actif jusqu'au : <strong>${expiryFmt}</strong>.
+          </p>
+
+          <div style="text-align: center; margin: 28px 0 10px 0;">
+            <a href="${DASHBOARD_URL}" style="display: inline-block; background-color: ${C.blue}; color: #ffffff; text-decoration: none; font-weight: bold; padding: 14px 28px; border-radius: 12px; font-size: 14px;">
+              Accéder à mon Cockpit Juula Pro
+            </a>
+          </div>
+        </div>
+        <div style="background: #F8FAFC; padding: 16px; text-align: center; border-top: 1px solid ${C.line}; font-size: 11px; color: ${C.muted};">
+          Juula Store · Plateforme e-commerce pour l'Afrique · Dakar, Sénégal
+        </div>
+      </div>
+    </div>
+  `;
+
+  const text = `
+Bienvenue dans Juula Pro !
+
+${greeting}
+Votre abonnement Plan Juula Pro est désormais actif pour votre boutique ${storeLabel}.
+Tous vos avantages sont débloqués :
+- Produits et pages de vente illimités
+- Paiement à la livraison débloqué
+- 0% de commission Juula
+- Pixels Facebook & TikTok
+- Sous-domaine personnalisé
+
+Valable jusqu'au : ${expiryFmt}
+Accéder au cockpit : ${DASHBOARD_URL}
+  `.trim();
+
+  await send(
+    user.email,
+    'Bienvenue dans Juula Pro 🚀 Votre abonnement est actif',
+    html,
+    text,
+    'pro_activated',
+  );
 }

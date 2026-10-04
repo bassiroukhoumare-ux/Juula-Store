@@ -369,9 +369,30 @@ model Store {
   tiktokPixelId      String?
   orderCounter       Int          @default(0) // last allocated StoreOrder.number
   welcomeEmailSentAt DateTime? // set once when the welcome email is claimed
+  plan               String       @default("FREE") // "FREE" | "PRO"
+  planExpiresAt      DateTime? // null = active if PRO, or expiration date
   aliases            StoreAlias[]
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
+}
+
+model StoreSubscription {
+  id                String    @id @default(cuid())
+  storeId           String
+  userId            String
+  plan              String    @default("PRO") // PRO
+  amount            Int       @default(6000) // 6 000 FCFA / mois
+  currency          String    @default("FCFA")
+  status            String    @default("pending") // pending | active | expired
+  providerSessionId String?   @unique
+  providerPaymentId String?
+  startsAt          DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([storeId])
+  @@index([userId])
 }
 
 model StoreAlias {

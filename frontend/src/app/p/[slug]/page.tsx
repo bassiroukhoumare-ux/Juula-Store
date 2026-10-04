@@ -8,6 +8,7 @@ import { productConfig } from '@/lib/server/store/products';
 import { loadProductBySlug, pixelsOf, productMetadata } from '@/lib/server/store/public';
 import { PublicProductView } from '@/components/showcase/PublicProductView';
 import { storeProductUrl } from '@/lib/store/subdomain';
+import { isStorePro } from '@/lib/store/plans';
 
 // Edits must show up on the shared link immediately.
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,9 @@ export default async function PublicProductPage({ params, searchParams }: PagePr
   const found = await loadProductBySlug(slug);
   if (!found) notFound();
 
-  if (!found.isPreview && found.store?.subdomain) {
+  const isPro = isStorePro(found.store);
+
+  if (!found.isPreview && isPro && found.store?.subdomain) {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(await searchParams)) if (typeof v === 'string') q.set(k, v);
     const search = q.toString();
@@ -38,11 +41,12 @@ export default async function PublicProductPage({ params, searchParams }: PagePr
     );
   }
 
+  const config = productConfig(found.product);
+  if (!isPro) {
+    config.codEnabled = false;
+  }
+
   return (
-    <PublicProductView
-      config={productConfig(found.product)}
-      pixels={pixelsOf(found.store)}
-      isPreview={found.isPreview}
-    />
+    <PublicProductView config={config} pixels={pixelsOf(found.store)} isPreview={found.isPreview} />
   );
 }

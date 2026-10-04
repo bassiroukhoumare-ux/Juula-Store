@@ -95,7 +95,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   const [isMuted, setIsMuted] = useState(true);
   const [isCheckoutPageOpen, setIsCheckoutPageOpen] = useState(false);
   const [quantity, setQuantity] = useState<number>(1);
-  const [paymentChoice, setPaymentChoice] = useState<'cod' | 'wave' | 'orange'>('cod');
+  const [paymentChoice, setPaymentChoice] = useState<'cod' | 'wave' | 'orange'>(
+    config.codEnabled === false ? 'wave' : 'cod',
+  );
   const [selectedColor, setSelectedColor] = useState<string>(
     config.availableColors && config.availableColors.length > 0
       ? config.availableColors[0]?.name || ''
@@ -366,7 +368,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   };
 
   const handleOpenCheckout = (choice: 'cod' | 'wave') => {
-    setPaymentChoice(choice);
+    const effectiveChoice = config.codEnabled === false && choice === 'cod' ? 'wave' : choice;
+    setPaymentChoice(effectiveChoice);
     setOrderSuccess(null);
     setSubmitError(null);
     setIsCheckoutPageOpen(true);
@@ -433,8 +436,12 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
       const startOnlinePayment = (order: OrderLead, orderDbId: string) => {
         const failOnline = (message?: string) => {
           setIsSubmitting(false);
+          const fallback =
+            config.codEnabled === false
+              ? 'Veuillez réessayer votre paiement en ligne.'
+              : 'vous pouvez réessayer ou payer à la livraison.';
           setSubmitError(
-            `${message || 'Le paiement en ligne n’a pas pu démarrer.'} Votre commande ${order.id} est enregistrée : vous pouvez réessayer ou payer à la livraison.`,
+            `${message || 'Le paiement en ligne n’a pas pu démarrer.'} Votre commande ${order.id} est enregistrée : ${fallback}`,
           );
         };
         fetch('/api/payments/moneriz/checkout-session', {
@@ -1014,22 +1021,30 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     <label className="text-xs font-bold text-[#0F172A] block">
                       Mode de règlement souhaité
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentChoice('cod')}
-                        className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
-                          paymentChoice === 'cod'
-                            ? 'border-[#0F172A] bg-[#0F172A] text-white shadow-xs'
-                            : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#475569] hover:bg-white'
-                        }`}
-                      >
-                        <Banknote className="w-4 h-4 mx-auto mb-1" />
-                        <span className="text-[11px] font-bold block leading-tight">
-                          À la livraison
-                        </span>
-                        <span className="text-[9px] opacity-75 block">Espèces</span>
-                      </button>
+                    <div
+                      className={
+                        config.codEnabled === false
+                          ? 'grid grid-cols-2 gap-2'
+                          : 'grid grid-cols-3 gap-2'
+                      }
+                    >
+                      {config.codEnabled !== false && (
+                        <button
+                          type="button"
+                          onClick={() => setPaymentChoice('cod')}
+                          className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                            paymentChoice === 'cod'
+                              ? 'border-[#0F172A] bg-[#0F172A] text-white shadow-xs'
+                              : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#475569] hover:bg-white'
+                          }`}
+                        >
+                          <Banknote className="w-4 h-4 mx-auto mb-1" />
+                          <span className="text-[11px] font-bold block leading-tight">
+                            À la livraison
+                          </span>
+                          <span className="text-[9px] opacity-75 block">Espèces</span>
+                        </button>
+                      )}
 
                       <button
                         type="button"
@@ -1602,16 +1617,24 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {/* 4. LES 2 BOUTONS : ÉPURÉS SANS TEXTE DU BAS (AUDIO 5)     */}
             {/* ======================================================== */}
             <div className="p-3 rounded-2xl bg-[#F1F5F9]/80 border border-[#E2E8F0] space-y-2.5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div
+                className={
+                  config.codEnabled === false
+                    ? 'grid grid-cols-1 gap-2.5'
+                    : 'grid grid-cols-1 sm:grid-cols-2 gap-2.5'
+                }
+              >
                 {/* Bouton 1 : Payer à la livraison */}
-                <button
-                  type="button"
-                  onClick={() => handleOpenCheckout('cod')}
-                  className="w-full py-4 px-4 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
-                >
-                  <Banknote className="w-4 h-4 text-[#10B981]" />
-                  <span>Payer à la livraison</span>
-                </button>
+                {config.codEnabled !== false && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCheckout('cod')}
+                    className="w-full py-4 px-4 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
+                  >
+                    <Banknote className="w-4 h-4 text-[#10B981]" />
+                    <span>Payer à la livraison</span>
+                  </button>
+                )}
 
                 {/* Bouton 2 : Payer en ligne */}
                 <button
@@ -1620,7 +1643,11 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   className="w-full py-4 px-4 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
                 >
                   <CreditCard className="w-4 h-4 text-white" />
-                  <span>Payer en ligne</span>
+                  <span>
+                    {config.codEnabled === false
+                      ? 'Payer en ligne (Wave / Orange Money)'
+                      : 'Payer en ligne'}
+                  </span>
                 </button>
               </div>
 
@@ -2007,41 +2034,57 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
       {/* ======================================================== */}
       {isInsideMockup ? (
         <div className="sticky bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md p-3 border-t border-[#E2E8F0] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex items-center justify-center">
-          <div className="w-full max-w-sm mx-auto grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleOpenCheckout('cod')}
-              className="py-3 px-2 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
-            >
-              <Banknote className="w-4 h-4 text-[#10B981]" />
-              <span className="truncate">Payer à la livraison</span>
-            </button>
+          <div
+            className={`w-full max-w-sm mx-auto grid gap-2 ${
+              config.codEnabled === false ? 'grid-cols-1' : 'grid-cols-2'
+            }`}
+          >
+            {config.codEnabled !== false && (
+              <button
+                onClick={() => handleOpenCheckout('cod')}
+                className="py-3 px-2 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
+              >
+                <Banknote className="w-4 h-4 text-[#10B981]" />
+                <span className="truncate">Payer à la livraison</span>
+              </button>
+            )}
 
             <button
               onClick={() => handleOpenCheckout('wave')}
               className="py-3 px-2 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
             >
               <CreditCard className="w-4 h-4 text-white" />
-              <span className="truncate">Payer en ligne</span>
+              <span className="truncate">
+                {config.codEnabled === false ? 'Payer en ligne (Wave / Orange)' : 'Payer en ligne'}
+              </span>
             </button>
           </div>
         </div>
       ) : (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md p-3.5 border-t border-[#E2E8F0] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex items-center justify-center">
-          <div className="w-full max-w-md mx-auto grid grid-cols-2 gap-2.5">
-            <button
-              onClick={() => handleOpenCheckout('cod')}
-              className="py-3.5 px-3 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer border border-neutral-800"
-            >
-              <Banknote className="w-4 h-4 text-[#10B981]" />
-              <span>Payer à la livraison</span>
-            </button>
+          <div
+            className={`w-full max-w-md mx-auto grid gap-2.5 ${
+              config.codEnabled === false ? 'grid-cols-1' : 'grid-cols-2'
+            }`}
+          >
+            {config.codEnabled !== false && (
+              <button
+                onClick={() => handleOpenCheckout('cod')}
+                className="py-3.5 px-3 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer border border-neutral-800"
+              >
+                <Banknote className="w-4 h-4 text-[#10B981]" />
+                <span>Payer à la livraison</span>
+              </button>
+            )}
 
             <button
               onClick={() => handleOpenCheckout('wave')}
               className="py-3.5 px-3 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
             >
               <CreditCard className="w-4 h-4 text-white" />
-              <span>Payer en ligne</span>
+              <span>
+                {config.codEnabled === false ? 'Payer en ligne (Wave / Orange)' : 'Payer en ligne'}
+              </span>
             </button>
           </div>
         </div>

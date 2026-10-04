@@ -37,8 +37,22 @@ export function commissionPercent(): number {
   return intEnv('PLATFORM_COMMISSION_PERCENT', 0, 100);
 }
 
-export function netAmountFor(totalAmount: number): number {
-  return totalAmount - Math.round((totalAmount * commissionPercent()) / 100);
+/**
+ * Net amount credited to merchant wallet:
+ * - Free Plan: 7.5% total deduction (5% telecom gateway fee + 2.5% Juula platform margin)
+ * - Pro Plan: 5.0% total deduction (strictly the 5% telecom gateway fee, 0% Juula fee)
+ */
+export function netAmountFor(totalAmount: number, isPro: boolean = false): number {
+  const envCommission = process.env.PLATFORM_COMMISSION_PERCENT
+    ? Number(process.env.PLATFORM_COMMISSION_PERCENT)
+    : null;
+  const rate =
+    typeof envCommission === 'number' && !Number.isNaN(envCommission) && envCommission > 0
+      ? envCommission / 100
+      : isPro
+        ? 0.05
+        : 0.075;
+  return totalAmount - Math.round(totalAmount * rate);
 }
 
 export function isMonerizConfigured(): boolean {
@@ -86,6 +100,14 @@ export async function verifyOrderPayment(orderId: string): Promise<PaymentCheckR
     return { status: 'mismatch' };
   }
 
+  const merchantStore = await prisma.store.findUnique({
+    where: { userId: order.merchantId },
+    select: { plan: true, planExpiresAt: true },
+  });
+  const isPro =
+    merchantStore?.plan === 'PRO' &&
+    (!merchantStore.planExpiresAt || merchantStore.planExpiresAt > new Date());
+
   const paidAt = new Date();
   const updated = await prisma.storeOrder.updateMany({
     where: { id: order.id, paymentStatus: { not: 'paid' } },
@@ -93,7 +115,7 @@ export async function verifyOrderPayment(orderId: string): Promise<PaymentCheckR
       paymentStatus: 'paid',
       paidAt,
       availableAt: new Date(paidAt.getTime() + payoutHoldHours() * 3600_000),
-      netAmount: netAmountFor(order.totalAmount),
+      netAmount: netAmountFor(order.totalAmount, isPro),
       providerPaymentId: session.paymentId,
       deliveryNotes: `Payé en ligne via Moneriz (réf. ${session.paymentId ?? session.id})`,
     },

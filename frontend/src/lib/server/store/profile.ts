@@ -47,9 +47,12 @@ export interface StoreProfile {
   onlineOnly: boolean;
   address: string | null;
   city: string | null;
+  plan: 'FREE' | 'PRO';
+  planExpiresAt: string | null;
 }
 
 export function toStoreProfile(store: Store | null): StoreProfile {
+  const isPro = store?.plan === 'PRO' && (!store.planExpiresAt || store.planExpiresAt > new Date());
   return {
     name: store?.name ?? null,
     subdomain: store?.subdomain ?? null,
@@ -58,6 +61,8 @@ export function toStoreProfile(store: Store | null): StoreProfile {
     onlineOnly: store?.onlineOnly ?? false,
     address: store?.address ?? null,
     city: store?.city ?? null,
+    plan: isPro ? 'PRO' : 'FREE',
+    planExpiresAt: store?.planExpiresAt?.toISOString() ?? null,
   };
 }
 

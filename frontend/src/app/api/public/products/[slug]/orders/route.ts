@@ -20,6 +20,7 @@ import { nextOrderNumber, publicOrderRateLimit } from '@/lib/server/store/orders
 import { computeOrderPricing } from '@/lib/store/pricing';
 import { sendNewOrderEmail } from '@/lib/server/store/notify';
 import { formatOrderId, getStoreCode } from '@/lib/orderUtils';
+import { isStorePro } from '@/lib/store/plans';
 
 const Body = z.object({
   customerName: z.string().trim().min(2).max(120),
@@ -71,7 +72,10 @@ export async function POST(
     }
 
     const { slug } = await routeCtx.params;
-    const product = await prisma.product.findUnique({ where: { slug } });
+    const product = await prisma.product.findUnique({
+      where: { slug },
+      include: { user: { select: { store: true } } },
+    });
     if (!product || product.status !== 'published') {
       return NextResponse.json(
         { error: 'PRODUCT_NOT_AVAILABLE', message: "Ce produit n'est plus disponible" },
@@ -79,8 +83,21 @@ export async function POST(
       );
     }
 
-    const config = productConfig(product);
+    const isPro = isStorePro(product.user?.store);
     const isOnline = input.paymentType !== 'cod';
+
+    if (!isOnline && !isPro) {
+      return NextResponse.json(
+        {
+          error: 'COD_REQUIRES_PRO',
+          message:
+            'Le paiement à la livraison est réservé aux boutiques Juula Pro. Veuillez régler votre commande en ligne par Wave ou Orange Money.',
+        },
+        { status: 400, headers },
+      );
+    }
+
+    const config = productConfig(product);
     if (
       (isOnline && config.mobileMoneyEnabled === false) ||
       (!isOnline && config.codEnabled === false)

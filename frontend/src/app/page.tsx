@@ -26,8 +26,6 @@ import {
 } from 'lucide-react';
 import { SiteHeader } from '@/components/site/SiteHeader';
 import { SiteFooter } from '@/components/site/SiteFooter';
-import { LEAD_PACKS, WELCOME_CREDITS } from '@/lib/store/plans';
-import { formatNumber } from '@/lib/orderUtils';
 
 export const metadata: Metadata = {
   title: 'Juula Store — Vendez en ligne avec paiement à la livraison et Mobile Money',
@@ -116,7 +114,7 @@ const FEATURES = [
 const FAQ = [
   {
     q: 'Combien coûte Juula Store ?',
-    a: `L’inscription est gratuite et vous recevez ${WELCOME_CREDITS} crédits leads offerts. Vous rechargez ensuite selon vos besoins, sans abonnement : un crédit correspond à une commande reçue.`,
+    a: 'Vous pouvez démarrer gratuitement avec le Plan Gratuit (0 FCFA/mois) pour publier 1 produit et encaisser par Wave ou Orange Money. Le Plan Juula Pro (6 000 FCFA/mois) débloque les produits illimités, le paiement à la livraison en espèces, 0% de commission Juula et vos pixels publicitaires Facebook et TikTok.',
   },
   {
     q: 'Comment mes clients paient-ils ?',
@@ -229,8 +227,6 @@ function HeroMockup() {
 }
 
 export default function LandingPage() {
-  const [discovery, growth, scaler] = LEAD_PACKS;
-
   return (
     <div className="min-h-screen bg-[#F2F4F7] text-[#0F172A] overflow-x-hidden">
       <SiteHeader />
@@ -268,9 +264,9 @@ export default function LandingPage() {
             </div>
             <ul className="flex flex-wrap gap-x-5 gap-y-2 justify-center lg:justify-start text-sm text-[#475569]">
               {[
-                `${WELCOME_CREDITS} crédits offerts`,
-                'Sans abonnement',
-                'Connexion avec Google',
+                'Plan Gratuit disponible',
+                'Paiements Wave & Orange Money',
+                'Connexion rapide avec Google',
               ].map((t) => (
                 <li key={t} className="flex items-center gap-1.5">
                   <Check className="w-4 h-4 text-[#10B981]" /> {t}
@@ -471,114 +467,160 @@ export default function LandingPage() {
 
         {/* ───────────────────── PRICING ───────────────────── */}
         <section id="tarifs" className="scroll-mt-24 bg-white border-y border-[#E5E9F0]">
-          <div className="max-w-6xl mx-auto px-4 py-20">
+          <div className="max-w-5xl mx-auto px-4 py-20">
             <div className="text-center max-w-2xl mx-auto space-y-3">
-              <Eyebrow>Tarifs</Eyebrow>
+              <Eyebrow>Tarifs simples & transparents</Eyebrow>
               <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-                Payez seulement quand vous vendez
+                Choisissez la formule adaptée à votre croissance
               </h2>
               <p className="text-[#475569]">
-                Pas d&apos;abonnement. Un crédit lead = une commande reçue. Rechargez par Wave ou
-                Orange Money quand vous en avez besoin.
+                Démarrez gratuitement pour tester votre premier produit, ou passez au Plan Pro pour
+                débloquer le paiement à la livraison et vendre sans limites.
               </p>
             </div>
 
-            <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4 items-stretch">
-              <div className="p-6 rounded-3xl bg-[#F8FAFC] border border-[#E5E9F0] flex flex-col">
-                <p className="text-sm font-black">Démarrage</p>
-                <p className="text-xs text-[#64748B] mt-1">Pour lancer votre boutique</p>
-                <p className="mt-5 text-4xl font-black">0 F</p>
-                <p className="text-sm text-[#475569] mt-1">
-                  {WELCOME_CREDITS} crédits leads offerts
-                </p>
-                <ul className="mt-5 space-y-2 text-sm text-[#334155] flex-1">
-                  {[
-                    'Pages produits illimitées',
-                    'Paiement à la livraison',
-                    'Wave & Orange Money',
-                    'Pixels Meta & TikTok',
-                  ].map((t) => (
-                    <li key={t} className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-[#10B981] shrink-0" /> {t}
+            <div className="mt-12 grid gap-6 md:grid-cols-2 items-stretch max-w-4xl mx-auto">
+              {/* Plan Gratuit */}
+              <div className="p-8 rounded-3xl bg-[#F8FAFC] border border-[#E5E9F0] flex flex-col justify-between hover:border-[#CBD5E1] transition-all">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#64748B]">
+                      Démarrage
+                    </span>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                      Sans abonnement
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-black text-[#0F172A] mt-2">Plan Gratuit</h3>
+                  <p className="text-xs text-[#64748B] mt-1">
+                    Idéal pour tester votre premier produit sans frais fixes.
+                  </p>
+                  <div className="mt-6 flex items-baseline gap-1">
+                    <span className="text-4xl sm:text-5xl font-black text-[#0F172A]">0</span>
+                    <span className="text-lg font-bold text-[#64748B]">FCFA / mois</span>
+                  </div>
+                  <p className="text-xs text-[#64748B] mt-2">
+                    7,5% prélevés sur les paiements en ligne (5% télécoms + 2,5% Juula)
+                  </p>
+
+                  <div className="my-6 border-t border-[#E2E8F0]" />
+
+                  <ul className="space-y-3 text-sm text-[#334155]">
+                    <li className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
+                      <span>
+                        <strong>1 produit actif</strong> maximum
+                      </span>
                     </li>
-                  ))}
-                </ul>
+                    <li className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
+                      <span>
+                        Paiements en ligne sécurisés <strong>Wave & Orange Money</strong>
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
+                      <span>
+                        Lien boutique standard (<code>juula.store/p/…</code>)
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5 text-[#94A3B8]">
+                      <span className="text-xs font-bold px-1.5 py-0.2 rounded bg-neutral-200 text-neutral-500 mr-0.5 shrink-0">
+                        Non inclus
+                      </span>
+                      <span>Paiement à la livraison (réservé Pro)</span>
+                    </li>
+                    <li className="flex items-start gap-2.5 text-[#94A3B8]">
+                      <span className="text-xs font-bold px-1.5 py-0.2 rounded bg-neutral-200 text-neutral-500 mr-0.5 shrink-0">
+                        Non inclus
+                      </span>
+                      <span>Pixels publicitaires Facebook & TikTok</span>
+                    </li>
+                  </ul>
+                </div>
+
                 <Link
                   href="/signup"
-                  className="mt-6 py-3 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#1E60F8] text-sm font-black text-center transition-colors"
+                  className="mt-8 py-3.5 rounded-2xl bg-white border border-[#CBD5E1] hover:border-[#1E60F8] hover:bg-[#F1F5F9] text-sm font-black text-[#0F172A] text-center transition-all shadow-xs"
                 >
-                  Commencer gratuitement
+                  Créer ma boutique gratuite
                 </Link>
               </div>
 
-              {[discovery, growth, scaler].filter(Boolean).map((pack) => {
-                const p = pack!;
-                return (
-                  <div
-                    key={p.label}
-                    className={`relative p-6 rounded-3xl flex flex-col ${
-                      p.popular
-                        ? 'bg-[#0F172A] text-white shadow-[0_25px_50px_-20px_rgba(30,96,248,0.55)] ring-2 ring-[#1E60F8]'
-                        : 'bg-white border border-[#E5E9F0]'
-                    }`}
-                  >
-                    {p.popular && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-wider bg-[#1E60F8] text-white px-3 py-1 rounded-full">
-                        Le plus choisi
-                      </span>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-black">{p.label}</p>
-                      {p.discount && (
-                        <span
-                          className={`text-[10px] font-black px-2 py-0.5 rounded-full ${p.popular ? 'bg-[#10B981] text-white' : 'bg-[#ECFDF5] text-[#059669]'}`}
-                        >
-                          {p.discount}
-                        </span>
-                      )}
-                    </div>
-                    <p className={`text-xs mt-1 ${p.popular ? 'text-white/70' : 'text-[#64748B]'}`}>
-                      {p.tagline}
-                    </p>
-                    <p className="mt-5 text-4xl font-black">
-                      {formatNumber(p.price)} <span className="text-lg">F</span>
-                    </p>
-                    <p className={`text-sm mt-1 ${p.popular ? 'text-white/80' : 'text-[#475569]'}`}>
-                      {p.credits} crédits leads · {p.costPerLead}
-                    </p>
-                    <ul
-                      className={`mt-5 space-y-2 text-sm flex-1 ${p.popular ? 'text-white/90' : 'text-[#334155]'}`}
-                    >
-                      {[
-                        `${p.credits} commandes reçues`,
-                        'Crédits sans date d’expiration',
-                        'Paiement Wave ou Orange Money',
-                      ].map((t) => (
-                        <li key={t} className="flex items-center gap-2">
-                          <Check
-                            className={`w-4 h-4 shrink-0 ${p.popular ? 'text-[#34D399]' : 'text-[#10B981]'}`}
-                          />{' '}
-                          {t}
-                        </li>
-                      ))}
-                    </ul>
-                    <Link
-                      href="/signup"
-                      className={`mt-6 py-3 rounded-2xl text-sm font-black text-center transition-colors ${
-                        p.popular
-                          ? 'bg-[#1E60F8] hover:bg-[#164ED0] text-white'
-                          : 'bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A]'
-                      }`}
-                    >
-                      Choisir ce pack
-                    </Link>
+              {/* Plan Juula Pro */}
+              <div className="relative p-8 rounded-3xl bg-[#0F172A] text-white shadow-[0_25px_50px_-20px_rgba(30,96,248,0.55)] ring-2 ring-[#1E60F8] flex flex-col justify-between">
+                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-widest bg-[#1E60F8] text-white px-3.5 py-1 rounded-full shadow-md">
+                  Le choix des pros
+                </span>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#38BDF8]">
+                      Scaler sans limites
+                    </span>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      0% commission Juula
+                    </span>
                   </div>
-                );
-              })}
+                  <h3 className="text-2xl font-black text-white mt-2">Plan Juula Pro</h3>
+                  <p className="text-xs text-white/70 mt-1">
+                    Pour les e-commerçants et marques qui scalent leurs ventes.
+                  </p>
+                  <div className="mt-6 flex items-baseline gap-1">
+                    <span className="text-4xl sm:text-5xl font-black text-white">6 000</span>
+                    <span className="text-lg font-bold text-white/80">FCFA / mois</span>
+                  </div>
+                  <p className="text-xs text-emerald-400 mt-2 font-semibold">
+                    0% de commission Juula · 0 F sur le cash · Seuls 5% télécoms sur Wave/OM
+                  </p>
+
+                  <div className="my-6 border-t border-white/10" />
+
+                  <ul className="space-y-3 text-sm text-white/95">
+                    <li className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 text-[#34D399] shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Produits & pages de vente illimités</strong>
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 text-[#34D399] shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Paiement à la livraison (Espèces) débloqué</strong>
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 text-[#34D399] shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Pixels Facebook & TikTok débloqués</strong> pour vos pubs
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 text-[#34D399] shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Sous-domaine personnalisé</strong> (
+                        <code>boutique.juula.store</code>)
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 text-[#34D399] shrink-0 mt-0.5" />
+                      <span>Reçus WhatsApp personnalisés & Support VIP prioritaire 7j/7</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <Link
+                  href="/signup"
+                  className="mt-8 py-3.5 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-sm font-black text-center transition-all shadow-[0_4px_16px_rgba(30,96,248,0.4)]"
+                >
+                  Démarrer avec Juula Pro
+                </Link>
+              </div>
             </div>
-            <p className="mt-6 text-center text-xs text-[#64748B]">
-              Prix en francs CFA (FCFA). Les paiements en ligne de vos clients sont reversés sur
-              votre portefeuille, retirables 72 h après chaque paiement.
+
+            <p className="mt-8 text-center text-xs text-[#64748B] max-w-xl mx-auto">
+              <strong>Transparence totale :</strong> Les 5% sur les paiements en ligne correspondent
+              exclusivement aux frais techniques des opérateurs de passerelle télécoms (Wave et
+              Orange Money). Juula ne prend 0% de commission sur vos ventes Pro.
             </p>
           </div>
         </section>

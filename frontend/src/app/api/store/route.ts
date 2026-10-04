@@ -84,18 +84,33 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    const store = await prisma.store.findUnique({ where: { userId: auth.user.sub } });
+    const isPro =
+      store?.plan === 'PRO' && (!store.planExpiresAt || store.planExpiresAt > new Date());
+
+    if (!isPro && (parsed.data.facebookPixelId || parsed.data.tiktokPixelId)) {
+      return NextResponse.json(
+        {
+          error: 'PRO_REQUIRED',
+          message:
+            'Les pixels de conversion Facebook et TikTok sont réservés au Plan Juula Pro. Passez au Plan Pro pour tracker vos campagnes.',
+        },
+        { status: 403, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
+
     const data = {
       facebookPixelId: parsed.data.facebookPixelId || null,
       tiktokPixelId: parsed.data.tiktokPixelId || null,
     };
-    const store = await prisma.store.upsert({
+    const saved = await prisma.store.upsert({
       where: { userId: auth.user.sub },
       create: { userId: auth.user.sub, ...data },
       update: data,
     });
     const pixels: StorePixels = {
-      facebookPixelId: store.facebookPixelId,
-      tiktokPixelId: store.tiktokPixelId,
+      facebookPixelId: saved.facebookPixelId,
+      tiktokPixelId: saved.tiktokPixelId,
     };
     return NextResponse.json({ store: pixels }, { headers: { 'x-request-id': ctx.requestId } });
   });

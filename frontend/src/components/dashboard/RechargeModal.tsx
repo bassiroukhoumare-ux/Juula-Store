@@ -1,202 +1,200 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Check, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { X, Zap, ArrowRight, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react';
+import { PRO_PLAN_PRICE_FCFA } from '@/lib/store/plans';
 import { formatNumber } from '@/lib/orderUtils';
-import { LEAD_PACKS } from '@/lib/store/plans';
 
 interface RechargeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onRecharged: (creditsAdded: number) => void;
+  onRecharged?: (creditsAdded: number) => void;
+  currentPlan?: 'FREE' | 'PRO' | undefined;
+  planExpiresAt?: string | null | undefined;
 }
 
-export const RechargeModal: React.FC<RechargeModalProps> = ({ isOpen, onClose, onRecharged }) => {
-  const [selectedPack, setSelectedPack] = useState<number>(150);
-  const [paymentProvider, setPaymentProvider] = useState<'wave' | 'orange'>('wave');
-  const [phoneNumber, setPhoneNumber] = useState('');
+export const RechargeModal: React.FC<RechargeModalProps> = ({
+  isOpen,
+  onClose,
+  onRecharged: _onRecharged,
+  currentPlan = 'FREE',
+  planExpiresAt,
+}) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const packs = LEAD_PACKS;
+  const isPro = currentPlan === 'PRO';
 
-  const handlePay = () => {
+  const handleSubscribePro = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
+    setErrorMessage(null);
+    try {
+      const res = await fetch('/api/store/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.checkoutUrl) {
+        setErrorMessage(
+          data?.message || 'Impossible d’initialiser le paiement. Veuillez réessayer.',
+        );
+        setIsProcessing(false);
+        return;
+      }
+
+      // Redirect merchant to Moneriz secure checkout session (Wave / Orange Money)
+      window.location.href = data.checkoutUrl;
+    } catch {
+      setErrorMessage('Erreur réseau. Vérifiez votre connexion.');
       setIsProcessing(false);
-      setIsSuccess(true);
-      setTimeout(() => {
-        onRecharged(selectedPack);
-        setIsSuccess(false);
-        onClose();
-      }, 1400);
-    }, 1200);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-white border border-[#E5E9F0] rounded-3xl p-7 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg bg-white border border-[#E5E9F0] rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+          className="absolute top-5 right-5 p-2 rounded-full text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors cursor-pointer z-10"
         >
           <X className="w-5 h-5" />
         </button>
 
-        {isSuccess ? (
-          <div className="py-12 text-center space-y-4">
-            <div className="w-16 h-16 bg-[#ECFDF5] text-[#10B981] rounded-full flex items-center justify-center mx-auto shadow-inner">
-              <Check className="w-8 h-8 stroke-[3]" />
-            </div>
-            <h3 className="text-xl font-black text-[#0F172A]">Recharge confirmée !</h3>
-            <p className="text-sm text-[#64748B] max-w-xs mx-auto">
-              +{selectedPack} crédits leads ont été ajoutés à votre compte Juula Store via{' '}
-              {paymentProvider === 'wave' ? 'Wave' : 'Orange Money'}.
-            </p>
+        {/* Header */}
+        <div className="text-center space-y-2 mb-6">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EFF4FF] text-[#1E60F8] text-xs font-black uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Offre Marchand Juula</span>
           </div>
-        ) : (
-          <div>
-            <div className="flex items-center gap-2 mb-1 text-[#1E60F8]">
-              <Zap className="w-5 h-5" />
-              <span className="text-xs font-bold uppercase tracking-wider">Recharge Immédiate</span>
+          <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
+            {isPro ? 'Votre Abonnement Juula Pro' : 'Passez au Plan Juula Pro'}
+          </h2>
+          <p className="text-xs sm:text-sm text-[#64748B] max-w-sm mx-auto">
+            {isPro
+              ? 'Profitez de la puissance maximale de Juula Store sans aucune limite.'
+              : 'Débloquez le paiement à la livraison, les pixels publicitaires et vendez sans aucune limite.'}
+          </p>
+        </div>
+
+        {/* Pricing Card */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white shadow-xl relative overflow-hidden mb-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#38BDF8] block">
+                Formule Tout Inclus
+              </span>
+              <h3 className="text-xl font-black text-white mt-0.5">Plan Juula Pro</h3>
             </div>
-            <h2 className="text-2xl font-black text-[#0F172A] tracking-tight">
-              Recharger mes crédits Leads
-            </h2>
-            <p className="text-sm text-[#64748B] mt-1 mb-6">
-              Paiement direct et sécurisé par Wave ou Orange Money.
-            </p>
-
-            {/* Pack Selector */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              {packs.map((pack) => {
-                const isSelected = selectedPack === pack.credits;
-                return (
-                  <button
-                    key={pack.credits}
-                    type="button"
-                    onClick={() => setSelectedPack(pack.credits)}
-                    className={`
-                      relative p-3.5 rounded-2xl border text-left transition-all cursor-pointer
-                      ${
-                        isSelected
-                          ? 'border-[#1E60F8] bg-[#EFF4FF] ring-2 ring-[#1E60F8]/15 shadow-xs'
-                          : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
-                      }
-                    `}
-                  >
-                    {pack.popular && (
-                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#1E60F8] text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        Populaire
-                      </span>
-                    )}
-                    <span className="text-xs font-semibold text-[#64748B] block">{pack.label}</span>
-                    <div className="mt-1 flex items-baseline gap-1">
-                      <span className="text-lg font-black text-[#0F172A]">{pack.credits}</span>
-                      <span className="text-[10px] font-bold text-[#1E60F8]">leads</span>
-                    </div>
-                    <p className="text-xs font-bold text-[#0F172A] mt-1">
-                      {formatNumber(pack.price)} F
-                    </p>
-                    <p className="text-[10px] text-[#64748B]">{pack.costPerLead}</p>
-                  </button>
-                );
-              })}
+            <div className="text-right">
+              <span className="text-2xl sm:text-3xl font-black text-white">
+                {formatNumber(PRO_PLAN_PRICE_FCFA)}{' '}
+                <span className="text-sm font-semibold text-white/80">FCFA</span>
+              </span>
+              <span className="block text-[11px] text-white/70">/ mois</span>
             </div>
+          </div>
 
-            {/* Payment Method Selector */}
-            <div className="space-y-3 mb-6">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#0F172A]/80 block">
-                Moyen de Paiement
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPaymentProvider('wave')}
-                  className={`
-                    flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer
-                    ${
-                      paymentProvider === 'wave'
-                        ? 'border-[#1E60F8] bg-[#EFF4FF] ring-2 ring-[#1E60F8]/20'
-                        : 'border-[#E2E8F0] bg-white hover:bg-[#F8FAFC]'
-                    }
-                  `}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-[#1AA3FF] text-white font-black text-xs flex items-center justify-center flex-shrink-0">
-                    W
-                  </div>
-                  <div className="text-left">
-                    <span className="text-sm font-bold text-[#0F172A] block">Wave Sénégal</span>
-                    <span className="text-[10px] text-[#64748B]">0% de commission</span>
-                  </div>
-                </button>
+          <div className="my-4 border-t border-white/10" />
 
-                <button
-                  type="button"
-                  onClick={() => setPaymentProvider('orange')}
-                  className={`
-                    flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer
-                    ${
-                      paymentProvider === 'orange'
-                        ? 'border-[#FF7900] bg-[#FFF5EB] ring-2 ring-[#FF7900]/20'
-                        : 'border-[#E2E8F0] bg-white hover:bg-[#F8FAFC]'
-                    }
-                  `}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-[#FF7900] text-white font-black text-xs flex items-center justify-center flex-shrink-0">
-                    OM
-                  </div>
-                  <div className="text-left">
-                    <span className="text-sm font-bold text-[#0F172A] block">Orange Money</span>
-                    <span className="text-[10px] text-[#64748B]">Instantané</span>
-                  </div>
-                </button>
-              </div>
+          {/* Features Comparison Highlights */}
+          <ul className="space-y-2.5 text-xs">
+            <li className="flex items-center gap-2.5 text-white/95">
+              <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+              <span>
+                <strong>Produits illimités</strong> (Plan Gratuit limité à 1 produit)
+              </span>
+            </li>
+            <li className="flex items-center gap-2.5 text-white/95">
+              <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+              <span>
+                <strong>Paiement à la livraison (Espèces) débloqué</strong>
+              </span>
+            </li>
+            <li className="flex items-center gap-2.5 text-white/95">
+              <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+              <span>
+                <strong>0% de commission Juula</strong> (0 F sur le cash, seuls 5% télécom sur
+                Wave/OM)
+              </span>
+            </li>
+            <li className="flex items-center gap-2.5 text-white/95">
+              <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+              <span>
+                <strong>Pixels Facebook & TikTok débloqués</strong> pour tracker vos pubs
+              </span>
+            </li>
+            <li className="flex items-center gap-2.5 text-white/95">
+              <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+              <span>
+                <strong>Sous-domaine personnalisé</strong> (
+                <span className="text-[#38BDF8]">boutique.juula.store</span>)
+              </span>
+            </li>
+          </ul>
 
-              {/* Phone number */}
-              <div className="pt-2">
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#94A3B8]">
-                    +221
-                  </span>
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="77 000 00 00"
-                    className="w-full pl-16 pr-4 py-3 rounded-xl bg-white border border-[#E2E8F0] text-sm font-medium text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:ring-2 focus:ring-[#1E60F8]/15"
-                  />
-                </div>
-              </div>
-            </div>
+          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-white/70">
+            <span>Paiement sécurisé Wave & OM</span>
+            <span className="flex items-center gap-1 text-emerald-400 font-bold">
+              <ShieldCheck className="w-3.5 h-3.5" /> Sans engagement
+            </span>
+          </div>
+        </div>
 
-            <div className="pt-4 border-t border-[#F1F5F9] flex items-center justify-between">
-              <div>
-                <span className="text-[11px] text-[#64748B] block">Total :</span>
-                <span className="text-xl font-black text-[#0F172A]">
-                  {formatNumber(packs.find((p) => p.credits === selectedPack)?.price || 0)} FCFA
-                </span>
-              </div>
-              <Button
-                variant="primary"
-                size="lg"
-                loading={isProcessing}
-                onClick={handlePay}
-                iconRight={<ArrowRight className="w-4 h-4" />}
-              >
-                Payer avec {paymentProvider === 'wave' ? 'Wave' : 'Orange'}
-              </Button>
-            </div>
-
-            <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-[#64748B]">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Notification de validation envoyée sur votre mobile</span>
+        {/* Current Status Box if already Pro */}
+        {isPro && planExpiresAt && (
+          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div className="text-xs">
+              <p className="font-bold text-emerald-900">Votre abonnement Pro est actif</p>
+              <p className="text-emerald-700">
+                Valable jusqu’au{' '}
+                {new Intl.DateTimeFormat('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                }).format(new Date(planExpiresAt))}
+                .
+              </p>
             </div>
           </div>
         )}
+
+        {errorMessage && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+            {errorMessage}
+          </div>
+        )}
+
+        {/* Action Button */}
+        <div className="space-y-3">
+          <button
+            onClick={handleSubscribePro}
+            disabled={isProcessing}
+            className="w-full py-4 px-6 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(30,96,248,0.4)] transition-all cursor-pointer disabled:opacity-50"
+          >
+            {isProcessing ? (
+              <span>Redirection vers le paiement sécurisé...</span>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 fill-white text-white" />
+                <span>
+                  {isPro
+                    ? 'Prolonger mon abonnement Pro (6 000 FCFA)'
+                    : 'Activer Juula Pro maintenant (6 000 FCFA)'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+
+          <p className="text-center text-[11px] text-[#64748B]">
+            Paiement direct par <strong>Wave</strong> ou <strong>Orange Money</strong>. Activation
+            immédiate après règlement.
+          </p>
+        </div>
       </div>
     </div>
   );

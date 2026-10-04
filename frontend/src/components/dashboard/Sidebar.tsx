@@ -30,18 +30,22 @@ interface SidebarProps {
   currency: string;
   userEmail?: string | undefined;
   onLogout?: () => void;
+  plan?: 'FREE' | 'PRO' | undefined;
+  planExpiresAt?: string | null | undefined;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
-  leadCreditsRemaining,
-  leadCreditsTotal,
+  leadCreditsRemaining: _leadCreditsRemaining,
+  leadCreditsTotal: _leadCreditsTotal,
   onOpenRecharge,
   onOpenStorefrontPreview,
   newOrdersCount,
   userEmail,
   onLogout,
+  plan = 'FREE',
+  planExpiresAt: _planExpiresAt,
 }) => {
   return (
     <aside className="hidden lg:flex w-64 bg-white border-r border-[#E5E9F0] flex-col justify-between h-screen sticky top-0 z-30 select-none flex-shrink-0">
@@ -272,27 +276,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* Shopeers Promo Card: "Passez au Premium !" */}
-        <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0F2B6B] via-[#143E9C] to-[#1E60F8] text-white shadow-md relative overflow-hidden">
-          <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center mb-2.5 backdrop-blur-xs">
-            <Zap className="w-4 h-4 text-white" />
+        {/* Plan Status / Upgrade Card */}
+        {plan === 'PRO' ? (
+          <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white shadow-md relative overflow-hidden border border-emerald-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                PRO ACTIF
+              </span>
+              <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            </div>
+            <h4 className="text-xs font-black tracking-tight leading-tight">Plan Juula Pro</h4>
+            <p className="text-[10px] text-white/70 leading-relaxed mt-1 mb-3">
+              Produits illimités · Paiement à la livraison actif · 0% commission Juula.
+            </p>
+            <button
+              onClick={onOpenRecharge}
+              className="w-full py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-all shadow-xs cursor-pointer border border-white/15"
+            >
+              Gérer mon abonnement
+            </button>
           </div>
-
-          <h4 className="text-xs font-black tracking-tight leading-tight">
-            Passez au Statut Pro !
-          </h4>
-          <p className="text-[10px] text-white/80 leading-relaxed mt-1 mb-3">
-            {leadCreditsRemaining}/{leadCreditsTotal} crédits leads restants. Rechargez via Wave ou
-            Orange.
-          </p>
-
-          <button
-            onClick={onOpenRecharge}
-            className="w-full py-2 px-3 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-[11px] font-black transition-all shadow-sm cursor-pointer"
-          >
-            Recharger mes crédits
-          </button>
-        </div>
+        ) : (
+          <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0F2B6B] via-[#143E9C] to-[#1E60F8] text-white shadow-md relative overflow-hidden">
+            <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center mb-2.5 backdrop-blur-xs">
+              <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
+            </div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[9px] font-black uppercase tracking-wider bg-white/20 text-white px-1.5 py-0.5 rounded">
+                Plan Gratuit
+              </span>
+            </div>
+            <h4 className="text-xs font-black tracking-tight leading-tight mt-1">
+              Passez à Juula Pro
+            </h4>
+            <p className="text-[10px] text-white/80 leading-relaxed mt-1 mb-3">
+              Débloquez le paiement à la livraison, les pixels pubs et des produits illimités pour 6
+              000 F/mois.
+            </p>
+            <button
+              onClick={onOpenRecharge}
+              className="w-full py-2 px-3 rounded-xl bg-white text-[#1E60F8] hover:bg-white/90 text-[11px] font-black transition-all shadow-sm cursor-pointer"
+            >
+              Activer Pro (6 000 F)
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

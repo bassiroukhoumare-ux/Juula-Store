@@ -10,6 +10,8 @@ import { normalizeSubdomain, ROOT_DOMAIN } from '@/lib/store/subdomain';
 export interface StoreProfile {
   name: string | null;
   subdomain: string | null;
+  plan?: 'FREE' | 'PRO';
+  planExpiresAt?: string | null;
 }
 
 interface OnboardingScreenProps {
