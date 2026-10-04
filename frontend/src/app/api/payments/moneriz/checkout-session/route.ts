@@ -103,6 +103,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           id: session.id,
           checkoutUrl: session.checkoutUrl,
           embedUrl: session.embedUrl,
+          integrationMode: session.integrationMode,
           status: session.status,
           amount: session.amount,
           currency: session.currency,

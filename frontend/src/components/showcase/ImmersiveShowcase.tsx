@@ -452,6 +452,12 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             setPendingOnlineOrder(order);
             setPendingOrderDbId(orderDbId);
             setMonerizSession(data);
+
+            if (data.integrationMode === 'redirect' || !data.embedUrl) {
+              window.location.href = data.checkoutUrl;
+              return;
+            }
+
             setIsMonerizModalOpen(true);
           })
           .catch(() => failOnline());

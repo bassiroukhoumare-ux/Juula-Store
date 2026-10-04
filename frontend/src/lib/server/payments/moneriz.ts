@@ -218,8 +218,18 @@ export async function createMonerizCheckoutSession(
       },
     });
   } catch (err: any) {
-    if (err?.code === 'EMBED_NOT_CONFIGURED' && params.integrationMode === 'iframe') {
-      console.warn('[Moneriz] Origine iframe non autorisée dans Moneriz dashboard, bascule automatique vers mode redirect');
+    const isEmbedOriginError =
+      err?.code === 'EMBED_ORIGIN_NOT_ALLOWED' ||
+      err?.code === 'EMBED_NOT_CONFIGURED' ||
+      err?.code === 'EMBED_NOT_ALLOWED' ||
+      /embed/i.test(err?.code || '') ||
+      /embed/i.test(err?.message || '') ||
+      /iframe/i.test(err?.message || '');
+
+    if (isEmbedOriginError && params.integrationMode === 'iframe') {
+      console.warn(
+        '[Moneriz] Origine iframe non autorisée (ex: sous-domaine boutique), bascule automatique vers mode redirect',
+      );
       return await monerizFetch<MonerizCheckoutSession>('/checkout-sessions', {
         method: 'POST',
         idempotencyKey: `${params.idempotencyKey || `cs-${params.reference}`}-fallback`,
