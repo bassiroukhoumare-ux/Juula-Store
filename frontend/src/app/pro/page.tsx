@@ -4,10 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Zap,
   ArrowRight,
   ShieldCheck,
-  Sparkles,
   CheckCircle2,
   XCircle,
   Package,
@@ -88,7 +86,7 @@ export default function ProSubscriptionPage() {
         return;
       }
 
-      // Redirection immédiate vers la session sécurisée Moneriz (Wave & Orange Money)
+      // Redirection immédiate vers la session sécurisée Moneriz
       window.location.href = data.checkoutUrl;
     } catch (err) {
       if (err instanceof ApiError) {
@@ -108,9 +106,10 @@ export default function ProSubscriptionPage() {
   };
 
   // Calculations for 5% telecom fee vs 0% COD
-  const feeOnline = Math.round(simulatedAmount * 0.05);
-  const netOnline = simulatedAmount - feeOnline;
-  const netDelivery = simulatedAmount; // 0% fee on COD
+  const safeAmount = Math.max(0, simulatedAmount || 0);
+  const feeOnline = Math.round(safeAmount * 0.05);
+  const netOnline = safeAmount - feeOnline;
+  const netDelivery = safeAmount; // 0% fee on COD
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans selection:bg-[#1E60F8] selection:text-white">
@@ -133,13 +132,12 @@ export default function ProSubscriptionPage() {
 
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EFF4FF] border border-[#BFDBFE] text-xs font-bold text-[#1E60F8]">
-              <Sparkles className="w-3.5 h-3.5" />
               <span>Abonnement Marchand Pro</span>
             </div>
 
             {isPro ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-extrabold text-xs border border-emerald-200">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-[#1E60F8] font-extrabold text-xs border border-blue-200">
+                <CheckCircle2 className="w-4 h-4 text-[#1E60F8]" />
                 <span>Plan Pro Actif</span>
               </span>
             ) : (
@@ -152,8 +150,8 @@ export default function ProSubscriptionPage() {
                   <span>Initialisation...</span>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 fill-white text-white" />
                     <span>Passer à Pro (6 000 F)</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>
@@ -168,16 +166,13 @@ export default function ProSubscriptionPage() {
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#EFF4FF] border border-[#BFDBFE] text-[#1E60F8] text-xs font-extrabold uppercase tracking-wider mb-6 shadow-xs">
-            <Zap className="w-3.5 h-3.5 fill-[#1E60F8]" />
-            <span>Multipliez vos ventes · 0% de commission Juula</span>
+            <span>MULTIPLIEZ VOS VENTES · 0% DE COMMISSION JUULA</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#0F172A] leading-[1.15] max-w-4xl mx-auto">
             Vendez sans limites.
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1E60F8] via-[#3B82F6] to-[#059669]">
-              Encaissez à 100% avec Juula Pro.
-            </span>
+            <span className="text-[#1E60F8]">Encaissez à 100% avec Juula Pro.</span>
           </h1>
 
           <p className="mt-6 text-base sm:text-lg text-[#475569] max-w-2xl mx-auto leading-relaxed">
@@ -186,38 +181,38 @@ export default function ProSubscriptionPage() {
             <strong>pixels Meta & TikTok</strong>.
           </p>
 
-          {/* Pricing Highlight Card */}
-          <div className="mt-10 max-w-md mx-auto p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white shadow-2xl border border-white/10 relative overflow-hidden">
-            <div className="absolute -top-12 -right-12 w-40 h-40 bg-[#1E60F8]/20 rounded-full blur-2xl pointer-events-none" />
-
+          {/* Pricing Highlight Card — Light clean design with blue border */}
+          <div className="mt-10 max-w-md mx-auto p-6 sm:p-8 rounded-3xl bg-white border-2 border-[#1E60F8] shadow-2xl shadow-[#1E60F8]/10 relative overflow-hidden text-left">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-[11px] font-black uppercase tracking-wider bg-white/10 text-white/90 px-3 py-1 rounded-full border border-white/15">
+              <span className="text-[11px] font-black uppercase tracking-wider bg-[#EFF4FF] text-[#1E60F8] px-3 py-1 rounded-full border border-[#BFDBFE]">
                 Formule Tout Inclus
               </span>
-              <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400">
-                <ShieldCheck className="w-4 h-4" /> Sans engagement
+              <span className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
+                <ShieldCheck className="w-4 h-4 text-[#1E60F8]" /> Sans engagement
               </span>
             </div>
 
-            <div className="text-left mb-6">
+            <div className="mb-6">
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl sm:text-5xl font-black tracking-tight">6 000</span>
-                <span className="text-lg font-bold text-white/80">FCFA</span>
-                <span className="text-xs text-white/60 font-medium">/ mois</span>
+                <span className="text-4xl sm:text-5xl font-black tracking-tight text-[#0F172A]">
+                  6 000
+                </span>
+                <span className="text-lg font-bold text-[#1E60F8]">FCFA</span>
+                <span className="text-xs text-[#64748B] font-medium">/ mois</span>
               </div>
-              <p className="text-xs text-white/70 mt-1">
-                Paiement direct Wave & Orange Money · Activation immédiate
+              <p className="text-xs text-[#64748B] font-medium mt-1">
+                Paiement par Mobile Money · Activation immédiate
               </p>
             </div>
 
             {isPro ? (
-              <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-left mb-4">
-                <div className="flex items-center gap-2 text-emerald-400 font-extrabold text-sm">
+              <div className="p-4 rounded-2xl bg-[#EFF4FF] border border-[#BFDBFE] text-left mb-4">
+                <div className="flex items-center gap-2 text-[#1E60F8] font-extrabold text-sm">
                   <CheckCircle2 className="w-5 h-5 shrink-0" />
                   <span>Votre Plan Juula Pro est déjà actif !</span>
                 </div>
                 {subStatus?.planExpiresAt && (
-                  <p className="text-xs text-emerald-200 mt-1">
+                  <p className="text-xs text-[#475569] mt-1">
                     Valable encore {subStatus.daysRemaining} jour(s) (jusqu&apos;au{' '}
                     {new Intl.DateTimeFormat('fr-FR', {
                       day: 'numeric',
@@ -230,7 +225,7 @@ export default function ProSubscriptionPage() {
                 <div className="mt-3 flex gap-2">
                   <Link
                     href="/dashboard"
-                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold text-center transition-colors"
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-xs font-bold text-center transition-colors"
                   >
                     Retourner à mes ventes
                   </Link>
@@ -239,7 +234,7 @@ export default function ProSubscriptionPage() {
             ) : (
               <>
                 {errorMessage && (
-                  <div className="mb-4 p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-xs text-red-200 text-left">
+                  <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 text-left">
                     {errorMessage}
                   </div>
                 )}
@@ -247,7 +242,7 @@ export default function ProSubscriptionPage() {
                 <button
                   onClick={handleSubscribe}
                   disabled={isProcessing}
-                  className="w-full py-4 px-6 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_25px_rgba(30,96,248,0.5)] transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full py-4 px-6 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(30,96,248,0.35)] transition-all cursor-pointer disabled:opacity-50"
                 >
                   {isProcessing ? (
                     <span className="flex items-center gap-2">
@@ -256,7 +251,6 @@ export default function ProSubscriptionPage() {
                     </span>
                   ) : (
                     <>
-                      <Zap className="w-4 h-4 fill-white text-white" />
                       <span>Activer Juula Pro maintenant (6 000 FCFA)</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
@@ -265,7 +259,7 @@ export default function ProSubscriptionPage() {
               </>
             )}
 
-            <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-center gap-4 text-[11px] text-white/60">
+            <div className="mt-4 pt-4 border-t border-[#F1F5F9] flex items-center justify-center gap-3 text-[11px] text-[#64748B] font-medium">
               <span>✓ Wave</span>
               <span>•</span>
               <span>✓ Orange Money</span>
@@ -279,8 +273,8 @@ export default function ProSubscriptionPage() {
       {/* THE CONCRETE 10 000 FCFA EXAMPLE & COD STRATEGY */}
       <section className="py-16 bg-white border-y border-[#E2E8F0]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-3">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EFF4FF] text-[#1E60F8] text-xs font-bold uppercase tracking-wider mb-3">
               <Coins className="w-3.5 h-3.5" />
               <span>Transparence Totale sur les Frais</span>
             </div>
@@ -294,32 +288,58 @@ export default function ProSubscriptionPage() {
             </p>
           </div>
 
-          {/* Interactive Preset selector */}
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-8">
-            <span className="text-xs font-bold text-[#64748B] mr-2">Exemples de prix :</span>
-            {[5000, 10000, 20000, 50000].map((amt) => (
-              <button
-                key={amt}
-                onClick={() => setSimulatedAmount(amt)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  simulatedAmount === amt
-                    ? 'bg-[#1E60F8] text-white shadow-sm scale-105'
-                    : 'bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0]'
-                }`}
-              >
-                {formatNumber(amt)} FCFA
-              </button>
-            ))}
+          {/* Interactive Amount Selector & Custom Input */}
+          <div className="mb-10 p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] max-w-xl mx-auto text-center space-y-4">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
+              <span className="text-xs font-bold text-[#64748B] mr-1">Montants rapides :</span>
+              {[5000, 10000, 20000, 50000].map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => setSimulatedAmount(amt)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    simulatedAmount === amt
+                      ? 'bg-[#1E60F8] text-white shadow-sm'
+                      : 'bg-white border border-[#CBD5E1] text-[#64748B] hover:bg-[#F1F5F9]'
+                  }`}
+                >
+                  {formatNumber(amt)} FCFA
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2 border-t border-[#E2E8F0]">
+              <span className="text-xs font-bold text-[#475569]">
+                Ou saisissez votre propre prix :
+              </span>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="10000000"
+                  step="500"
+                  value={simulatedAmount || ''}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    setSimulatedAmount(isNaN(val) ? 0 : Math.max(0, val));
+                  }}
+                  placeholder="10000"
+                  className="w-36 px-3 py-1.5 pr-14 rounded-xl border-2 border-[#CBD5E1] bg-white text-xs font-black text-[#0F172A] text-right focus:outline-none focus:border-[#1E60F8] transition-colors"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#94A3B8] pointer-events-none">
+                  FCFA
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Side by side cards: Online vs Delivery */}
+          {/* Side by side cards: Online vs Delivery (Strictly Noir / Bleu / Blanc) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
             {/* Mode 1: Paiement en ligne */}
-            <div className="p-6 sm:p-7 rounded-3xl bg-[#F8FAFC] border border-[#E2E8F0] shadow-sm relative flex flex-col justify-between">
+            <div className="p-6 sm:p-7 rounded-3xl bg-[#F8FAFC] border border-[#CBD5E1] shadow-sm relative flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EFF4FF] text-[#1E60F8] text-xs font-extrabold">
-                    <span>1. Paiement en ligne sécurisé</span>
+                    <span>1. Paiement en ligne</span>
                   </div>
                   <span className="text-xs text-[#64748B] font-bold">Wave & Orange Money</span>
                 </div>
@@ -329,14 +349,14 @@ export default function ProSubscriptionPage() {
                 </h3>
                 <p className="text-xs text-[#64748B] mb-6 leading-relaxed">
                   Votre client règle immédiatement sa commande sur votre page de vente par mobile
-                  money.
+                  money via passerelle sécurisée.
                 </p>
 
                 <div className="space-y-3 p-4 rounded-2xl bg-white border border-[#E2E8F0]">
                   <div className="flex justify-between text-xs">
                     <span className="text-[#64748B]">Prix du produit vendu :</span>
                     <span className="font-bold text-[#0F172A]">
-                      {formatNumber(simulatedAmount)} FCFA
+                      {formatNumber(safeAmount)} FCFA
                     </span>
                   </div>
                   <div className="flex justify-between text-xs">
@@ -348,7 +368,7 @@ export default function ProSubscriptionPage() {
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-[#64748B]">Commission Juula (Plan Pro) :</span>
-                    <span className="font-black text-emerald-600">0 FCFA (0%)</span>
+                    <span className="font-black text-[#1E60F8]">0 FCFA (0%)</span>
                   </div>
                   <div className="pt-3 border-t border-[#E2E8F0] flex justify-between items-baseline">
                     <span className="text-xs font-black text-[#0F172A]">Vous recevez net :</span>
@@ -359,67 +379,70 @@ export default function ProSubscriptionPage() {
                 </div>
               </div>
 
-              <div className="mt-5 text-[11px] text-[#64748B] bg-white/60 p-3 rounded-xl border border-dashed border-[#CBD5E1]">
-                ℹ️ <strong>Transparence :</strong> Les 5% sont prélevés directement par la
-                passerelle de paiement et les opérateurs télécoms. Juula ne prend aucun centime sur
-                votre vente.
+              <div className="mt-5 text-xs text-[#475569] bg-white p-3.5 rounded-2xl border border-[#E2E8F0] flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-[#1E60F8] shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  <strong>Transparence :</strong> Les 5% sont prélevés directement par la passerelle
+                  de paiement et les opérateurs télécoms. Juula ne prend aucun centime sur votre
+                  vente.
+                </p>
               </div>
             </div>
 
-            {/* Mode 2: Paiement à la livraison (EXCLUSIF PRO) */}
-            <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-[#ECFDF5] to-[#F0FDF4] border-2 border-emerald-500 shadow-md relative flex flex-col justify-between">
-              <div className="absolute -top-3 right-6 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider px-3 py-0.5 rounded-full shadow-xs">
-                ⭐ EXCLUSIF JUULA PRO
+            {/* Mode 2: Paiement à la livraison (EXCLUSIF PRO — Blanc / Gris épuré avec bordure Bleue) */}
+            <div className="p-6 sm:p-7 rounded-3xl bg-[#F8FAFC] border-2 border-[#1E60F8] shadow-md relative flex flex-col justify-between">
+              <div className="absolute -top-3 right-6 bg-[#1E60F8] text-white text-[10px] font-black uppercase tracking-wider px-3 py-0.5 rounded-full shadow-xs">
+                EXCLUSIF JUULA PRO
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">
-                    <Truck className="w-3.5 h-3.5" />
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EFF4FF] text-[#1E60F8] text-xs font-extrabold">
+                    <Truck className="w-3.5 h-3.5 text-[#1E60F8]" />
                     <span>2. Paiement à la livraison (Espèces)</span>
                   </div>
-                  <span className="text-xs text-emerald-700 font-bold">100% pour vous</span>
+                  <span className="text-xs text-[#1E60F8] font-bold">100% pour vous</span>
                 </div>
 
-                <h3 className="text-lg font-black text-emerald-950 mb-2">
+                <h3 className="text-lg font-black text-[#0F172A] mb-2">
                   Client paie en cash au livreur
                 </h3>
-                <p className="text-xs text-emerald-800 mb-6 leading-relaxed">
+                <p className="text-xs text-[#64748B] mb-6 leading-relaxed">
                   Le mode d&apos;achat favori en Afrique de l&apos;Ouest : le client valide sa
                   commande en 1 clic et paie en espèces à la livraison.
                 </p>
 
-                <div className="space-y-3 p-4 rounded-2xl bg-white border border-emerald-200">
+                <div className="space-y-3 p-4 rounded-2xl bg-white border border-[#CBD5E1]">
                   <div className="flex justify-between text-xs">
                     <span className="text-[#64748B]">Prix du produit vendu :</span>
                     <span className="font-bold text-[#0F172A]">
-                      {formatNumber(simulatedAmount)} FCFA
+                      {formatNumber(safeAmount)} FCFA
                     </span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-[#64748B]">Frais opérateurs télécoms :</span>
-                    <span className="font-bold text-emerald-600">0 FCFA (0%)</span>
+                    <span className="font-bold text-[#0F172A]">0 FCFA (0%)</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-[#64748B]">Commission Juula (Plan Pro) :</span>
-                    <span className="font-black text-emerald-600">0 FCFA (0%)</span>
+                    <span className="font-black text-[#1E60F8]">0 FCFA (0%)</span>
                   </div>
-                  <div className="pt-3 border-t border-emerald-200 flex justify-between items-baseline">
-                    <span className="text-xs font-black text-emerald-950">
+                  <div className="pt-3 border-t border-[#E2E8F0] flex justify-between items-baseline">
+                    <span className="text-xs font-black text-[#0F172A]">
                       Vous encaissez en main propre :
                     </span>
-                    <span className="text-xl font-black text-emerald-600">
+                    <span className="text-xl font-black text-[#1E60F8]">
                       {formatNumber(netDelivery)} FCFA
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Pro Tip Box */}
-              <div className="mt-5 p-3.5 rounded-2xl bg-emerald-600 text-white shadow-xs">
-                <div className="flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-amber-300" />
-                  <p className="text-xs leading-relaxed">
+              {/* Pro Tip Box — Professional blue/white styling */}
+              <div className="mt-5 p-4 rounded-2xl bg-[#EFF4FF] border border-[#BFDBFE] text-[#0F172A]">
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-[#1E60F8]" />
+                  <p className="text-xs leading-relaxed text-[#1E3A8A]">
                     <strong>L&apos;astuce des top marchands Juula :</strong> Avec le Plan Pro, vous
                     pouvez choisir de <strong>désactiver le paiement en ligne</strong> et proposer{' '}
                     <strong>exclusivement le paiement à la livraison</strong>. Ainsi, vous avez{' '}
@@ -447,95 +470,97 @@ export default function ProSubscriptionPage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm overflow-hidden">
-          <div className="grid grid-cols-3 p-4 sm:p-6 bg-[#F8FAFC] border-b border-[#E2E8F0] font-black text-xs sm:text-sm">
-            <div className="text-[#64748B]">Fonctionnalité</div>
-            <div className="text-center text-[#64748B]">Plan Gratuit</div>
-            <div className="text-center text-[#1E60F8]">Plan Juula Pro (6 000 F)</div>
-          </div>
-
-          <div className="divide-y divide-[#F1F5F9] text-xs sm:text-sm">
-            {/* Feature 1 */}
-            <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors">
-              <div className="font-bold text-[#0F172A] flex items-center gap-2">
-                <Package className="w-4 h-4 text-[#1E60F8] shrink-0" />
-                <span>Nombre de produits actifs</span>
-              </div>
-              <div className="text-center text-[#64748B]">1 produit max</div>
-              <div className="text-center font-black text-emerald-600 flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Produits Illimités</span>
-              </div>
+        <div className="bg-white rounded-3xl border border-[#CBD5E1] shadow-sm overflow-hidden overflow-x-auto">
+          <div className="min-w-[540px]">
+            <div className="grid grid-cols-3 p-4 sm:p-6 bg-[#F8FAFC] border-b border-[#E2E8F0] font-black text-xs sm:text-sm">
+              <div className="text-[#64748B]">Fonctionnalité</div>
+              <div className="text-center text-[#64748B]">Plan Gratuit</div>
+              <div className="text-center text-[#1E60F8]">Plan Juula Pro (6 000 F)</div>
             </div>
 
-            {/* Feature 2 */}
-            <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors bg-emerald-50/30">
-              <div className="font-bold text-[#0F172A] flex items-center gap-2">
-                <Truck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Paiement à la livraison (COD)</span>
+            <div className="divide-y divide-[#F1F5F9] text-xs sm:text-sm">
+              {/* Feature 1 */}
+              <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors">
+                <div className="font-bold text-[#0F172A] flex items-center gap-2">
+                  <Package className="w-4 h-4 text-[#1E60F8] shrink-0" />
+                  <span>Nombre de produits actifs</span>
+                </div>
+                <div className="text-center text-[#64748B]">1 produit max</div>
+                <div className="text-center font-black text-[#1E60F8] flex items-center justify-center gap-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Produits Illimités</span>
+                </div>
               </div>
-              <div className="text-center text-[#94A3B8] flex items-center justify-center gap-1">
-                <XCircle className="w-4 h-4 text-red-400" />
-                <span className="hidden sm:inline">Bloqué</span>
-              </div>
-              <div className="text-center font-black text-emerald-600 flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Débloqué (0% frais)</span>
-              </div>
-            </div>
 
-            {/* Feature 3 */}
-            <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors">
-              <div className="font-bold text-[#0F172A] flex items-center gap-2">
-                <Coins className="w-4 h-4 text-[#1E60F8] shrink-0" />
-                <span>Commission plateforme Juula</span>
+              {/* Feature 2 */}
+              <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors bg-[#EFF4FF]/40">
+                <div className="font-bold text-[#0F172A] flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-[#1E60F8] shrink-0" />
+                  <span>Paiement à la livraison (COD)</span>
+                </div>
+                <div className="text-center text-[#94A3B8] flex items-center justify-center gap-1">
+                  <XCircle className="w-4 h-4 text-red-400" />
+                  <span className="hidden sm:inline">Bloqué</span>
+                </div>
+                <div className="text-center font-black text-[#1E60F8] flex items-center justify-center gap-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Débloqué (0% frais)</span>
+                </div>
               </div>
-              <div className="text-center text-[#64748B]">2.5% prélevés</div>
-              <div className="text-center font-black text-emerald-600 flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>0% Commission Juula</span>
-              </div>
-            </div>
 
-            {/* Feature 4 */}
-            <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors">
-              <div className="font-bold text-[#0F172A] flex items-center gap-2">
-                <Target className="w-4 h-4 text-[#1E60F8] shrink-0" />
-                <span>Pixels Meta (Facebook) & TikTok</span>
+              {/* Feature 3 */}
+              <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors">
+                <div className="font-bold text-[#0F172A] flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-[#1E60F8] shrink-0" />
+                  <span>Commission plateforme Juula</span>
+                </div>
+                <div className="text-center text-[#64748B]">2.5% prélevés</div>
+                <div className="text-center font-black text-[#1E60F8] flex items-center justify-center gap-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>0% Commission Juula</span>
+                </div>
               </div>
-              <div className="text-center text-[#94A3B8] flex items-center justify-center gap-1">
-                <XCircle className="w-4 h-4 text-red-400" />
-                <span className="hidden sm:inline">Bloqué</span>
-              </div>
-              <div className="text-center font-black text-emerald-600 flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Débloqués (Trackez vos pubs)</span>
-              </div>
-            </div>
 
-            {/* Feature 5 */}
-            <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors">
-              <div className="font-bold text-[#0F172A] flex items-center gap-2">
-                <Globe className="w-4 h-4 text-[#1E60F8] shrink-0" />
-                <span>Sous-domaine personnalisé</span>
+              {/* Feature 4 */}
+              <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors">
+                <div className="font-bold text-[#0F172A] flex items-center gap-2">
+                  <Target className="w-4 h-4 text-[#1E60F8] shrink-0" />
+                  <span>Pixels Meta (Facebook) & TikTok</span>
+                </div>
+                <div className="text-center text-[#94A3B8] flex items-center justify-center gap-1">
+                  <XCircle className="w-4 h-4 text-red-400" />
+                  <span className="hidden sm:inline">Bloqué</span>
+                </div>
+                <div className="text-center font-black text-[#1E60F8] flex items-center justify-center gap-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Débloqués (Trackez vos pubs)</span>
+                </div>
               </div>
-              <div className="text-center text-[#64748B]">Standard</div>
-              <div className="text-center font-black text-emerald-600 flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>boutique.juula.store</span>
-              </div>
-            </div>
 
-            {/* Feature 6 */}
-            <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors">
-              <div className="font-bold text-[#0F172A] flex items-center gap-2">
-                <Headphones className="w-4 h-4 text-[#1E60F8] shrink-0" />
-                <span>Support client & Accompagnement</span>
+              {/* Feature 5 */}
+              <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors">
+                <div className="font-bold text-[#0F172A] flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-[#1E60F8] shrink-0" />
+                  <span>Sous-domaine personnalisé</span>
+                </div>
+                <div className="text-center text-[#64748B]">Standard</div>
+                <div className="text-center font-black text-[#1E60F8] flex items-center justify-center gap-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>boutique.juula.store</span>
+                </div>
               </div>
-              <div className="text-center text-[#64748B]">Email</div>
-              <div className="text-center font-black text-emerald-600 flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Ligne VIP WhatsApp 7j/7</span>
+
+              {/* Feature 6 */}
+              <div className="grid grid-cols-3 p-4 sm:p-5 items-center hover:bg-[#F8FAFC] transition-colors">
+                <div className="font-bold text-[#0F172A] flex items-center gap-2">
+                  <Headphones className="w-4 h-4 text-[#1E60F8] shrink-0" />
+                  <span>Support client & Accompagnement</span>
+                </div>
+                <div className="text-center text-[#64748B]">Standard</div>
+                <div className="text-center font-black text-[#1E60F8] flex items-center justify-center gap-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Ligne VIP Prioritaire 7j/7</span>
+                </div>
               </div>
             </div>
           </div>
@@ -545,9 +570,8 @@ export default function ProSubscriptionPage() {
           <button
             onClick={handleSubscribe}
             disabled={isProcessing || isPro}
-            className="px-8 py-4 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] text-white font-black text-sm tracking-tight inline-flex items-center gap-2 shadow-[0_4px_20px_rgba(30,96,248,0.4)] transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+            className="px-8 py-4 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] text-white font-black text-sm tracking-tight inline-flex items-center gap-2 shadow-[0_4px_20px_rgba(30,96,248,0.35)] transition-all cursor-pointer active:scale-95 disabled:opacity-50"
           >
-            <Zap className="w-4 h-4 fill-white text-white" />
             <span>
               {isPro
                 ? 'Vous êtes déjà sur le Plan Pro'
@@ -558,7 +582,7 @@ export default function ProSubscriptionPage() {
         </div>
       </section>
 
-      {/* 5 GROWTH PILLARS */}
+      {/* 6 GROWTH PILLARS — Cohesive Blue / Noir / Blanc palette */}
       <section className="py-16 bg-[#F1F5F9] border-t border-[#E2E8F0]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
@@ -572,7 +596,7 @@ export default function ProSubscriptionPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Card 1 */}
-            <div className="p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow">
+            <div className="p-6 rounded-3xl bg-white border border-[#CBD5E1] shadow-sm hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-2xl bg-[#EFF4FF] flex items-center justify-center text-[#1E60F8] mb-4">
                 <Truck className="w-6 h-6" />
               </div>
@@ -587,8 +611,8 @@ export default function ProSubscriptionPage() {
             </div>
 
             {/* Card 2 */}
-            <div className="p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4">
+            <div className="p-6 rounded-3xl bg-white border border-[#CBD5E1] shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 rounded-2xl bg-[#EFF4FF] flex items-center justify-center text-[#1E60F8] mb-4">
                 <Target className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-black text-[#0F172A] mb-2">
@@ -602,8 +626,8 @@ export default function ProSubscriptionPage() {
             </div>
 
             {/* Card 3 */}
-            <div className="p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 mb-4">
+            <div className="p-6 rounded-3xl bg-white border border-[#CBD5E1] shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 rounded-2xl bg-[#EFF4FF] flex items-center justify-center text-[#1E60F8] mb-4">
                 <Package className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-black text-[#0F172A] mb-2">Produits & Pages Illimités</h3>
@@ -614,8 +638,8 @@ export default function ProSubscriptionPage() {
             </div>
 
             {/* Card 4 */}
-            <div className="p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 mb-4">
+            <div className="p-6 rounded-3xl bg-white border border-[#CBD5E1] shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 rounded-2xl bg-[#EFF4FF] flex items-center justify-center text-[#1E60F8] mb-4">
                 <Coins className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-black text-[#0F172A] mb-2">0% Commission Juula</h3>
@@ -627,8 +651,8 @@ export default function ProSubscriptionPage() {
             </div>
 
             {/* Card 5 */}
-            <div className="p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 mb-4">
+            <div className="p-6 rounded-3xl bg-white border border-[#CBD5E1] shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 rounded-2xl bg-[#EFF4FF] flex items-center justify-center text-[#1E60F8] mb-4">
                 <Globe className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-black text-[#0F172A] mb-2">Sous-domaine Personnalisé</h3>
@@ -640,14 +664,14 @@ export default function ProSubscriptionPage() {
             </div>
 
             {/* Card 6 */}
-            <div className="p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600 mb-4">
+            <div className="p-6 rounded-3xl bg-white border border-[#CBD5E1] shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 rounded-2xl bg-[#EFF4FF] flex items-center justify-center text-[#1E60F8] mb-4">
                 <Headphones className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-black text-[#0F172A] mb-2">Support VIP WhatsApp</h3>
+              <h3 className="text-lg font-black text-[#0F172A] mb-2">Support VIP Prioritaire</h3>
               <p className="text-xs text-[#64748B] leading-relaxed">
-                Un contact direct avec notre équipe technique et commerciale sur WhatsApp pour
-                résoudre vos requêtes en priorité et vous conseiller sur vos boutiques.
+                Un contact direct avec notre équipe technique et commerciale pour résoudre vos
+                requêtes en priorité et vous conseiller sur l&apos;optimisation de vos boutiques.
               </p>
             </div>
           </div>
@@ -711,13 +735,9 @@ export default function ProSubscriptionPage() {
         </div>
       </section>
 
-      {/* FINAL CTA SECTION */}
-      <section className="py-16 bg-[#0F172A] text-white text-center relative overflow-hidden">
+      {/* FINAL CTA SECTION — Deep black background, no flash icon */}
+      <section className="py-16 bg-[#0B0F19] text-white text-center relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mx-auto mb-4">
-            <Zap className="w-6 h-6 text-amber-400 fill-amber-400" />
-          </div>
-
           <h2 className="text-2xl sm:text-4xl font-black tracking-tight mb-4">
             Prêt à faire passer votre boutique au niveau supérieur ?
           </h2>
@@ -727,8 +747,8 @@ export default function ProSubscriptionPage() {
           </p>
 
           {isPro ? (
-            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-sm font-black">
-              <CheckCircle2 className="w-5 h-5" />
+            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/10 text-white border border-white/20 text-sm font-black">
+              <CheckCircle2 className="w-5 h-5 text-[#1E60F8]" />
               <span>Vous profitez déjà du Plan Juula Pro</span>
             </div>
           ) : (
@@ -741,7 +761,6 @@ export default function ProSubscriptionPage() {
                 <span>Initialisation de votre paiement...</span>
               ) : (
                 <>
-                  <Zap className="w-5 h-5 fill-white text-white" />
                   <span>Activer Juula Pro maintenant (6 000 FCFA / mois)</span>
                   <ArrowRight className="w-5 h-5" />
                 </>
@@ -750,16 +769,16 @@ export default function ProSubscriptionPage() {
           )}
 
           <p className="mt-4 text-xs text-white/50">
-            Activation immédiate par Wave & Orange Money · Aucun frais caché
+            Activation immédiate par Mobile Money · Aucun frais caché
           </p>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 bg-[#090D16] text-[#64748B] text-xs text-center border-t border-white/5">
+      {/* Footer — Juula Logo in White, no WhatsApp support link */}
+      <footer className="py-8 bg-[#070A10] text-[#94A3B8] text-xs text-center border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <JuulaLogo height={24} />
+            <JuulaLogo height={24} className="brightness-0 invert" />
             <span>© {new Date().getFullYear()} Juula Store. Tous droits réservés.</span>
           </div>
           <div className="flex items-center gap-6">
@@ -769,14 +788,6 @@ export default function ProSubscriptionPage() {
             <Link href="/confidentialite" className="hover:text-white transition-colors">
               Confidentialité
             </Link>
-            <a
-              href="https://wa.me/221774128930"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
-            >
-              Support WhatsApp
-            </a>
           </div>
         </div>
       </footer>
