@@ -6,6 +6,8 @@ coverage/
 *.log
 .DS_Store
 .env
+.env*
+*.env*
 .env.local
 .env.*.local
 *.tsbuildinfo
@@ -20,4 +22,6 @@ next-env.d.ts
 # Local cruft — not part of the kit
 amp
 node-compile-cache/
+izikit/
+
 

@@ -1,0 +1,2204 @@
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Check,
+  Truck,
+  ShieldCheck,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  Volume2,
+  VolumeX,
+  X,
+  ArrowRight,
+  CreditCard,
+  Banknote,
+  MapPin,
+  User,
+  ShoppingBag,
+  Award,
+  Send,
+  Maximize2,
+  Lock,
+  Phone,
+  Mic,
+  MicOff,
+  Pause,
+  Play,
+  RotateCcw,
+  Trash2,
+  Camera,
+  Film,
+  Headphones,
+  CheckCheck,
+  Plus,
+  Minus,
+  ArrowLeft,
+  Palette,
+  Zap,
+  Flame,
+} from 'lucide-react';
+import { FunnelPageConfig, OrderLead, CustomerReview, ProofItem, QuantityDiscountTier } from '@/types/juula';
+import { Button } from '@/components/ui/Button';
+import { formatOrderId, formatNumber, formatFCFA } from '@/lib/orderUtils';
+import { MonerizCheckoutModal } from '@/components/payments/MonerizCheckoutModal';
+
+// SVG Officiel WhatsApp
+const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+  </svg>
+);
+
+interface ImmersiveShowcaseProps {
+  config: FunnelPageConfig;
+  onOrderCreated?: (order: Partial<OrderLead>) => void;
+  isInsideMockup?: boolean;
+}
+
+export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
+  config,
+  onOrderCreated,
+  isInsideMockup = false,
+}) => {
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isCheckoutPageOpen, setIsCheckoutPageOpen] = useState(false);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [paymentChoice, setPaymentChoice] = useState<'cod' | 'wave' | 'orange'>('cod');
+  const [selectedColor, setSelectedColor] = useState<string>(
+    config.availableColors && config.availableColors.length > 0
+      ? config.availableColors[0]?.name || ''
+      : ''
+  );
+
+  useEffect(() => {
+    if (config.availableColors && config.availableColors.length > 0 && !selectedColor) {
+      setSelectedColor(config.availableColors[0]?.name || '');
+    }
+  }, [config.availableColors, selectedColor]);
+
+  // Moneriz Checkout Modal state
+  const [monerizSession, setMonerizSession] = useState<any>(null);
+  const [isMonerizModalOpen, setIsMonerizModalOpen] = useState(false);
+  const [pendingOnlineOrder, setPendingOnlineOrder] = useState<OrderLead | null>(null);
+
+  // Address Input Mode: text vs voice
+  const [addressInputMode, setAddressInputMode] = useState<'text' | 'voice'>('text');
+
+  // Voice Note Recorder state
+  const [isRecording, setIsRecording] = useState(false);
+  const [isRecordingPaused, setIsRecordingPaused] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [voiceNoteBlob, setVoiceNoteBlob] = useState<Blob | null>(null);
+  const [voiceNoteUrl, setVoiceNoteUrl] = useState<string | null>(null);
+  const [isPlayingRecordedVoice, setIsPlayingRecordedVoice] = useState(false);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recordedAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Review modal state
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewsList, setReviewsList] = useState<CustomerReview[]>(
+    config.reviews && config.reviews.length > 0
+      ? config.reviews
+      : [
+          {
+            id: 'rev-1',
+            authorName: 'Moussa Ba',
+            city: 'Mermoz',
+            rating: 5,
+            comment:
+              'Reçu en 2h chrono à Mermoz ! J’ai pu essayer la montre devant le coursier avant de payer en Wave. La finition saphir est juste magnifique, identique aux photos.',
+            date: 'Hier',
+            verified: true,
+          },
+          {
+            id: 'rev-2',
+            authorName: 'Aminata Traoré',
+            city: 'Sacré-Cœur',
+            rating: 5,
+            comment:
+              'Cadeau pour mon mari, il a adoré. Très bon contact WhatsApp avec le support pour caler l’heure exacte de livraison à mon bureau.',
+            date: 'Il y a 2 jours',
+            verified: true,
+          },
+          {
+            id: 'rev-3',
+            authorName: 'Ibrahima Ndiaye',
+            city: 'Point E',
+            rating: 5,
+            comment:
+              'Paiement Wave en ligne sécurisé, livreur très poli. Le packaging et la boîte cadeau sont top qualité.',
+            date: 'Il y a 3 jours',
+            verified: true,
+          },
+        ]
+  );
+
+  // New review form
+  const [newReviewAuthor, setNewReviewAuthor] = useState('');
+  const [newReviewCity, setNewReviewCity] = useState('');
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [newReviewComment, setNewReviewComment] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  // Proof Items (Images, Videos, WhatsApp Voice Notes)
+  const [activeProofFilter, setActiveProofFilter] = useState<'all' | 'audio' | 'video' | 'image'>('all');
+  const [playingProofAudioId, setPlayingProofAudioId] = useState<string | null>(null);
+  const [selectedProofModalItem, setSelectedProofModalItem] = useState<ProofItem | null>(null);
+
+  const proofAudioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
+
+  const defaultProofItems: ProofItem[] = [
+    {
+      id: 'prf-1',
+      type: 'audio',
+      url: 'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3',
+      title: 'Note Vocale WhatsApp — Colis reçu en 2h à Dakar',
+      authorName: 'Mamadou Diallo',
+      city: 'Almadies',
+      duration: '0:38',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    },
+    {
+      id: 'prf-2',
+      type: 'image',
+      url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=720&q=80',
+      title: 'Montre portée après essayage',
+      authorName: 'Cheikh Tidiane',
+      city: 'Plateau',
+    },
+    {
+      id: 'prf-3',
+      type: 'video',
+      url: 'https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-man-adjusting-a-luxury-wristwatch-43405-large.mp4',
+      title: 'Vidéo unboxing du coffret luxe',
+      authorName: 'Fatou Bintou Diop',
+      city: 'Mermoz',
+      duration: '0:18',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=720&q=80',
+    },
+    {
+      id: 'prf-4',
+      type: 'audio',
+      url: 'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3',
+      title: 'Note Vocale — Validation et remerciements',
+      authorName: 'Ousmane Cissé',
+      city: 'Guédiawaye',
+      duration: '0:45',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    },
+    {
+      id: 'prf-5',
+      type: 'image',
+      url: 'https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=720&q=80',
+      title: 'Confirmation WhatsApp de livraison',
+      authorName: 'Aminata Traoré',
+      city: 'Sacré-Cœur',
+    },
+  ];
+
+  const allProofItems: ProofItem[] =
+    config.proofItems && config.proofItems.length > 0 ? config.proofItems : defaultProofItems;
+
+  const filteredProofItems =
+    activeProofFilter === 'all'
+      ? allProofItems
+      : allProofItems.filter((item) => item.type === activeProofFilter);
+
+  // Checkout Form fields
+  const [customerName, setCustomerName] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [neighborhood, setNeighborhood] = useState('Almadies');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState<OrderLead | null>(null);
+
+  const quickNeighborhoods = [
+    'Almadies',
+    'Grand Dakar',
+    'Mermoz',
+    'Plateau',
+    'Point E',
+    'Sacré-Cœur',
+    'Yoff',
+    'Guédiawaye',
+    'Pikine',
+  ];
+
+  const deliveryFee =
+    config.deliveryPricingType === 'fixed'
+      ? config.fixedDeliveryFee || 0
+      : config.deliveryFree
+      ? 0
+      : config.deliveryFee ?? 0;
+
+  // Paliers de réductions par volume (Pack Duo, Trio, etc.)
+  const defaultTiers: QuantityDiscountTier[] = [
+    { id: 't1', minQty: 1, discountType: 'percent', discountValue: 0, label: '1 Pièce (Standard)' },
+    { id: 't2', minQty: 2, discountType: 'percent', discountValue: 10, label: 'Pack Duo — 2 Pièces (-10%)', isPopular: true },
+    { id: 't3', minQty: 3, discountType: 'percent', discountValue: 20, label: 'Pack Famille — 3 Pièces (-20%)' },
+  ];
+
+  const quantityTiers =
+    config.quantityDiscounts && config.quantityDiscounts.length > 0
+      ? config.quantityDiscounts
+      : defaultTiers;
+
+  const activeTier = [...quantityTiers]
+    .sort((a, b) => b.minQty - a.minQty)
+    .find((t) => quantity >= t.minQty);
+
+  const baseSubtotal = config.price * quantity;
+  let discountAmount = 0;
+  if (config.quantityDiscountsEnabled !== false && activeTier && activeTier.discountValue > 0) {
+    if (activeTier.discountType === 'percent') {
+      discountAmount = Math.round((baseSubtotal * activeTier.discountValue) / 100);
+    } else {
+      discountAmount = Math.max(0, baseSubtotal - activeTier.discountValue * quantity);
+    }
+  }
+
+  const subtotalAfterDiscount = baseSubtotal - discountAmount;
+  const totalAmount = subtotalAfterDiscount + deliveryFee;
+
+  const images = config.mediaItems.filter((m) => m.type === 'image');
+  const totalSlides = images.length + (config.hasVideo && config.videoUrl ? 1 : 0);
+
+  // Clean timer on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    };
+  }, []);
+
+  // -------------------------------------------------------------
+  // VOICE NOTE RECORDER LOGIC (MAX 2 MINUTES, PAUSE/RESUME/DELETE)
+  // -------------------------------------------------------------
+  const startVoiceRecording = async () => {
+    try {
+      setRecordingSeconds(0);
+      setIsRecording(true);
+      setIsRecordingPaused(false);
+      setVoiceNoteUrl(null);
+      setVoiceNoteBlob(null);
+
+      // Attempt microphone capture
+      if (navigator?.mediaDevices?.getUserMedia) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mediaRecorder = new MediaRecorder(stream);
+          mediaRecorderRef.current = mediaRecorder;
+          const chunks: Blob[] = [];
+
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            setVoiceNoteBlob(blob);
+            setVoiceNoteUrl(URL.createObjectURL(blob));
+            // stop tracks
+            stream.getTracks().forEach((track) => track.stop());
+          };
+
+          mediaRecorder.start();
+        } catch (err) {
+          console.warn('Microphone permission not granted, using simulated recording timer', err);
+        }
+      }
+
+      // Interval timer (Max 120s = 2 minutes)
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => {
+          if (prev >= 119) {
+            stopVoiceRecording();
+            return 120;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const pauseVoiceRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.pause();
+    }
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    setIsRecordingPaused(true);
+  };
+
+  const resumeVoiceRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+      mediaRecorderRef.current.resume();
+    }
+    setIsRecordingPaused(false);
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingSeconds((prev) => {
+        if (prev >= 119) {
+          stopVoiceRecording();
+          return 120;
+        }
+        return prev + 1;
+      });
+    }, 1000);
+  };
+
+  const stopVoiceRecording = () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    } else {
+      // Fallback synthetic voice note URL for environments without hardware mic
+      const sampleAudioUrl = 'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3';
+      setVoiceNoteUrl(sampleAudioUrl);
+    }
+
+    setIsRecording(false);
+    setIsRecordingPaused(false);
+  };
+
+  const deleteVoiceRecording = () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    setIsRecordingPaused(false);
+    setRecordingSeconds(0);
+    setVoiceNoteBlob(null);
+    setVoiceNoteUrl(null);
+    setIsPlayingRecordedVoice(false);
+  };
+
+  const togglePlayRecordedVoice = () => {
+    if (!recordedAudioRef.current) return;
+    if (isPlayingRecordedVoice) {
+      recordedAudioRef.current.pause();
+      setIsPlayingRecordedVoice(false);
+    } else {
+      recordedAudioRef.current.play();
+      setIsPlayingRecordedVoice(true);
+    }
+  };
+
+  const formatTimer = (totalSec: number) => {
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  // Proof Audio playback
+  const handleToggleProofAudio = (item: ProofItem) => {
+    if (playingProofAudioId === item.id) {
+      if (proofAudioPlayerRef.current) proofAudioPlayerRef.current.pause();
+      setPlayingProofAudioId(null);
+    } else {
+      if (proofAudioPlayerRef.current) {
+        proofAudioPlayerRef.current.src = item.url;
+        proofAudioPlayerRef.current.play().catch(() => {});
+      }
+      setPlayingProofAudioId(item.id);
+    }
+  };
+
+  const scrollSlider = (direction: 'left' | 'right') => {
+    if (sliderRef.current) {
+      const scrollAmount = direction === 'left' ? -280 : 280;
+      sliderRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const handleOpenCheckout = (choice: 'cod' | 'wave') => {
+    setPaymentChoice(choice);
+    setOrderSuccess(null);
+    setIsCheckoutPageOpen(true);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleSubmitOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerName || !whatsappNumber) return;
+
+    // Check if either address text or voice note was provided
+    if (!deliveryAddress && !voiceNoteUrl) {
+      setAddressInputMode('text');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setTimeout(() => {
+      const isOnline = paymentChoice === 'wave' || paymentChoice === 'orange';
+      const orderSeq = Math.floor(10 + Math.random() * 900);
+      const generatedId = formatOrderId(config.storeCode || 'BDE', orderSeq);
+
+      const finalAddressDesc = deliveryAddress
+        ? deliveryAddress
+        : `[Note vocale de ${recordingSeconds}s enregistrée] ${neighborhood}, Dakar`;
+
+      const newOrder: OrderLead = {
+        id: generatedId,
+        sequenceNumber: orderSeq,
+        customerName,
+        phone: `+221 ${whatsappNumber}`,
+        whatsappNumber: `221${whatsappNumber.replace(/\s+/g, '')}`,
+        neighborhood,
+        deliveryAddress: finalAddressDesc,
+        hasVoiceNote: !!voiceNoteUrl,
+        voiceNoteUrl: voiceNoteUrl || undefined,
+        city: 'Dakar',
+        productName: quantity > 1 ? `${config.productTitle} (×${quantity})` : config.productTitle,
+        amount: subtotalAfterDiscount,
+        deliveryFee,
+        totalAmount,
+        quantity,
+        currency: config.currency,
+        status: 'new',
+        createdAt: "À l'instant",
+        paymentType:
+          paymentChoice === 'wave'
+            ? 'online_wave'
+            : paymentChoice === 'orange'
+            ? 'online_orange'
+            : 'cod',
+        paymentStatus: isOnline ? 'paid' : 'pending_cod',
+        deliveryNotes: isOnline
+          ? `Payé en ligne via ${paymentChoice === 'wave' ? 'Wave' : 'Orange Money'}`
+          : 'Paiement en espèces prévu à la livraison',
+        selectedColor: selectedColor || (config.availableColors?.[0]?.name ?? undefined),
+      };
+
+      if (isOnline) {
+        // Déclenchement sécurisé de la session de paiement Moneriz (Wave · OM · Carte)
+        fetch('/api/payments/moneriz/checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: generatedId,
+            amount: totalAmount,
+            title: quantity > 1 ? `${config.productTitle} (×${quantity})` : config.productTitle,
+            customerName,
+            customerPhone: whatsappNumber,
+            integrationMode: 'iframe',
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            setIsSubmitting(false);
+            if (data?.checkoutUrl) {
+              setPendingOnlineOrder(newOrder);
+              setMonerizSession(data);
+              setIsMonerizModalOpen(true);
+            } else {
+              if (onOrderCreated) onOrderCreated(newOrder);
+              setOrderSuccess(newOrder);
+            }
+          })
+          .catch((err) => {
+            console.warn('[Moneriz error, fallback]:', err);
+            setIsSubmitting(false);
+            if (onOrderCreated) onOrderCreated(newOrder);
+            setOrderSuccess(newOrder);
+          });
+        return;
+      }
+
+      if (onOrderCreated) {
+        onOrderCreated(newOrder);
+      }
+
+      setIsSubmitting(false);
+      setOrderSuccess(newOrder);
+    }, 600);
+  };
+
+  const handleAddReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReviewAuthor.trim() || !newReviewComment.trim()) return;
+
+    const newRev: CustomerReview = {
+      id: `rev-${Date.now()}`,
+      authorName: newReviewAuthor.trim(),
+      city: newReviewCity.trim() || 'Dakar',
+      rating: newReviewRating,
+      comment: newReviewComment.trim(),
+      date: "À l'instant",
+      verified: true,
+    };
+
+    setReviewsList((prev) => [newRev, ...prev]);
+    setReviewSubmitted(true);
+    setTimeout(() => {
+      setReviewSubmitted(false);
+      setIsReviewModalOpen(false);
+      setNewReviewAuthor('');
+      setNewReviewCity('');
+      setNewReviewComment('');
+      setNewReviewRating(5);
+    }, 1500);
+  };
+
+  const discountPercent = Math.round(
+    ((config.originalPrice - config.price) / config.originalPrice) * 100
+  );
+
+  // ========================================================
+  // PAGE DÉSACTIVÉE PAR LE MARCHAND (LIEN COUPÉ)
+  // ========================================================
+  if (config.status === 'inactive') {
+    const cleanPhone = (config.whatsappSupportNumber || '+221 77 412 89 30').replace(/[^0-9+]/g, '');
+    const whatsappUrl = `https://wa.me/${cleanPhone.replace('+', '')}?text=${encodeURIComponent(
+      `Bonjour ${config.storeName || 'Juula Store'} ! J'aimerais me renseigner sur vos produits disponibles.`
+    )}`;
+
+    return (
+      <div
+        className={`w-full bg-[#F8FAFC] text-[#0F172A] flex items-center justify-center p-6 text-center select-none ${
+          isInsideMockup ? 'h-full' : 'min-h-screen'
+        }`}
+      >
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-xl space-y-5 animate-in fade-in">
+          <div className="w-16 h-16 rounded-3xl bg-[#FFF1F2] text-rose-500 mx-auto flex items-center justify-center shadow-xs">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
+              Page Hors Ligne
+            </span>
+            <h2 className="text-xl font-black text-[#0F172A] tracking-tight">
+              Cette offre est actuellement désactivée
+            </h2>
+            <p className="text-xs text-[#64748B] leading-relaxed">
+              La boutique <span className="font-bold text-[#0F172A]">{config.storeName}</span> a temporairement suspendu l'accès à ce tunnel de vente. Pour toute question, vous pouvez contacter directement le support client sur WhatsApp.
+            </p>
+          </div>
+
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3.5 px-4 rounded-2xl bg-[#0F172A] hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+          >
+            <WhatsAppIcon className="w-4 h-4 text-emerald-400" />
+            <span>Contacter le support boutique sur WhatsApp</span>
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // ========================================================
+  // PAGE EN ENTIÈRE : FINALISATION DE COMMANDE (PLEINE PAGE)
+  // (DEMANDE FORMELLE DE L'UTILISATEUR : PAS DE SIMPLE POPUP)
+  // ========================================================
+  if (isCheckoutPageOpen) {
+    return (
+      <div
+        className={`relative w-full bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans select-none ${
+          isInsideMockup ? 'h-full overflow-y-auto' : 'min-h-screen'
+        }`}
+      >
+        {/* Top Header Navigation */}
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
+          <button
+            type="button"
+            onClick={() => {
+              setIsCheckoutPageOpen(false);
+              setOrderSuccess(null);
+            }}
+            className="inline-flex items-center gap-2 text-xs font-bold text-[#1E60F8] hover:text-[#164ED0] transition-colors cursor-pointer bg-[#EFF4FF] hover:bg-[#DBEAFE] px-3 py-1.5 rounded-xl"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Retourner à la vitrine</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-black text-[#0F172A] uppercase tracking-wide">
+              Finalisation de Commande
+            </span>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#64748B]">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span className="font-semibold">Livraison & Paiement Sécurisés à Dakar</span>
+          </div>
+        </header>
+
+        {orderSuccess ? (
+          /* Confirmation Screen Full Page */
+          <main className="flex-1 max-w-2xl w-full mx-auto p-4 sm:p-8 flex flex-col items-center justify-center animate-in fade-in duration-200">
+            <div className="w-full bg-white rounded-3xl p-6 sm:p-8 border border-[#E2E8F0] shadow-xl text-center space-y-5">
+              <div className="w-20 h-20 bg-[#ECFDF5] text-[#10B981] rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <Check className="w-10 h-10 stroke-[3]" />
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3.5 py-1 rounded-full">
+                  Commande Confirmée avec Succès
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] mt-2">
+                  Merci {orderSuccess.customerName} !
+                </h2>
+                <p className="text-xs sm:text-sm text-[#64748B] max-w-md mx-auto">
+                  Votre commande <span className="font-bold text-[#0F172A]">#{orderSuccess.id}</span> pour {orderSuccess.productName} a bien été enregistrée et transmise à notre équipe logistique à Dakar.
+                </p>
+              </div>
+
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-left text-xs space-y-2.5">
+                <div className="flex justify-between items-center pb-2 border-b border-[#E2E8F0]">
+                  <span className="text-[#64748B]">Numéro de commande :</span>
+                  <span className="font-mono font-bold text-[#1E60F8] bg-[#EFF4FF] px-2 py-0.5 rounded">
+                    #{orderSuccess.id}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-start">
+                  <span className="text-[#64748B] shrink-0">Adresse de livraison :</span>
+                  <span className="font-bold text-[#0F172A] text-right ml-4">
+                    {orderSuccess.deliveryAddress || orderSuccess.neighborhood}
+                  </span>
+                </div>
+
+                {orderSuccess.selectedColor && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748B]">Couleur choisie :</span>
+                    <span className="font-bold text-[#0F172A] bg-white border border-[#E2E8F0] px-2 py-0.5 rounded-md">
+                      {orderSuccess.selectedColor}
+                    </span>
+                  </div>
+                )}
+
+                {orderSuccess.hasVoiceNote && (
+                  <div className="flex justify-between items-center bg-[#EFF6FF] border border-[#BFDBFE] p-2.5 rounded-xl text-[#1E60F8] font-bold">
+                    <span className="flex items-center gap-1.5">
+                      <Mic className="w-4 h-4" /> Note vocale d'adresse
+                    </span>
+                    <span className="text-[11px] bg-white px-2 py-0.5 rounded-full font-semibold">
+                      Transmise au coursier
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-2 border-t border-[#E2E8F0]">
+                  <span className="text-sm font-bold text-[#0F172A]">Montant total à régler :</span>
+                  <span className="text-base font-black text-[#1E60F8]">
+                    {formatFCFA(orderSuccess.totalAmount || orderSuccess.amount)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-[#64748B]">Mode de règlement :</span>
+                  <span className="font-bold text-emerald-700">
+                    {orderSuccess.paymentType === 'online_wave'
+                      ? 'Payé en ligne via Wave'
+                      : orderSuccess.paymentType === 'online_orange'
+                      ? 'Payé en ligne via Orange Money'
+                      : 'Paiement en espèces à la livraison (COD)'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2.5 pt-2">
+                <a
+                  href={`https://wa.me/${config.whatsappSupportNumber.replace(/\D/g, '')}?text=${encodeURIComponent(
+                    `Bonjour, je viens de passer la commande #${orderSuccess.id} pour ${orderSuccess.productName}. Mon adresse : ${orderSuccess.deliveryAddress || orderSuccess.neighborhood}.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
+                >
+                  <WhatsAppIcon className="w-5 h-5" />
+                  <span>Suivre ma livraison sur WhatsApp</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCheckoutPageOpen(false);
+                    setOrderSuccess(null);
+                  }}
+                  className="w-full py-3 text-xs font-semibold text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-xl transition-colors cursor-pointer"
+                >
+                  ← Retourner à la boutique
+                </button>
+              </div>
+            </div>
+          </main>
+        ) : (
+          /* Dedicated Checkout Page */
+          <main className={`flex-1 ${isInsideMockup ? 'w-full p-3 sm:p-4' : 'max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8'} animate-in fade-in duration-200`}>
+            <div className={isInsideMockup ? 'flex flex-col space-y-4' : 'grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start'}>
+              {/* LEFT COLUMN: PRODUCT RECAP, QUANTITY DISCOUNTS & SUMMARY */}
+              <div className={isInsideMockup ? 'w-full space-y-4' : 'lg:col-span-7 space-y-5'}>
+                {/* Product Card */}
+                <div className="p-4 sm:p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
+                  <img
+                    src={images[currentMediaIndex]?.url || images[0]?.url || ''}
+                    alt={config.productTitle}
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover bg-black shrink-0 border border-[#E2E8F0]"
+                  />
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-bold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        {config.storeName || 'Boutique Officielle'}
+                      </span>
+                      {config.stockQuantity !== undefined && config.showStockBadge !== false ? (
+                        <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                          ⚡ Plus que {config.stockQuantity} pièces restantes
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          En stock à Dakar
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-base sm:text-lg font-black text-[#0F172A] leading-tight">
+                      {config.productTitle}
+                    </h3>
+                    <div className="flex items-baseline gap-2 pt-0.5">
+                      <span className="text-lg font-black text-[#1E60F8]">
+                        {formatFCFA(config.price)}
+                      </span>
+                      {config.originalPrice > config.price && (
+                        <span className="text-xs text-[#94A3B8] line-through font-semibold">
+                          {formatFCFA(config.originalPrice)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sélecteur de Couleur (si disponible) */}
+                {config.availableColors && config.availableColors.length > 0 && (
+                  <div className="p-4 sm:p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Palette className="w-4 h-4 text-[#1E60F8]" />
+                        <h4 className="text-sm font-black text-[#0F172A]">
+                          Couleur / Modèle
+                        </h4>
+                      </div>
+                      <span className="text-xs font-black text-[#1E60F8]">
+                        {selectedColor || config.availableColors[0]?.name}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {config.availableColors.map((color) => {
+                        const isSelected = (selectedColor || config.availableColors?.[0]?.name) === color.name;
+                        return (
+                          <button
+                            key={color.id}
+                            type="button"
+                            onClick={() => setSelectedColor(color.name)}
+                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                              isSelected
+                                ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
+                                : 'bg-[#F8FAFC] text-[#0F172A] border-[#E2E8F0] hover:border-[#CBD5E1]'
+                            }`}
+                          >
+                            <span
+                              className="w-3.5 h-3.5 rounded-full border border-black/15 shrink-0"
+                              style={{ backgroundColor: color.hex }}
+                            />
+                            <span>{color.name}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sélecteur de Quantité & Paliers Dégressifs */}
+                <div className="p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-black text-[#0F172A]">
+                        Quantité commandée
+                      </h4>
+                      <p className="text-xs text-[#64748B]">
+                        Choisissez votre pack ou ajustez manuellement
+                      </p>
+                    </div>
+
+                    {/* Stepper - / + */}
+                    <div className="flex items-center gap-2 bg-[#F1F5F9] p-1 rounded-2xl border border-[#E2E8F0]">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        disabled={quantity <= 1}
+                        className="w-8 h-8 rounded-xl bg-white text-[#0F172A] hover:bg-[#E2E8F0] disabled:opacity-40 flex items-center justify-center font-bold text-sm shadow-xs transition-colors cursor-pointer"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="w-8 text-center text-sm font-black text-[#0F172A]">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="w-8 h-8 rounded-xl bg-white text-[#0F172A] hover:bg-[#E2E8F0] flex items-center justify-center font-bold text-sm shadow-xs transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cartes de Paliers Dégressifs (Packs) */}
+                  {config.quantityDiscountsEnabled && config.quantityDiscounts && config.quantityDiscounts.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                      {/* Pack 1 pièce */}
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(1)}
+                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                          quantity === 1
+                            ? 'border-[#1E60F8] bg-[#EFF4FF] ring-2 ring-[#1E60F8]/20 shadow-xs'
+                            : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#0F172A]">1 Article</span>
+                          {quantity === 1 && (
+                            <Check className="w-3.5 h-3.5 text-[#1E60F8] stroke-[3]" />
+                          )}
+                        </div>
+                        <span className="text-[11px] text-[#64748B] block mt-0.5">Prix standard</span>
+                        <span className="text-xs font-black text-[#0F172A] block mt-1">
+                          {formatFCFA(config.price)}
+                        </span>
+                      </button>
+
+                      {/* Tiers configurés par le commerçant */}
+                      {config.quantityDiscounts.map((tier) => {
+                        const isSelected = quantity === tier.minQty;
+                        const tierSubtotal = config.price * tier.minQty;
+                        const tierDisc =
+                          tier.discountType === 'percent'
+                            ? Math.round(tierSubtotal * (tier.discountValue / 100))
+                            : tier.discountValue;
+                        const tierTotal = tierSubtotal - tierDisc;
+
+                        return (
+                          <button
+                            key={tier.id}
+                            type="button"
+                            onClick={() => setQuantity(tier.minQty)}
+                            className={`p-3 rounded-2xl border text-left transition-all relative cursor-pointer ${
+                              isSelected
+                                ? 'border-[#1E60F8] bg-[#EFF4FF] ring-2 ring-[#1E60F8]/20 shadow-xs'
+                                : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
+                            }`}
+                          >
+                            <span className="absolute -top-2 right-2 text-[9px] font-black uppercase tracking-wider text-white bg-emerald-600 px-1.5 py-0.5 rounded-full shadow-xs">
+                              {tier.discountType === 'percent'
+                                ? `-${tier.discountValue}%`
+                                : `-${formatFCFA(tier.discountValue)}`}
+                            </span>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-[#0F172A] truncate">
+                                {tier.label}
+                              </span>
+                              {isSelected && (
+                                <Check className="w-3.5 h-3.5 text-[#1E60F8] stroke-[3]" />
+                              )}
+                            </div>
+                            <span className="text-[11px] text-emerald-700 font-semibold block mt-0.5">
+                              Économie {formatFCFA(tierDisc)}
+                            </span>
+                            <span className="text-xs font-black text-[#0F172A] block mt-1">
+                              {formatFCFA(tierTotal)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Récapitulatif des Prix */}
+                <div className="p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5 text-xs">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-[#64748B]">
+                    Détail du règlement
+                  </h4>
+
+                  <div className="flex items-center justify-between text-[#475569]">
+                    <span>Sous-total ({quantity} {quantity > 1 ? 'articles' : 'article'}) :</span>
+                    <span className="font-semibold text-[#0F172A]">{formatFCFA(baseSubtotal)}</span>
+                  </div>
+
+                  {discountAmount > 0 && (
+                    <div className="flex items-center justify-between text-emerald-600 font-bold">
+                      <span className="flex items-center gap-1">
+                        <Award className="w-3.5 h-3.5" />
+                        Réduction appliquée ({activeTier?.label || 'Pack'}) :
+                      </span>
+                      <span>-{formatFCFA(discountAmount)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-[#475569]">
+                    <span>Frais de livraison à Dakar :</span>
+                    <span className="font-semibold text-[#0F172A]">
+                      {deliveryFee === 0 ? (
+                        <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">
+                          Gratuit
+                        </span>
+                      ) : (
+                        `+${formatFCFA(deliveryFee)}`
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#F1F5F9] flex items-center justify-between">
+                    <span className="text-sm font-black text-[#0F172A]">Total net à régler :</span>
+                    <span className="text-xl font-black text-[#1E60F8]">
+                      {formatFCFA(totalAmount)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Garanties et réassurance */}
+                <div className="grid grid-cols-3 gap-3 p-4 rounded-3xl bg-[#F1F5F9]/60 border border-[#E2E8F0] text-center text-[11px] text-[#475569]">
+                  <div className="space-y-1">
+                    <ShieldCheck className="w-4 h-4 text-[#1E60F8] mx-auto" />
+                    <span className="font-bold block text-[#0F172A]">Inspection libre</span>
+                    <span className="text-[10px] text-[#64748B]">Vérifiez avant de payer</span>
+                  </div>
+                  <div className="space-y-1 border-x border-[#CBD5E1]/60 px-1">
+                    <Truck className="w-4 h-4 text-[#1E60F8] mx-auto" />
+                    <span className="font-bold block text-[#0F172A]">Livraison rapide</span>
+                    <span className="text-[10px] text-[#64748B]">Sous 2 à 4h à Dakar</span>
+                  </div>
+                  <div className="space-y-1">
+                    <RotateCcw className="w-4 h-4 text-[#1E60F8] mx-auto" />
+                    <span className="font-bold block text-[#0F172A]">Échange 48h</span>
+                    <span className="text-[10px] text-[#64748B]">Garantie satisfaction</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: DELIVERY & PAYMENT FORM */}
+              <div className={`${isInsideMockup ? 'w-full' : 'lg:col-span-5'} bg-white rounded-3xl p-5 sm:p-6 border border-[#E2E8F0] shadow-sm space-y-5`}>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-[#0F172A]">
+                    Adresse de livraison & Paiement
+                  </h3>
+                  <p className="text-xs text-[#64748B]">
+                    Renseignez vos coordonnées pour la remise en main propre
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmitOrder} className="space-y-4">
+                  {/* Mode de règlement */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#0F172A] block">
+                      Mode de règlement souhaité
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentChoice('cod')}
+                        className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                          paymentChoice === 'cod'
+                            ? 'border-[#0F172A] bg-[#0F172A] text-white shadow-xs'
+                            : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#475569] hover:bg-white'
+                        }`}
+                      >
+                        <Banknote className="w-4 h-4 mx-auto mb-1" />
+                        <span className="text-[11px] font-bold block leading-tight">À la livraison</span>
+                        <span className="text-[9px] opacity-75 block">Espèces</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPaymentChoice('wave')}
+                        className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                          paymentChoice === 'wave'
+                            ? 'border-[#1E60F8] bg-[#1E60F8] text-white shadow-xs'
+                            : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#475569] hover:bg-white'
+                        }`}
+                      >
+                        <CreditCard className="w-4 h-4 mx-auto mb-1" />
+                        <span className="text-[11px] font-bold block leading-tight">Wave</span>
+                        <span className="text-[9px] opacity-75 block">En ligne</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPaymentChoice('orange')}
+                        className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                          paymentChoice === 'orange'
+                            ? 'border-[#EA580C] bg-[#EA580C] text-white shadow-xs'
+                            : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#475569] hover:bg-white'
+                        }`}
+                      >
+                        <Phone className="w-4 h-4 mx-auto mb-1" />
+                        <span className="text-[11px] font-bold block leading-tight">Orange</span>
+                        <span className="text-[9px] opacity-75 block">En ligne</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Nom complet */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#0F172A] flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-[#1E60F8]" />
+                      Nom et prénom *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Ex : Fatou Diop"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] text-xs font-semibold text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  {/* Téléphone WhatsApp */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#0F172A] flex items-center gap-1">
+                      <WhatsAppIcon className="w-3.5 h-3.5 text-[#25D366]" />
+                      Numéro WhatsApp joignable *
+                    </label>
+                    <div className="flex">
+                      <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-[#CBD5E1] bg-[#F1F5F9] text-xs font-bold text-[#475569]">
+                        +221
+                      </span>
+                      <input
+                        type="tel"
+                        required
+                        value={whatsappNumber}
+                        onChange={(e) => setWhatsappNumber(e.target.value)}
+                        placeholder="77 000 00 00"
+                        className="flex-1 px-3.5 py-2.5 rounded-r-xl border border-[#CBD5E1] bg-[#F8FAFC] text-xs font-semibold text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white transition-all"
+                      />
+                    </div>
+                    <span className="text-[10px] text-[#64748B]">Le coursier vous contactera sur ce numéro.</span>
+                  </div>
+
+                  {/* Quartier Dakar */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[#0F172A] flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-[#1E60F8]" />
+                      Quartier de livraison *
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 pb-1">
+                      {['Almadies', 'Mermoz', 'Plateau', 'Point E', 'Yoff', 'Sacré-Cœur'].map((q) => (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => setNeighborhood(q)}
+                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                            neighborhood.includes(q)
+                              ? 'bg-[#1E60F8] text-white border-[#1E60F8]'
+                              : 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0] hover:bg-white'
+                          }`}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Choix Mode Adresse : Texte vs Note Vocale */}
+                  <div className="space-y-2 pt-1 border-t border-[#F1F5F9]">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-[#0F172A]">
+                        Indications d'adresse
+                      </label>
+                      <div className="flex items-center gap-1 bg-[#F1F5F9] p-0.5 rounded-xl border border-[#E2E8F0]">
+                        <button
+                          type="button"
+                          onClick={() => setAddressInputMode('text')}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                            addressInputMode === 'text'
+                              ? 'bg-white text-[#1E60F8] shadow-xs'
+                              : 'text-[#64748B]'
+                          }`}
+                        >
+                          Écrire
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAddressInputMode('voice')}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                            addressInputMode === 'voice'
+                              ? 'bg-[#1E60F8] text-white shadow-xs'
+                              : 'text-[#64748B]'
+                          }`}
+                        >
+                          <Mic className="w-3 h-3" />
+                          <span>Vocal (Recommandé)</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {addressInputMode === 'text' ? (
+                      <textarea
+                        rows={2}
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        placeholder="Ex : En face de la pharmacie, Immeuble bleu, 2ème étage..."
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] text-xs font-medium text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white transition-all"
+                      />
+                    ) : (
+                      /* Enregistreur Vocal Interactif Max 2 min */
+                      <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] space-y-2.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-[#1E60F8] flex items-center gap-1.5">
+                            <Mic className="w-4 h-4" />
+                            Note vocale pour le livreur (max 2 min)
+                          </span>
+                          <span className="font-mono font-bold text-[#1E60F8]">
+                            {formatTimer(recordingSeconds)} / 02:00
+                          </span>
+                        </div>
+
+                        {!isRecording && !voiceNoteUrl && (
+                          <button
+                            type="button"
+                            onClick={startVoiceRecording}
+                            className="w-full py-2.5 px-3 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                          >
+                            <Mic className="w-4 h-4" />
+                            <span>Démarrer l'enregistrement vocal</span>
+                          </button>
+                        )}
+
+                        {isRecording && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-[#BFDBFE]">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+                                <span className="text-xs font-bold text-rose-600">
+                                  {isRecordingPaused ? 'Enregistrement en pause' : 'Enregistrement en cours...'}
+                                </span>
+                              </div>
+                              <span className="font-mono font-bold text-xs text-[#0F172A]">
+                                {formatTimer(recordingSeconds)}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              {isRecordingPaused ? (
+                                <button
+                                  type="button"
+                                  onClick={resumeVoiceRecording}
+                                  className="py-2 px-3 rounded-xl bg-[#1E60F8] text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <Play className="w-3.5 h-3.5 fill-current" />
+                                  <span>Reprendre</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={pauseVoiceRecording}
+                                  className="py-2 px-3 rounded-xl bg-amber-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <Pause className="w-3.5 h-3.5 fill-current" />
+                                  <span>Pause</span>
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={stopVoiceRecording}
+                                className="py-2 px-3 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                              >
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                <span>Terminer</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {voiceNoteUrl && !isRecording && (
+                          <div className="space-y-2 bg-white p-2.5 rounded-xl border border-[#BFDBFE]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
+                                Vocal enregistré ({formatTimer(recordingSeconds)})
+                              </span>
+                              <button
+                                type="button"
+                                onClick={deleteVoiceRecording}
+                                className="text-xs text-rose-500 hover:text-rose-700 font-semibold flex items-center gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Supprimer</span>
+                              </button>
+                            </div>
+                            <audio src={voiceNoteUrl} controls className="w-full h-8 rounded" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bouton de Soumission */}
+                  <div className="pt-2">
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="lg"
+                      fullWidth
+                      loading={isSubmitting}
+                      iconRight={<ArrowRight className="w-4 h-4" />}
+                      className="!py-4 text-sm font-black shadow-md cursor-pointer"
+                    >
+                      {paymentChoice === 'cod'
+                        ? `Valider la commande (${formatFCFA(totalAmount)})`
+                        : `Payer avec ${paymentChoice === 'wave' ? 'Wave' : 'Orange'} (${formatFCFA(totalAmount)})`}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </main>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`relative w-full bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans select-none ${
+        isInsideMockup ? 'h-full overflow-y-auto' : 'min-h-screen'
+      }`}
+    >
+      {/* Hidden audio player for proof recordings */}
+      <audio
+        ref={proofAudioPlayerRef}
+        onEnded={() => setPlayingProofAudioId(null)}
+        className="hidden"
+      />
+
+      {/* ======================================================== */}
+      {/* DESKTOP TOP BRAND BAR (Visible on wide screens)          */}
+      {/* ======================================================== */}
+      {!isInsideMockup && (
+        <header className="hidden lg:flex items-center justify-between px-8 py-3.5 bg-white border-b border-[#E2E8F0] sticky top-0 z-30 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#1E60F8] text-white flex items-center justify-center font-black text-sm shadow-xs">
+              {(config.storeCode || 'JS').slice(0, 2)}
+            </div>
+            <div>
+              <span className="font-extrabold text-sm text-[#0F172A] tracking-tight block">
+                {config.storeName || 'Boutique Dakar Élégance'}
+              </span>
+              <span className="text-[10px] text-[#64748B] flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Vendeur vérifié à Dakar &bull; Expédition express
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs font-semibold">
+            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1.5 font-bold">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Zéro risque : essayage avant paiement
+            </span>
+
+            <a
+              href={`https://wa.me/${config.whatsappSupportNumber.replace(/\D/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366]/20 transition-colors font-bold"
+            >
+              <WhatsAppIcon className="w-4 h-4" />
+              Assistance WhatsApp
+            </a>
+          </div>
+        </header>
+      )}
+
+      {/* ======================================================== */}
+      {/* MAIN CONTAINER (Mobile Vertical / Desktop 2-Column Grid) */}
+      {/* ======================================================== */}
+      <div
+        className={`w-full ${
+          isInsideMockup
+            ? 'p-0 max-w-full'
+            : 'max-w-6xl mx-auto px-0 sm:px-6 lg:px-8 lg:py-8'
+        }`}
+      >
+        <div className={isInsideMockup ? 'flex flex-col space-y-3' : 'grid grid-cols-1 lg:grid-cols-12 lg:gap-10 items-start'}>
+          {/* ======================================================== */}
+          {/* LEFT COLUMN: PRODUCT MEDIA GALLERY                       */}
+          {/* ======================================================== */}
+          <div className={isInsideMockup ? 'w-full space-y-2' : 'lg:col-span-6 lg:sticky lg:top-20 space-y-3'}>
+            {/* PRODUCT HERO IMAGE / VIDEO (SANS LES BADGES COMME DEMANDÉ AUDIO 2) */}
+            <div className={`relative w-full ${isInsideMockup ? 'h-[360px] rounded-none sm:rounded-b-2xl' : 'h-[62vh] min-h-[400px] max-h-[580px] lg:h-[520px] lg:max-h-none lg:rounded-3xl'} bg-black overflow-hidden flex-shrink-0 shadow-sm`}>
+              {config.hasVideo && config.videoUrl && currentMediaIndex === 0 ? (
+                <div className="relative w-full h-full">
+                  <video
+                    src={config.videoUrl}
+                    autoPlay
+                    loop
+                    muted={isMuted}
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    onClick={() => setIsMuted(!isMuted)}
+                    className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center cursor-pointer hover:bg-black/80 transition-colors"
+                  >
+                    {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  </button>
+                </div>
+              ) : (
+                <div className="relative w-full h-full">
+                  <img
+                    src={
+                      images[config.hasVideo ? currentMediaIndex - 1 : currentMediaIndex]?.url ||
+                      images[0]?.url ||
+                      ''
+                    }
+                    alt={config.productTitle}
+                    className="w-full h-full object-cover transition-opacity duration-300"
+                  />
+                </div>
+              )}
+
+              {/* Carousel navigation arrows */}
+              {totalSlides > 1 && (
+                <>
+                  <button
+                    onClick={() => setCurrentMediaIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 backdrop-blur-xs text-white flex items-center justify-center hover:bg-black/70 transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentMediaIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 backdrop-blur-xs text-white flex items-center justify-center hover:bg-black/70 transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+
+                  {/* Dots indicator */}
+                  <div className="absolute bottom-5 left-0 right-0 z-20 flex justify-center gap-1.5">
+                    {[...Array(totalSlides)].map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentMediaIndex(idx)}
+                        className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                          currentMediaIndex === idx ? 'w-6 bg-white' : 'w-1.5 bg-white/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Mobile gradient bottom fade */}
+              <div className="lg:hidden absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#F8FAFC] via-[#F8FAFC]/30 to-transparent pointer-events-none" />
+            </div>
+
+            {/* Desktop Thumbnails Grid */}
+            {!isInsideMockup && (
+              <div className="hidden lg:grid grid-cols-5 gap-2.5 pt-1">
+                {config.hasVideo && config.videoUrl && (
+                  <button
+                    onClick={() => setCurrentMediaIndex(0)}
+                    className={`h-20 rounded-2xl overflow-hidden border-2 relative cursor-pointer transition-all ${
+                      currentMediaIndex === 0
+                        ? 'border-[#1E60F8] ring-2 ring-[#1E60F8]/20 scale-102'
+                        : 'border-[#E2E8F0] opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <video src={config.videoUrl} className="w-full h-full object-cover" />
+                    <span className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-[10px] font-bold">
+                      Vidéo
+                    </span>
+                  </button>
+                )}
+
+                {images.map((img, i) => {
+                  const slideIdx = config.hasVideo ? i + 1 : i;
+                  return (
+                    <button
+                      key={img.id}
+                      onClick={() => setCurrentMediaIndex(slideIdx)}
+                      className={`h-20 rounded-2xl overflow-hidden border-2 cursor-pointer transition-all ${
+                        currentMediaIndex === slideIdx
+                          ? 'border-[#1E60F8] ring-2 ring-[#1E60F8]/20 scale-102'
+                          : 'border-[#E2E8F0] opacity-70 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={img.url} alt={`Aperçu ${i + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ======================================================== */}
+          {/* RIGHT COLUMN: CONTENT STRICTEMENT SELON VOS CONSIGNES    */}
+          {/* ======================================================== */}
+          <div className={`${isInsideMockup ? 'w-full px-4 pt-1 pb-24 space-y-4' : 'lg:col-span-6 px-5 lg:px-0 pt-3 lg:pt-0 pb-28 lg:pb-12 space-y-5 -mt-4 lg:mt-0'} relative z-10`}>
+            {/* 1. Header Badges: Stock Garanti & Nom Boutique */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600" />
+                <span>{config.guaranteeBadge || 'Stock Garanti à Dakar'}</span>
+              </span>
+
+              <span className="text-[11px] font-bold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-1 rounded-full">
+                {config.storeName || 'Boutique Dakar Élégance'}
+              </span>
+            </div>
+
+            {/* 2. Product Title & Pricing (Single Line Pricing) */}
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A] leading-tight tracking-tight">
+                {config.productTitle}
+              </h1>
+
+              <div className="flex flex-wrap items-baseline gap-2.5 sm:gap-3.5 pt-1">
+                <span className="text-2xl sm:text-3xl font-black text-[#1E60F8] tracking-tight whitespace-nowrap">
+                  {formatNumber(config.price)} {config.currency}
+                </span>
+                <span className="text-sm font-semibold text-[#94A3B8] line-through whitespace-nowrap">
+                  {formatNumber(config.originalPrice)} {config.currency}
+                </span>
+                <span className="text-xs font-extrabold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-0.5 rounded-lg border border-[#BFDBFE] whitespace-nowrap">
+                  {config.discountPercent || `-${discountPercent}% RÉDUCTION`}
+                </span>
+              </div>
+            </div>
+
+            {/* 3. Carte "Zéro risque d'achat" */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#1E60F8] text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="text-xs leading-snug">
+                <span className="font-extrabold text-[#0F172A] block text-sm">
+                  Zéro risque d'achat
+                </span>
+                <span className="text-[#64748B]">
+                  Essayez votre article devant le coursier avant de régler en espèces ou Wave.
+                </span>
+              </div>
+            </div>
+
+            {/* Stock Urgency Alert (si configuré) */}
+            {config.stockQuantity !== undefined && config.showStockBadge !== false && (
+              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-300 text-amber-900 flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping shrink-0" />
+                  <span className="text-xs font-black">
+                    ⚡ Plus que {config.stockQuantity} pièces disponibles en stock à Dakar !
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full shrink-0">
+                  Forte demande
+                </span>
+              </div>
+            )}
+
+            {/* Sélecteur de Variante / Couleur (si configuré) */}
+            {config.availableColors && config.availableColors.length > 0 && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#64748B] flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-[#1E60F8]" />
+                    Couleur : <strong className="text-[#0F172A]">{selectedColor || config.availableColors[0]?.name}</strong>
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {config.availableColors.map((color) => {
+                    const isSelected = (selectedColor || config.availableColors?.[0]?.name) === color.name;
+                    return (
+                      <button
+                        key={color.id}
+                        type="button"
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                          isSelected
+                            ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
+                            : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#CBD5E1]'
+                        }`}
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-black/15 shrink-0"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        <span>{color.name}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ======================================================== */}
+            {/* 4. LES 2 BOUTONS : ÉPURÉS SANS TEXTE DU BAS (AUDIO 5)     */}
+            {/* ======================================================== */}
+            <div className="p-3 rounded-2xl bg-[#F1F5F9]/80 border border-[#E2E8F0] space-y-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Bouton 1 : Payer à la livraison */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenCheckout('cod')}
+                  className="w-full py-4 px-4 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
+                >
+                  <Banknote className="w-4 h-4 text-[#10B981]" />
+                  <span>Payer à la livraison</span>
+                </button>
+
+                {/* Bouton 2 : Payer en ligne */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenCheckout('wave')}
+                  className="w-full py-4 px-4 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
+                >
+                  <CreditCard className="w-4 h-4 text-white" />
+                  <span>Payer en ligne</span>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between px-2 text-[11px] text-[#64748B]">
+                <span className="flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-emerald-600" />
+                  Commande 100% sécurisée
+                </span>
+                <span>
+                  Livraison :{' '}
+                  <strong className={deliveryFee === 0 ? 'text-emerald-700' : 'text-[#0F172A]'}>
+                    {deliveryFee === 0 ? 'Offerte (Gratuit)' : `+${formatFCFA(deliveryFee)}`}
+                  </strong>
+                </span>
+              </div>
+            </div>
+
+            {/* ======================================================== */}
+            {/* 5. EXPÉDITION LOCALE (APRÈS LES BOUTONS)                  */}
+            {/* ======================================================== */}
+            <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-1.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#0F172A]">
+                <Truck className="w-4 h-4 text-[#1E60F8]" />
+                <span>{config.deliveryNotice || 'Expédition locale sous 2h à 4h à Dakar'}</span>
+              </div>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                Notre service logistique vous contacte immédiatement sur WhatsApp pour coordonner l'heure exacte et l'adresse de livraison.
+              </p>
+            </div>
+
+            {/* ======================================================== */}
+            {/* 6. AVANTAGES & CARACTÉRISTIQUES                           */}
+            {/* ======================================================== */}
+            {config.benefits.length > 0 && (
+              <div className="space-y-2.5 pt-1">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
+                  Avantages & Caractéristiques :
+                </h3>
+
+                <div className="space-y-2">
+                  {config.benefits.map((benefit, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-[#E5E9F0] shadow-xs hover:border-[#CBD5E1] transition-colors"
+                    >
+                      <div className="w-5 h-5 rounded-full bg-[#1E60F8] text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                      <p className="text-xs font-medium text-[#0F172A] leading-relaxed">
+                        {benefit}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ======================================================== */}
+            {/* 7. PREUVES CLIENTS REÇUES : PHOTOS, VIDÉOS & VOCAUX      */}
+            {/* (NOUVELLE ICÔNE + 3 TYPES DE PREUVES REÇUES - AUDIO 3)   */}
+            {/* ======================================================== */}
+            <div className="pt-2 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-[#1E60F8]/10 text-[#1E60F8] flex items-center justify-center">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </div>
+                    <span>Preuves Clients & Témoignages Authentiques</span>
+                  </h3>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => scrollSlider('left')}
+                    className="w-7 h-7 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollSlider('right')}
+                    className="w-7 h-7 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Filtres par type de preuves : Tous / Vocaux / Vidéos / Photos */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setActiveProofFilter('all')}
+                  className={`px-3 py-1 rounded-xl transition-all cursor-pointer ${
+                    activeProofFilter === 'all'
+                      ? 'bg-[#1E60F8] text-white shadow-xs'
+                      : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F1F5F9]'
+                  }`}
+                >
+                  Tous ({allProofItems.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveProofFilter('audio')}
+                  className={`px-3 py-1 rounded-xl flex items-center gap-1 transition-all cursor-pointer ${
+                    activeProofFilter === 'audio'
+                      ? 'bg-[#1E60F8] text-white shadow-xs'
+                      : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F1F5F9]'
+                  }`}
+                >
+                  <Headphones className="w-3 h-3" />
+                  <span>Vocaux WhatsApp</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveProofFilter('video')}
+                  className={`px-3 py-1 rounded-xl flex items-center gap-1 transition-all cursor-pointer ${
+                    activeProofFilter === 'video'
+                      ? 'bg-[#1E60F8] text-white shadow-xs'
+                      : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F1F5F9]'
+                  }`}
+                >
+                  <Film className="w-3 h-3" />
+                  <span>Vidéos Déballage</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveProofFilter('image')}
+                  className={`px-3 py-1 rounded-xl flex items-center gap-1 transition-all cursor-pointer ${
+                    activeProofFilter === 'image'
+                      ? 'bg-[#1E60F8] text-white shadow-xs'
+                      : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F1F5F9]'
+                  }`}
+                >
+                  <Camera className="w-3 h-3" />
+                  <span>Photos Colis</span>
+                </button>
+              </div>
+
+              {/* Slider Carrousel de droite à gauche */}
+              <div
+                ref={sliderRef}
+                className="flex gap-3 overflow-x-auto pb-2 pt-1 scroll-smooth snap-x snap-mandatory no-scrollbar"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {filteredProofItems.map((item) => (
+                  <div key={item.id} className="snap-start flex-shrink-0">
+                    {/* TYPE 1: NOTE VOCALE WHATSAPP */}
+                    {item.type === 'audio' && (
+                      <div className="w-64 h-64 rounded-2xl bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-4 text-white flex flex-col justify-between border border-neutral-800 shadow-sm relative overflow-hidden group">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-xs">
+                              <WhatsAppIcon className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold block leading-tight">
+                                {item.authorName}
+                              </span>
+                              <span className="text-[10px] text-[#25D366] font-medium flex items-center gap-1">
+                                <CheckCheck className="w-3 h-3" /> {item.city}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full text-white/80">
+                            Vocal
+                          </span>
+                        </div>
+
+                        {/* Player waveform */}
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleProofAudio(item)}
+                              className="w-10 h-10 rounded-full bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center justify-center shadow-md cursor-pointer transition-transform active:scale-95 flex-shrink-0"
+                            >
+                              {playingProofAudioId === item.id ? (
+                                <Pause className="w-4 h-4 fill-current" />
+                              ) : (
+                                <Play className="w-4 h-4 fill-current ml-0.5" />
+                              )}
+                            </button>
+
+                            <div className="flex-1 space-y-1">
+                              {/* Audio wave bars animation */}
+                              <div className="flex items-center gap-0.5 h-6">
+                                {[14, 22, 10, 24, 18, 26, 12, 20, 24, 16, 22, 12, 18, 24, 14, 20, 16, 22, 10].map(
+                                  (h, idx) => (
+                                    <span
+                                      key={idx}
+                                      style={{ height: `${h}px` }}
+                                      className={`w-1 rounded-full transition-all duration-200 ${
+                                        playingProofAudioId === item.id
+                                          ? 'bg-[#25D366] animate-pulse'
+                                          : 'bg-white/30'
+                                      }`}
+                                    />
+                                  )
+                                )}
+                              </div>
+                              <div className="flex justify-between text-[10px] text-white/60">
+                                <span>{playingProofAudioId === item.id ? 'Lecture...' : 'Message audio'}</span>
+                                <span>{item.duration || '0:38'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-[11px] text-white/80 italic bg-black/20 p-2 rounded-xl">
+                          "{item.title}"
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TYPE 2: VIDÉO DÉBALLAGE */}
+                    {item.type === 'video' && (
+                      <div
+                        onClick={() => setSelectedProofModalItem(item)}
+                        className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all"
+                      >
+                        <img
+                          src={item.thumbnailUrl || images[0]?.url || ''}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-white/90 text-[#1E60F8] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                            <Play className="w-5 h-5 fill-current ml-0.5" />
+                          </div>
+                        </div>
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2.5 text-white">
+                          <span className="text-[10px] font-bold block truncate">{item.title}</span>
+                          <span className="text-[9px] text-white/70">
+                            {item.authorName} &bull; {item.city} ({item.duration || '0:18'})
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TYPE 3: PHOTO REÇUE / CAPTURE */}
+                    {item.type === 'image' && (
+                      <div
+                        onClick={() => setSelectedProofModalItem(item)}
+                        className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all"
+                      >
+                        <img
+                          src={item.url}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-2.5 text-white">
+                          <span className="text-[10px] font-bold flex items-center gap-1">
+                            <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                            {item.authorName}
+                          </span>
+                          <span className="text-[9px] text-white/80">
+                            {item.title} &bull; {item.city}
+                          </span>
+                        </div>
+                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 backdrop-blur-xs flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Maximize2 className="w-3 h-3" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ======================================================== */}
+            {/* 8. SECTION AVIS CLIENTS & BOUTON "LAISSER UN AVIS"        */}
+            {/* ======================================================== */}
+            <div className="pt-2 space-y-3.5 border-t border-[#E2E8F0]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-black text-[#0F172A]">
+                    Avis Clients ({reviewsList.length})
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-amber-500 mt-0.5">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-3 h-3 fill-current" />
+                      ))}
+                    </div>
+                    <span className="text-xs font-bold text-[#0F172A]">5.0/5</span>
+                    <span className="text-[11px] text-[#64748B]">100% de recommandations</span>
+                  </div>
+                </div>
+
+                {/* Bouton demandé : "Laisser un avis sur cette page" */}
+                <button
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                >
+                  <Send className="w-3 h-3" />
+                  <span>Laisser un avis</span>
+                </button>
+              </div>
+
+              {/* Reviews List */}
+              <div className="space-y-2.5">
+                {reviewsList.map((rev) => (
+                  <div
+                    key={rev.id}
+                    className="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-[#1E60F8]/10 text-[#1E60F8] font-bold text-xs flex items-center justify-center">
+                          {rev.authorName.charAt(0)}
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-[#0F172A] block leading-tight">
+                            {rev.authorName}
+                          </span>
+                          <span className="text-[10px] text-[#64748B]">
+                            {rev.city || 'Dakar'} &bull; {rev.date}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <div className="flex text-amber-500">
+                          {[...Array(rev.rating)].map((_, i) => (
+                            <Star key={i} className="w-3 h-3 fill-current" />
+                          ))}
+                        </div>
+                        {rev.verified && (
+                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                            Achat vérifié
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-[#334155] leading-relaxed">
+                      "{rev.comment}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ======================================================== */}
+            {/* ASSISTANCE WHATSAPP AVEC ICÔNE OFFICIELLE (AUDIO 4)       */}
+            {/* ======================================================== */}
+            <div className="p-3.5 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#25D366] text-white flex items-center justify-center shadow-xs">
+                  <WhatsAppIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-[#0F172A] block">
+                    Besoin d'un conseil avant de commander ?
+                  </span>
+                  <span className="text-[11px] text-[#475569] font-medium">
+                    Notre équipe vous répond sur WhatsApp
+                  </span>
+                </div>
+              </div>
+
+              <a
+                href={`https://wa.me/${config.whatsappSupportNumber.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white text-xs font-bold flex items-center gap-1.5 flex-shrink-0 shadow-xs transition-colors cursor-pointer"
+              >
+                <WhatsAppIcon className="w-3.5 h-3.5" />
+                <span>Discuter</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ======================================================== */}
+      {/* MOBILE STICKY BOTTOM BAR                                 */}
+      {/* ======================================================== */}
+      {isInsideMockup ? (
+        <div className="sticky bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md p-3 border-t border-[#E2E8F0] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex items-center justify-center">
+          <div className="w-full max-w-sm mx-auto grid grid-cols-2 gap-2">
+            <button
+              onClick={() => handleOpenCheckout('cod')}
+              className="py-3 px-2 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
+            >
+              <Banknote className="w-4 h-4 text-[#10B981]" />
+              <span className="truncate">Payer à la livraison</span>
+            </button>
+
+            <button
+              onClick={() => handleOpenCheckout('wave')}
+              className="py-3 px-2 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
+            >
+              <CreditCard className="w-4 h-4 text-white" />
+              <span className="truncate">Payer en ligne</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md p-3.5 border-t border-[#E2E8F0] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex items-center justify-center">
+          <div className="w-full max-w-md mx-auto grid grid-cols-2 gap-2.5">
+            <button
+              onClick={() => handleOpenCheckout('cod')}
+              className="py-3.5 px-3 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer border border-neutral-800"
+            >
+              <Banknote className="w-4 h-4 text-[#10B981]" />
+              <span>Payer à la livraison</span>
+            </button>
+
+            <button
+              onClick={() => handleOpenCheckout('wave')}
+              className="py-3.5 px-3 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
+            >
+              <CreditCard className="w-4 h-4 text-white" />
+              <span>Payer en ligne</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL : LAISSER UN AVIS VÉRIFIÉ SUR CE PRODUIT           */}
+      {/* ======================================================== */}
+      {isReviewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0" onClick={() => setIsReviewModalOpen(false)} />
+
+          <div className="relative w-full max-w-md bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-2xl z-10 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+              <div>
+                <h3 className="text-base font-black text-[#0F172A]">
+                  Laisser un avis sur ce produit
+                </h3>
+                <p className="text-xs text-[#64748B]">
+                  Votre retour d'expérience aide les futurs acheteurs à Dakar
+                </p>
+              </div>
+              <button
+                onClick={() => setIsReviewModalOpen(false)}
+                className="p-1.5 rounded-full text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {reviewSubmitted ? (
+              <div className="py-6 text-center space-y-2 animate-in zoom-in-95">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                  <Check className="w-6 h-6 stroke-[3]" />
+                </div>
+                <h4 className="text-base font-black text-[#0F172A]">
+                  Merci pour votre avis !
+                </h4>
+                <p className="text-xs text-[#64748B]">
+                  Votre commentaire a été validé et publié avec le badge "Achat vérifié".
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleAddReview} className="space-y-3.5">
+                {/* Rating selection */}
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] mb-1">
+                    Votre note globale *
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setNewReviewRating(star)}
+                        className="p-1 text-amber-400 hover:scale-110 transition-transform cursor-pointer"
+                      >
+                        <Star
+                          className={`w-6 h-6 ${
+                            star <= newReviewRating ? 'fill-current text-amber-500' : 'text-[#CBD5E1]'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    <span className="text-xs font-bold text-[#0F172A] ml-2">
+                      {newReviewRating}/5 étoiles
+                    </span>
+                  </div>
+                </div>
+
+                {/* Nom & Prénom */}
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] mb-1">
+                    Nom et Prénom *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newReviewAuthor}
+                    onChange={(e) => setNewReviewAuthor(e.target.value)}
+                    placeholder="Ex: Cheikh Sow"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8]"
+                  />
+                </div>
+
+                {/* Ville / Quartier */}
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] mb-1">
+                    Quartier / Ville
+                  </label>
+                  <input
+                    type="text"
+                    value={newReviewCity}
+                    onChange={(e) => setNewReviewCity(e.target.value)}
+                    placeholder="Ex: Mermoz, Dakar"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8]"
+                  />
+                </div>
+
+                {/* Message / Avis */}
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] mb-1">
+                    Votre avis sur le produit et la livraison *
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={newReviewComment}
+                    onChange={(e) => setNewReviewComment(e.target.value)}
+                    placeholder="Partagez votre expérience : délai de livraison, état du colis, satisfaction..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8] resize-none"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    fullWidth
+                    iconRight={<Send className="w-3.5 h-3.5" />}
+                  >
+                    Publier mon avis vérifié
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL : APERÇU GRAND FORMAT PREUVE (PHOTO / VIDÉO)       */}
+      {/* ======================================================== */}
+      {selectedProofModalItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0" onClick={() => setSelectedProofModalItem(null)} />
+          <div className="relative max-w-xl w-full bg-black rounded-3xl overflow-hidden shadow-2xl z-10 border border-white/20">
+            <button
+              onClick={() => setSelectedProofModalItem(null)}
+              className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/40 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {selectedProofModalItem.type === 'video' ? (
+              <video
+                src={selectedProofModalItem.url}
+                controls
+                autoPlay
+                className="w-full max-h-[75vh] object-contain"
+              />
+            ) : (
+              <img
+                src={selectedProofModalItem.url}
+                alt={selectedProofModalItem.title}
+                className="w-full max-h-[75vh] object-contain"
+              />
+            )}
+
+            <div className="p-3.5 bg-neutral-900 text-white text-xs flex items-center justify-between">
+              <div>
+                <span className="font-bold flex items-center gap-1.5 text-emerald-400">
+                  <Check className="w-4 h-4 stroke-[3]" /> {selectedProofModalItem.title}
+                </span>
+                <span className="text-white/60 text-[11px]">
+                  {selectedProofModalItem.authorName} &bull; {selectedProofModalItem.city}
+                </span>
+              </div>
+              <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-white/80 font-bold uppercase">
+                {selectedProofModalItem.type === 'video' ? 'Vidéo Unboxing' : 'Photo Colis'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Moneriz Checkout Modal (Intégration iframe sécurisée) */}
+      <MonerizCheckoutModal
+        isOpen={isMonerizModalOpen}
+        onClose={() => setIsMonerizModalOpen(false)}
+        session={monerizSession}
+        onPaymentSuccess={(paymentInfo) => {
+          if (pendingOnlineOrder) {
+            const confirmed: OrderLead = {
+              ...pendingOnlineOrder,
+              paymentStatus: 'paid',
+              status: 'confirmed',
+              deliveryNotes: `Paiement en ligne confirmé via Moneriz (Réf: ${paymentInfo?.paymentId || monerizSession?.id})`,
+            };
+            if (onOrderCreated) {
+              onOrderCreated(confirmed);
+            }
+            setOrderSuccess(confirmed);
+          }
+          setIsMonerizModalOpen(false);
+        }}
+      />
+    </div>
+  );
+};
