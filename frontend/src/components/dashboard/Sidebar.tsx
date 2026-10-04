@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   Compass,
   ShoppingBag,
@@ -14,6 +15,7 @@ import {
   ChevronDown,
   ExternalLink,
   LogOut,
+  ArrowRight,
 } from 'lucide-react';
 import { JuulaLogo } from '@/components/brand/JuulaLogo';
 import { DashboardTab } from '@/types/juula';
@@ -39,7 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTabChange,
   leadCreditsRemaining: _leadCreditsRemaining,
   leadCreditsTotal: _leadCreditsTotal,
-  onOpenRecharge,
+  onOpenRecharge: _onOpenRecharge,
   onOpenStorefrontPreview,
   newOrdersCount,
   userEmail,
@@ -289,12 +291,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <p className="text-[10px] text-white/70 leading-relaxed mt-1 mb-3">
               Produits illimités · Paiement à la livraison actif · 0% commission Juula.
             </p>
-            <button
-              onClick={onOpenRecharge}
-              className="w-full py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-all shadow-xs cursor-pointer border border-white/15"
+            <Link
+              href="/pro"
+              className="w-full py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 border border-white/15"
             >
-              Gérer mon abonnement
-            </button>
+              <span>Gérer mon abonnement</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         ) : (
           <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0F2B6B] via-[#143E9C] to-[#1E60F8] text-white shadow-md relative overflow-hidden">
@@ -313,12 +316,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               Débloquez le paiement à la livraison, les pixels pubs et des produits illimités pour 6
               000 F/mois.
             </p>
-            <button
-              onClick={onOpenRecharge}
-              className="w-full py-2 px-3 rounded-xl bg-white text-[#1E60F8] hover:bg-white/90 text-[11px] font-black transition-all shadow-sm cursor-pointer"
+            <Link
+              href="/pro"
+              className="w-full py-2.5 px-3 rounded-xl bg-white text-[#1E60F8] hover:bg-white/90 active:scale-[0.98] text-[11px] font-black transition-all shadow-sm flex items-center justify-center gap-1.5"
             >
-              Activer Pro (6 000 F)
-            </button>
+              <span>Découvrir Juula Pro (6 000 F)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         )}
       </div>

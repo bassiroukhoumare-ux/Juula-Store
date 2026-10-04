@@ -17,7 +17,12 @@ import { CustomersView } from '@/components/dashboard/CustomersView';
 import { AnalyticsView } from '@/components/dashboard/AnalyticsView';
 import { SettingsView } from '@/components/dashboard/SettingsView';
 import { ShareLinkBar } from '@/components/dashboard/ShareLinkBar';
-import { OnboardingScreen, type StoreProfile } from '@/components/store/OnboardingScreen';
+import {
+  EMPTY_PROFILE,
+  isProfileComplete,
+  OnboardingScreen,
+  type StoreProfile,
+} from '@/components/store/OnboardingScreen';
 import { api, ApiError, clearCsrfToken } from '@/lib/api';
 import { pickStoreWide } from '@/lib/store/store-fields';
 import { getStoreCode } from '@/lib/orderUtils';
@@ -70,7 +75,7 @@ export default function JuulaStoreApp() {
   const router = useRouter();
   const { toast } = useToast();
   const [session, setSession] = useState<'loading' | 'onboarding' | 'ready' | 'error'>('loading');
-  const [storeProfile, setStoreProfile] = useState<StoreProfile>({ name: null, subdomain: null });
+  const [storeProfile, setStoreProfile] = useState<StoreProfile>(EMPTY_PROFILE);
   // Order opened from the "new order" email link (?commande=CMD-…).
   const [focusOrderId, setFocusOrderId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -205,7 +210,7 @@ export default function JuulaStoreApp() {
 
         const { store } = await api<{ store: StoreProfile }>('/api/store');
         setStoreProfile(store);
-        if (!store.subdomain) {
+        if (!isProfileComplete(store)) {
           setSession('onboarding');
           return;
         }
@@ -458,7 +463,7 @@ export default function JuulaStoreApp() {
   const newOrdersCount = orders.filter((o) => o.status === 'new').length;
 
   if (session === 'onboarding') {
-    return <OnboardingScreen email={userEmail} onDone={handleOnboarded} />;
+    return <OnboardingScreen email={userEmail} initial={storeProfile} onDone={handleOnboarded} />;
   }
 
   if (session !== 'ready') {

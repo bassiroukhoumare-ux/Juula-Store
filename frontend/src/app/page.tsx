@@ -1,690 +1,560 @@
 // Public landing page (/). The merchant dashboard lives at /dashboard.
+// Visual direction: airy light canvas, floating pill nav, big centred
+// headlines, white rounded cards with soft shadows, bento grid, tools fan,
+// oversized brand wordmark in the footer.
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Urbanist } from 'next/font/google';
 import {
   ArrowRight,
-  BadgeCheck,
-  Banknote,
   BarChart3,
   Check,
   ChevronDown,
-  Clock,
-  Link2,
-  MessageCircle,
-  Mic,
-  PackageCheck,
-  Radar,
+  Copy,
+  Globe,
+  Plug,
   Rocket,
   Share2,
-  ShieldCheck,
-  Smartphone,
+  ShoppingBag,
   Sparkles,
-  Star,
-  Truck,
   Wallet,
-  Zap,
 } from 'lucide-react';
 import { SiteHeader } from '@/components/site/SiteHeader';
-import { SiteFooter } from '@/components/site/SiteFooter';
+import { JuulaLogo } from '@/components/brand/JuulaLogo';
+import { HeroNetwork } from '@/components/landing/HeroNetwork';
+import { IntegrationsFan } from '@/components/landing/IntegrationsFan';
+import {
+  FacebookIcon,
+  MastercardIcon,
+  OrangeMoneyTile,
+  TikTokIcon,
+  VisaWordmark,
+  WaveTile,
+  WhatsAppIcon,
+} from '@/components/landing/BrandIcons';
+import { JUULA_PLANS } from '@/lib/store/plans';
+import { formatNumber } from '@/lib/orderUtils';
+import { LEGAL } from '@/lib/legal';
+
+const display = Urbanist({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'Juula Store — Vendez en ligne avec paiement à la livraison et Mobile Money',
+  title: 'Juula — Votre boutique pro en un seul lien',
   description:
-    'Créez une page produit qui convertit, partagez son lien sur Facebook, TikTok et WhatsApp, recevez vos commandes et encaissez par Wave, Orange Money ou à la livraison.',
+    'Créez votre page de vente pro, partagez-la et encaissez par Wave, Orange Money, carte bancaire ou à la livraison. Pixels Facebook & TikTok inclus.',
   ...(process.env.APP_URL ? { metadataBase: new URL(process.env.APP_URL) } : {}),
   openGraph: {
     type: 'website',
-    title: 'Juula Store — La boutique en ligne des marchands africains',
+    title: 'Juula — Votre boutique pro en un seul lien',
     description:
-      'Pages produits, commandes WhatsApp, paiement à la livraison, Wave et Orange Money. Lancez votre boutique en 2 minutes.',
-    images: [{ url: '/logo-juula.svg' }],
+      'Page de vente pro, paiement Wave, Orange Money, carte ou à la livraison, pixels Facebook & TikTok.',
+    images: [{ url: '/email/juula-logo.png' }],
   },
 };
 
-const PAYMENT_BADGES = [
-  'Paiement à la livraison',
-  'Wave',
-  'Orange Money',
-  'Carte bancaire',
-  'Pixel Meta',
-  'Pixel TikTok',
-];
-
-const STEPS = [
-  {
-    icon: Rocket,
-    title: 'Créez votre page produit',
-    text: 'Photos, prix, avantages, avis clients et offres par quantité : votre page de vente est prête en 2 minutes, sans compétence technique.',
-  },
-  {
-    icon: Share2,
-    title: 'Partagez votre lien',
-    text: 'Chaque produit a son lien unique, avec un bel aperçu sur Facebook, TikTok, Instagram et WhatsApp. Copiez, collez, vendez.',
-  },
-  {
-    icon: PackageCheck,
-    title: 'Recevez et encaissez',
-    text: 'Les commandes arrivent dans votre tableau de bord. Vos clients paient à la livraison ou en ligne par Wave et Orange Money.',
-  },
-];
-
-const FEATURES = [
-  {
-    icon: Smartphone,
-    title: 'Pages produits qui convertissent',
-    text: 'Galerie photo et vidéo, badges d’urgence, preuves clients en photo, vidéo ou note vocale, avis vérifiés.',
-  },
-  {
-    icon: Truck,
-    title: 'Paiement à la livraison',
-    text: 'Le mode préféré de vos clients. Ils commandent en un formulaire, vous confirmez sur WhatsApp et vous livrez.',
-  },
-  {
-    icon: Wallet,
-    title: 'Wave & Orange Money intégrés',
-    text: 'Paiement en ligne sécurisé, portefeuille marchand et retraits vers votre compte Mobile Money protégés par code PIN.',
-  },
-  {
-    icon: BarChart3,
-    title: 'Toutes vos commandes au même endroit',
-    text: 'Tableau Kanban — nouvelles, confirmées, livrées — chiffre d’affaires et statistiques mis à jour en temps réel.',
-  },
-  {
-    icon: Radar,
-    title: 'Pixels Meta & TikTok',
-    text: 'Collez vos identifiants de pixel : visites, ajouts et achats remontent automatiquement pour optimiser vos pubs.',
-  },
-  {
-    icon: Mic,
-    title: 'Adresse par note vocale',
-    text: 'Vos clients qui préfèrent parler peuvent décrire leur adresse de livraison par message vocal, directement sur la page.',
-  },
-  {
-    icon: Sparkles,
-    title: 'Offres par quantité',
-    text: 'Pack Duo, Pack Famille : augmentez votre panier moyen avec des remises automatiques par palier.',
-  },
-  {
-    icon: Link2,
-    title: 'Un lien pour chaque produit',
-    text: 'Des liens permanents et propres, prêts pour vos bios, vos stories et vos campagnes sponsorisées.',
-  },
-];
-
 const FAQ = [
   {
-    q: 'Combien coûte Juula Store ?',
-    a: 'Vous pouvez démarrer gratuitement avec le Plan Gratuit (0 FCFA/mois) pour publier 1 produit et encaisser par Wave ou Orange Money. Le Plan Juula Pro (6 000 FCFA/mois) débloque les produits illimités, le paiement à la livraison en espèces, 0% de commission Juula et vos pixels publicitaires Facebook et TikTok.',
+    q: 'Combien ça coûte ?',
+    a: `Le Plan Gratuit ne coûte rien : vous ne payez des frais que sur vos ventes en ligne. Le Plan Juula Pro est à ${formatNumber(JUULA_PLANS.PRO.priceMonthly)} FCFA par mois, sans commission Juula.`,
   },
   {
     q: 'Comment mes clients paient-ils ?',
-    a: 'À la livraison en espèces, ou en ligne par Wave, Orange Money ou carte bancaire. Vous choisissez les modes de paiement proposés sur chaque page.',
+    a: 'Par Wave, Orange Money ou carte Visa / Mastercard, en un clic. Avec le Plan Pro, ils peuvent aussi payer en espèces à la livraison.',
   },
   {
-    q: 'Quand puis-je retirer l’argent des paiements en ligne ?',
-    a: 'Notre partenaire de paiement règle les fonds 72 heures après chaque paiement. Le montant devient alors retirable vers votre compte Wave ou Orange Money, à partir de 1 000 FCFA, avec votre code PIN.',
+    q: 'Quand est-ce que je reçois mon argent ?',
+    a: 'Les paiements en ligne deviennent retirables 72 h après chaque paiement, directement vers votre compte Wave ou Orange Money.',
   },
   {
-    q: 'Ai-je besoin d’un site web ou d’un développeur ?',
-    a: 'Non. Vous vous connectez avec Google, vous créez votre page produit dans l’éditeur et vous partagez le lien. C’est tout.',
-  },
-  {
-    q: 'Puis-je suivre mes publicités Facebook et TikTok ?',
-    a: 'Oui. Ajoutez l’identifiant de votre Pixel Meta et de votre Pixel TikTok dans les Paramètres : les événements de visite, de formulaire et de commande sont envoyés automatiquement.',
-  },
-  {
-    q: 'Mes données et celles de mes clients sont-elles protégées ?',
-    a: 'Les échanges sont chiffrés, chaque paiement est vérifié auprès du prestataire avant d’être crédité et votre code PIN est stocké de façon chiffrée. Les détails sont dans notre politique de confidentialité.',
-  },
-  {
-    q: 'Puis-je vendre plusieurs produits ?',
-    a: 'Oui, vous créez autant de pages produits que nécessaire, chacune avec son propre lien, et vous les publiez ou désactivez quand vous voulez.',
+    q: 'Ai-je besoin d’un site ou d’un développeur ?',
+    a: 'Non. Connectez-vous avec Google, créez votre page en 2 minutes et partagez le lien.',
   },
 ];
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
+function Eyebrow({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#1E60F8] bg-[#EFF4FF] px-3 py-1 rounded-full">
-      {children}
-    </span>
+    <div className="flex flex-col items-center gap-4">
+      <span className="w-12 h-12 rounded-2xl bg-white border border-[#ECEFF4] shadow-[0_10px_24px_-14px_rgba(32,29,29,0.35)] flex items-center justify-center text-[#235BF7]">
+        {icon}
+      </span>
+      <span className="sr-only">{children}</span>
+    </div>
   );
 }
 
-/** Stylised product page + dashboard notifications (pure HTML, no images). */
-function HeroMockup() {
+function Card({ className = '', children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className="relative mx-auto w-full max-w-[420px]" aria-hidden="true">
-      <div className="absolute -inset-8 bg-gradient-to-tr from-[#1E60F8]/20 via-[#60A5FA]/10 to-transparent blur-3xl rounded-full" />
+    <div
+      className={`rounded-[28px] bg-white border border-[#ECEFF4] shadow-[0_1px_2px_rgba(16,24,40,0.03)] overflow-hidden ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
 
-      <div className="relative mx-auto w-[290px] sm:w-[310px] rounded-[2.6rem] border-[9px] border-[#0F172A] bg-white shadow-[0_30px_60px_-20px_rgba(15,23,42,0.45)] overflow-hidden">
-        <div className="h-44 bg-gradient-to-br from-[#1E60F8] via-[#3B82F6] to-[#93C5FD] relative">
-          <span className="absolute top-3 left-3 text-[10px] font-black text-white bg-[#EF4444] px-2 py-0.5 rounded-full">
-            -38% aujourd&apos;hui
-          </span>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-24 h-24 rounded-3xl bg-white/25 backdrop-blur-sm border border-white/40 flex items-center justify-center">
-              <PackageCheck className="w-11 h-11 text-white" />
-            </div>
-          </div>
-        </div>
-        <div className="p-4 space-y-2.5">
-          <div className="flex items-center gap-1 text-[#F59E0B]">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <Star key={i} className="w-3 h-3 fill-current" />
-            ))}
-            <span className="text-[10px] text-[#64748B] font-semibold ml-1">
-              Avis clients vérifiés
-            </span>
-          </div>
-          <p className="text-sm font-black text-[#0F172A] leading-tight">
-            Montre Élégance — Édition Dakar
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-lg font-black text-[#1E60F8]">15 000 F</span>
-            <span className="text-xs text-[#94A3B8] line-through">24 000 F</span>
-          </div>
-          <div className="space-y-1">
-            {['Livraison express à Dakar', 'Garantie satisfait ou remboursé'].map((t) => (
-              <p key={t} className="flex items-center gap-1.5 text-[11px] text-[#334155]">
-                <Check className="w-3 h-3 text-[#10B981]" /> {t}
-              </p>
-            ))}
-          </div>
-          <div className="w-full py-2.5 rounded-xl bg-[#1E60F8] text-white text-xs font-black text-center">
-            Commander — paiement à la livraison
-          </div>
-          <div className="w-full py-2 rounded-xl bg-[#F1F5F9] text-[#0F172A] text-[11px] font-bold text-center">
-            Payer avec Wave · Orange Money
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute -left-2 sm:-left-10 top-16 w-52 p-3 rounded-2xl bg-white border border-[#E5E9F0] shadow-xl motion-safe:animate-[float_6s_ease-in-out_infinite]">
-        <div className="flex items-center gap-2">
-          <span className="w-8 h-8 rounded-xl bg-[#ECFDF5] text-[#10B981] flex items-center justify-center">
-            <BadgeCheck className="w-4 h-4" />
-          </span>
-          <div>
-            <p className="text-[11px] font-black text-[#0F172A]">Nouvelle commande</p>
-            <p className="text-[10px] text-[#64748B] font-mono">CMD-JLA-000124 · 32 000 F</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute -right-2 sm:-right-8 -bottom-4 w-48 p-3 rounded-2xl bg-white border border-[#E5E9F0] shadow-xl motion-safe:animate-[float_7s_ease-in-out_infinite_1s]">
-        <div className="flex items-center gap-2">
-          <span className="w-8 h-8 rounded-xl bg-[#EFF4FF] text-[#1E60F8] flex items-center justify-center">
-            <Wallet className="w-4 h-4" />
-          </span>
-          <div>
-            <p className="text-[11px] font-black text-[#0F172A]">Retrait Wave envoyé</p>
-            <p className="text-[10px] text-[#64748B]">50 000 FCFA</p>
-          </div>
-        </div>
-      </div>
+function CardText({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="px-6 pb-6 pt-2">
+      <h3 className="text-xl font-bold tracking-tight text-[#201D1D]">{title}</h3>
+      <p className="mt-1.5 text-[15px] leading-relaxed text-[#7A808C]">{text}</p>
     </div>
   );
 }
 
 export default function LandingPage() {
+  const free = JUULA_PLANS.FREE;
+  const pro = JUULA_PLANS.PRO;
+  const year = new Date().getFullYear();
+
   return (
-    <div className="min-h-screen bg-[#F2F4F7] text-[#0F172A] overflow-x-hidden">
+    <div
+      className={`${display.className} min-h-screen bg-[#EDEFF3] text-[#201D1D] overflow-x-hidden`}
+    >
       <SiteHeader />
 
-      <main>
-        {/* ───────────────────────── HERO ───────────────────────── */}
-        <section className="max-w-6xl mx-auto px-4 pt-12 sm:pt-20 pb-16 grid gap-14 lg:grid-cols-2 items-center">
-          <div className="space-y-6 text-center lg:text-left">
-            <Eyebrow>
-              <Zap className="w-3.5 h-3.5" /> Pour les marchands du Sénégal et d&apos;Afrique de
-              l&apos;Ouest
-            </Eyebrow>
-            <h1 className="text-4xl sm:text-5xl lg:text-[3.4rem] font-black tracking-tight leading-[1.05]">
-              Vendez plus avec une page produit{' '}
-              <span className="text-[#1E60F8]">qui convertit.</span>
+      <main className="px-3 sm:px-5 pb-5 space-y-5">
+        {/* ─────────────────────────── HERO ─────────────────────────── */}
+        <section className="relative rounded-[36px] bg-[#F6F7F9] border border-white pt-10 sm:pt-14 pb-16 sm:pb-24 px-4 overflow-hidden">
+          <div className="hidden md:block">
+            <HeroNetwork />
+          </div>
+          {/* Mobile: compact tool row */}
+          <div
+            className="md:hidden flex items-center justify-center gap-3 pt-2 pb-6"
+            aria-hidden="true"
+          >
+            <WaveTile size="sm" />
+            <OrangeMoneyTile size="sm" />
+            <span className="w-16 h-16 rounded-[22px] bg-gradient-to-br from-[#4D7DFF] to-[#1F4FE0] flex items-center justify-center shadow-[0_18px_36px_-16px_rgba(35,91,247,0.7)]">
+              <ShoppingBag className="w-7 h-7 text-white" />
+            </span>
+            <span className="w-10 h-10 rounded-2xl bg-white border border-[#ECEFF4] flex items-center justify-center">
+              <FacebookIcon className="w-6 h-6" />
+            </span>
+            <span className="w-10 h-10 rounded-2xl bg-white border border-[#ECEFF4] flex items-center justify-center">
+              <TikTokIcon className="w-5 h-5" />
+            </span>
+          </div>
+
+          <div className="relative text-center max-w-3xl mx-auto md:-mt-4">
+            <h1 className="text-[44px] leading-[1.02] sm:text-6xl lg:text-[76px] font-extrabold tracking-[-0.035em]">
+              Votre boutique pro,
+              <br />
+              en un seul lien.
             </h1>
-            <p className="text-base sm:text-lg text-[#475569] leading-relaxed max-w-xl mx-auto lg:mx-0">
-              Créez votre page de vente, partagez son lien sur Facebook, TikTok et WhatsApp, et
-              encaissez vos commandes à la livraison ou par Wave et Orange Money. Tout depuis un
-              seul tableau de bord.
+            <p className="mt-5 text-base sm:text-lg text-[#7A808C] max-w-xl mx-auto leading-relaxed">
+              Une page de vente qui inspire confiance. Vos clients paient par Wave, Orange Money,
+              carte bancaire — ou à la livraison.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-sm font-black shadow-[0_6px_20px_rgba(30,96,248,0.35)] transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-gradient-to-b from-[#3D6CFF] to-[#235BF7] text-white font-bold shadow-[0_14px_30px_-12px_rgba(35,91,247,0.8),inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110 transition"
               >
                 Créer ma boutique gratuitement <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="#tarifs"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white hover:bg-[#F8FAFC] border border-[#E2E8F0] text-sm font-bold text-[#0F172A] transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-4 rounded-2xl bg-white border border-[#E3E7EE] font-bold hover:bg-[#FAFBFC] transition"
               >
                 Voir les tarifs
               </Link>
             </div>
-            <ul className="flex flex-wrap gap-x-5 gap-y-2 justify-center lg:justify-start text-sm text-[#475569]">
-              {[
-                'Plan Gratuit disponible',
-                'Paiements Wave & Orange Money',
-                'Connexion rapide avec Google',
-              ].map((t) => (
-                <li key={t} className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-[#10B981]" /> {t}
-                </li>
-              ))}
-            </ul>
           </div>
-          <HeroMockup />
         </section>
 
-        {/* ───────────────────── PAYMENT BADGES ───────────────────── */}
+        {/* ─────────────────────── 3 STEPS ─────────────────────── */}
         <section
-          aria-label="Moyens de paiement et intégrations"
-          className="border-y border-[#E5E9F0] bg-white"
+          id="comment-ca-marche"
+          className="scroll-mt-28 rounded-[36px] bg-white px-4 py-16 sm:py-20"
         >
-          <div className="max-w-6xl mx-auto px-4 py-5 flex flex-wrap items-center justify-center gap-2.5">
-            {PAYMENT_BADGES.map((b) => (
-              <span
-                key={b}
-                className="px-3.5 py-1.5 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-bold text-[#334155]"
-              >
-                {b}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        {/* ───────────────────── HOW IT WORKS ───────────────────── */}
-        <section id="comment-ca-marche" className="scroll-mt-24 max-w-6xl mx-auto px-4 py-20">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <Eyebrow>Comment ça marche</Eyebrow>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-              De l&apos;idée à la vente en 3 étapes
+          <div className="max-w-5xl mx-auto">
+            <Eyebrow icon={<Rocket className="w-5 h-5" />}>Comment ça marche</Eyebrow>
+            <h2 className="mt-5 text-center text-4xl sm:text-5xl font-extrabold tracking-[-0.03em]">
+              Créez. Partagez. Encaissez.
             </h2>
-            <p className="text-[#475569]">
-              Pas de site à construire, pas de développeur à payer. Juula Store s&apos;occupe de la
-              technique, vous vous occupez de vendre.
-            </p>
-          </div>
-          <ol className="mt-12 grid gap-5 md:grid-cols-3">
-            {STEPS.map((step, i) => (
-              <li
-                key={step.title}
-                className="relative p-6 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs"
-              >
-                <span className="absolute top-5 right-6 text-5xl font-black text-[#EFF4FF] select-none">
-                  {i + 1}
-                </span>
-                <span className="w-12 h-12 rounded-2xl bg-[#1E60F8] text-white flex items-center justify-center shadow-[0_4px_14px_rgba(30,96,248,0.3)]">
-                  <step.icon className="w-6 h-6" />
-                </span>
-                <h3 className="mt-5 text-lg font-black">{step.title}</h3>
-                <p className="mt-2 text-sm text-[#475569] leading-relaxed">{step.text}</p>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-10 text-center">
-            <Link
-              href="/signup"
-              className="inline-flex items-center gap-2 text-sm font-black text-[#1E60F8] hover:underline"
-            >
-              Créer ma première page produit <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </section>
-
-        {/* ───────────────────── FEATURES ───────────────────── */}
-        <section id="fonctionnalites" className="scroll-mt-24 bg-white border-y border-[#E5E9F0]">
-          <div className="max-w-6xl mx-auto px-4 py-20">
-            <div className="text-center max-w-2xl mx-auto space-y-3">
-              <Eyebrow>Fonctionnalités</Eyebrow>
-              <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-                Tout ce qu&apos;il faut pour vendre en Afrique
-              </h2>
-              <p className="text-[#475569]">
-                Pensé pour le paiement à la livraison, le Mobile Money et la vente sur les réseaux
-                sociaux.
-              </p>
-            </div>
-            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {FEATURES.map((f) => (
-                <div
-                  key={f.title}
-                  className="p-5 rounded-3xl bg-[#F8FAFC] border border-[#E5E9F0] hover:border-[#1E60F8]/40 hover:bg-white transition-colors"
-                >
-                  <span className="w-10 h-10 rounded-xl bg-[#EFF4FF] text-[#1E60F8] flex items-center justify-center">
-                    <f.icon className="w-5 h-5" />
-                  </span>
-                  <h3 className="mt-4 text-sm font-black">{f.title}</h3>
-                  <p className="mt-1.5 text-sm text-[#475569] leading-relaxed">{f.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ───────────────────── DASHBOARD / WALLET ───────────────────── */}
-        <section className="max-w-6xl mx-auto px-4 py-20 grid gap-12 lg:grid-cols-2 items-center">
-          <div className="space-y-5">
-            <Eyebrow>Votre argent, en sécurité</Eyebrow>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-              Un portefeuille clair, des retraits vers Wave et Orange Money
-            </h2>
-            <p className="text-[#475569] leading-relaxed">
-              Chaque paiement en ligne est vérifié auprès de notre partenaire de paiement avant
-              d&apos;être crédité. Vous voyez ce qui est disponible, ce qui est en attente, et vous
-              retirez quand vous voulez.
-            </p>
-            <ul className="space-y-3">
+            <ol className="mt-12 grid gap-4 md:grid-cols-3">
               {[
                 {
-                  icon: Clock,
-                  t: 'Fonds disponibles 72 h après chaque paiement, date de déblocage affichée',
+                  icon: <Sparkles className="w-5 h-5" />,
+                  t: 'Créez votre page',
+                  d: 'Photos, vidéo, prix et avis clients — en 2 minutes.',
                 },
-                { icon: ShieldCheck, t: 'Retraits protégés par votre code PIN à 6 chiffres' },
                 {
-                  icon: Banknote,
-                  t: 'Paiement à la livraison suivi séparément de vos encaissements en ligne',
+                  icon: <Share2 className="w-5 h-5" />,
+                  t: 'Partagez le lien',
+                  d: 'Sur Facebook, TikTok, Instagram et WhatsApp.',
                 },
-              ].map(({ icon: Icon, t }) => (
-                <li key={t} className="flex items-start gap-3 text-sm text-[#334155]">
-                  <span className="w-8 h-8 rounded-xl bg-[#ECFDF5] text-[#10B981] flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4" />
+                {
+                  icon: <Wallet className="w-5 h-5" />,
+                  t: 'Encaissez',
+                  d: 'Paiement en un clic ou à la livraison.',
+                },
+              ].map((s, i) => (
+                <li key={s.t} className="relative p-6 rounded-[24px] bg-[#F6F7F9]">
+                  <span className="absolute top-5 right-6 text-6xl font-extrabold text-[#E7EAF0] select-none">
+                    {i + 1}
                   </span>
-                  <span className="pt-1.5">{t}</span>
+                  <span className="w-11 h-11 rounded-2xl bg-white text-[#235BF7] flex items-center justify-center shadow-[0_8px_18px_-12px_rgba(32,29,29,0.4)]">
+                    {s.icon}
+                  </span>
+                  <h3 className="mt-5 text-lg font-bold">{s.t}</h3>
+                  <p className="mt-1 text-[15px] text-[#7A808C]">{s.d}</p>
                 </li>
               ))}
-            </ul>
+            </ol>
           </div>
+        </section>
 
-          <div
-            className="p-5 sm:p-6 rounded-3xl bg-white border border-[#E5E9F0] shadow-[0_20px_50px_-25px_rgba(15,23,42,0.35)] space-y-4"
-            aria-hidden="true"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-black">Portefeuille</p>
-              <span className="text-[10px] font-bold text-[#64748B] bg-[#F1F5F9] px-2 py-1 rounded-lg">
-                Exemple
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-4 rounded-2xl border border-[#E5E9F0] border-t-4 border-t-[#10B981]">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
-                  Disponible
-                </p>
-                <p className="text-xl font-black mt-1">185 000 F</p>
-              </div>
-              <div className="p-4 rounded-2xl border border-[#E5E9F0] border-t-4 border-t-[#F59E0B]">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
-                  En attente 72 h
-                </p>
-                <p className="text-xl font-black mt-1">64 000 F</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {[
-                {
-                  ref: 'CMD-JLA-000124',
-                  who: 'Awa · Mermoz',
-                  amt: '32 000 F',
-                  s: 'Payé · Wave',
-                  c: 'text-[#059669] bg-[#ECFDF5]',
-                },
-                {
-                  ref: 'CMD-JLA-000123',
-                  who: 'Moussa · Yoff',
-                  amt: '15 000 F',
-                  s: 'À la livraison',
-                  c: 'text-[#0284C7] bg-[#F0F9FF]',
-                },
-                {
-                  ref: 'CMD-JLA-000122',
-                  who: 'Fatou · Plateau',
-                  amt: '28 500 F',
-                  s: 'Payé · OM',
-                  c: 'text-[#059669] bg-[#ECFDF5]',
-                },
-              ].map((o) => (
-                <div
-                  key={o.ref}
-                  className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9]"
-                >
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-mono font-bold text-[#0F172A]">{o.ref}</p>
-                    <p className="text-[11px] text-[#64748B] truncate">{o.who}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs font-black">{o.amt}</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${o.c}`}>
-                      {o.s}
-                    </span>
+        {/* ─────────────────────── BENTO ─────────────────────── */}
+        <section
+          id="fonctionnalites"
+          className="scroll-mt-28 rounded-[36px] bg-[#F6F7F9] px-4 py-16 sm:py-20"
+        >
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-center text-4xl sm:text-6xl font-extrabold tracking-[-0.035em]">
+              Pensé pour vendre
+            </h2>
+            <p className="mt-3 text-center text-[#7A808C] text-base sm:text-lg max-w-xl mx-auto">
+              Tout ce qu’il faut pour vendre en ligne en Afrique — rien de compliqué.
+            </p>
+
+            <div className="mt-12 grid gap-4 lg:grid-cols-3">
+              {/* Page pro */}
+              <Card>
+                <div className="h-60 relative flex items-end justify-center bg-gradient-to-b from-[#F6F7F9] to-white">
+                  <div className="w-44 h-52 rounded-t-[26px] border-[6px] border-b-0 border-[#201D1D] bg-white overflow-hidden translate-y-1">
+                    <div className="h-20 bg-gradient-to-br from-[#4D7DFF] to-[#9DB6FF]" />
+                    <div className="p-3 space-y-1.5">
+                      <div className="h-2.5 w-28 rounded-full bg-[#201D1D]" />
+                      <div className="h-2 w-16 rounded-full bg-[#235BF7]" />
+                      <div className="h-2 w-24 rounded-full bg-[#E6E9EF]" />
+                      <div className="mt-2 h-7 rounded-lg bg-[#201D1D]" />
+                    </div>
                   </div>
                 </div>
+                <CardText
+                  title="Une page pro"
+                  text="Photos, vidéo, avis et offres. Prête à partager en 2 minutes."
+                />
+              </Card>
+
+              {/* Paiements */}
+              <Card>
+                <div className="h-60 relative flex items-center justify-center">
+                  <div className="absolute w-56 h-56 rounded-full border border-[#EEF0F4]" />
+                  <div className="absolute w-36 h-36 rounded-full border border-[#EEF0F4]" />
+                  <div className="relative w-64 p-3 rounded-2xl bg-white border border-[#ECEFF4] shadow-[0_18px_40px_-22px_rgba(32,29,29,0.35)] space-y-2">
+                    {[
+                      { el: <WaveTile size="sm" />, t: 'Wave' },
+                      { el: <OrangeMoneyTile size="sm" />, t: 'Orange Money' },
+                      {
+                        el: (
+                          <span className="w-10 h-10 rounded-2xl bg-[#F6F7F9] flex items-center justify-center">
+                            <MastercardIcon className="w-7 h-5" />
+                          </span>
+                        ),
+                        t: 'Carte bancaire',
+                      },
+                    ].map((m, i) => (
+                      <div
+                        key={m.t}
+                        className={`flex items-center gap-3 p-1.5 rounded-xl ${i === 0 ? 'bg-[#EEF3FF]' : ''}`}
+                      >
+                        {m.el}
+                        <span className="text-sm font-bold flex-1">{m.t}</span>
+                        {i === 0 && (
+                          <span className="w-5 h-5 rounded-full bg-[#235BF7] text-white flex items-center justify-center">
+                            <Check className="w-3 h-3" />
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <CardText
+                  title="Paiement en un clic"
+                  text="Wave, Orange Money, Visa, Mastercard — ou en espèces à la livraison."
+                />
+              </Card>
+
+              {/* Pixels */}
+              <Card>
+                <div className="h-60 relative flex items-center justify-center gap-4">
+                  {[
+                    { icon: <FacebookIcon className="w-8 h-8" />, e: 'Purchase' },
+                    { icon: <TikTokIcon className="w-7 h-7" />, e: 'PlaceAnOrder' },
+                  ].map((p, i) => (
+                    <div
+                      key={p.e}
+                      className={`w-32 rounded-2xl bg-white border border-[#ECEFF4] p-3 shadow-[0_16px_34px_-22px_rgba(32,29,29,0.4)] ${i ? 'translate-y-6' : '-translate-y-2'}`}
+                    >
+                      <span className="w-12 h-12 rounded-2xl bg-[#F6F7F9] flex items-center justify-center">
+                        {p.icon}
+                      </span>
+                      <p className="mt-3 text-[11px] font-bold text-[#16A34A] flex items-center gap-1">
+                        <Check className="w-3 h-3" /> {p.e}
+                      </p>
+                      <div className="mt-1.5 h-1.5 w-16 rounded-full bg-[#E6E9EF]" />
+                    </div>
+                  ))}
+                </div>
+                <CardText
+                  title="Pixels Facebook & TikTok"
+                  text="Collez votre identifiant : vos pubs mesurent visites et ventes."
+                />
+              </Card>
+
+              {/* Ventes (wide) */}
+              <Card className="lg:col-span-2">
+                <div className="h-64 relative px-6 pt-8 flex items-end gap-3 sm:gap-4 bg-gradient-to-b from-[#F6F7F9] to-white">
+                  {[38, 54, 46, 72, 60, 88, 66, 94].map((h, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                      {i === 7 && (
+                        <span className="mb-2 text-[11px] font-bold text-white bg-[#201D1D] px-2 py-1 rounded-lg whitespace-nowrap">
+                          +12 commandes
+                        </span>
+                      )}
+                      <div
+                        className={`w-full max-w-[44px] rounded-t-xl ${i === 7 ? 'bg-gradient-to-t from-[#235BF7] to-[#7FA2FF]' : 'bg-[#E3E8F1]'}`}
+                        style={{ height: `${h}%` }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-start gap-4 px-6 pb-6 pt-4">
+                  <span className="w-11 h-11 rounded-2xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
+                    <BarChart3 className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-xl font-bold tracking-tight">Vos ventes en temps réel</h3>
+                    <p className="mt-1.5 text-[15px] text-[#7A808C]">
+                      Chaque commande arrive dans votre tableau de bord et par e-mail. Retraits vers
+                      Wave ou Orange Money.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Lien boutique */}
+              <Card>
+                <div className="h-64 relative flex items-center justify-center">
+                  <div className="absolute w-52 h-52 rounded-full border border-dashed border-[#DCE2EC]" />
+                  <div className="relative w-64 p-3 rounded-2xl bg-white border border-[#ECEFF4] shadow-[0_18px_40px_-22px_rgba(32,29,29,0.35)]">
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F6F7F9]">
+                      <Globe className="w-4 h-4 text-[#235BF7] shrink-0" />
+                      <span className="text-sm font-bold truncate">
+                        awa-shop<span className="text-[#235BF7]">.juula.store</span>
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#201D1D] text-white text-sm font-bold">
+                      <Copy className="w-4 h-4" /> Lien copié
+                    </div>
+                  </div>
+                </div>
+                <CardText
+                  title="Votre adresse à vous"
+                  text="Une boutique à votre nom, prête pour vos bios et vos publicités."
+                />
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* ─────────────────────── TOOLS ─────────────────────── */}
+        <section className="rounded-[36px] bg-[#F6F7F9] px-3 sm:px-6 py-6 sm:py-10">
+          <div className="max-w-5xl mx-auto rounded-[32px] bg-white border border-[#ECEFF4] px-4 py-14 sm:py-16 overflow-hidden">
+            <Eyebrow icon={<Plug className="w-5 h-5" />}>Intégrations</Eyebrow>
+            <h2 className="mt-5 text-center text-3xl sm:text-5xl font-extrabold tracking-[-0.03em] max-w-2xl mx-auto">
+              Connecté à vos outils en quelques secondes
+            </h2>
+            <div className="mt-10">
+              <IntegrationsFan />
+            </div>
+          </div>
+        </section>
+
+        {/* ─────────────────────── PRICING ─────────────────────── */}
+        <section id="tarifs" className="scroll-mt-28 rounded-[36px] bg-white px-4 py-16 sm:py-20">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-center text-4xl sm:text-6xl font-extrabold tracking-[-0.035em]">
+              Simple et transparent
+            </h2>
+            <p className="mt-3 text-center text-[#7A808C] text-base sm:text-lg">
+              Commencez gratuitement. Passez Pro quand vous êtes prêt.
+            </p>
+
+            <div className="mt-12 grid gap-4 md:grid-cols-2 items-stretch">
+              {[free, pro].map((plan) => {
+                const isPro = plan.id === 'PRO';
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative rounded-[28px] p-7 flex flex-col ${
+                      isPro
+                        ? 'bg-[#201D1D] text-white shadow-[0_30px_60px_-30px_rgba(35,91,247,0.6)]'
+                        : 'bg-[#F6F7F9] border border-[#ECEFF4]'
+                    }`}
+                  >
+                    {isPro && (
+                      <span className="absolute top-6 right-6 text-[11px] font-bold uppercase tracking-wider bg-[#235BF7] text-white px-3 py-1 rounded-full">
+                        Recommandé
+                      </span>
+                    )}
+                    <p className="text-lg font-bold">{plan.name}</p>
+                    <p className={`mt-1 text-sm ${isPro ? 'text-white/65' : 'text-[#7A808C]'}`}>
+                      {plan.tagline}
+                    </p>
+                    <p className="mt-6 text-5xl font-extrabold tracking-tight">
+                      {formatNumber(plan.priceMonthly)}
+                      <span
+                        className={`text-base font-semibold ${isPro ? 'text-white/65' : 'text-[#7A808C]'}`}
+                      >
+                        {' '}
+                        FCFA / mois
+                      </span>
+                    </p>
+                    <ul
+                      className={`mt-6 space-y-2.5 text-[15px] flex-1 ${isPro ? 'text-white/90' : 'text-[#3F4654]'}`}
+                    >
+                      {plan.features.slice(0, 5).map((f) => (
+                        <li key={f} className="flex items-start gap-2.5">
+                          <span
+                            className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                              isPro
+                                ? 'bg-[#235BF7] text-white'
+                                : 'bg-white text-[#235BF7] border border-[#E3E7EE]'
+                            }`}
+                          >
+                            <Check className="w-3 h-3" />
+                          </span>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      href="/signup"
+                      className={`mt-8 py-3.5 rounded-2xl text-center font-bold transition ${
+                        isPro
+                          ? 'bg-gradient-to-b from-[#3D6CFF] to-[#235BF7] text-white hover:brightness-110'
+                          : 'bg-white border border-[#E3E7EE] hover:bg-[#FAFBFC]'
+                      }`}
+                    >
+                      {isPro ? 'Passer à Juula Pro' : 'Commencer gratuitement'}
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ─────────────────────── FAQ ─────────────────────── */}
+        <section id="faq" className="scroll-mt-28 rounded-[36px] bg-[#F6F7F9] px-4 py-16 sm:py-20">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-center text-4xl sm:text-5xl font-extrabold tracking-[-0.03em]">
+              Questions fréquentes
+            </h2>
+            <div className="mt-10 space-y-3">
+              {FAQ.map((item) => (
+                <details
+                  key={item.q}
+                  className="group rounded-2xl bg-white border border-[#ECEFF4] p-5"
+                >
+                  <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-lg [&::-webkit-details-marker]:hidden">
+                    {item.q}
+                    <ChevronDown className="w-5 h-5 text-[#7A808C] shrink-0 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <p className="mt-3 text-[15px] leading-relaxed text-[#7A808C]">{item.a}</p>
+                </details>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ───────────────────── PRICING ───────────────────── */}
-        <section id="tarifs" className="scroll-mt-24 bg-white border-y border-[#E5E9F0]">
-          <div className="max-w-5xl mx-auto px-4 py-20">
-            <div className="text-center max-w-2xl mx-auto space-y-3">
-              <Eyebrow>Tarifs simples & transparents</Eyebrow>
-              <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-                Choisissez la formule adaptée à votre croissance
-              </h2>
-              <p className="text-[#475569]">
-                Démarrez gratuitement pour tester votre premier produit, ou passez au Plan Pro pour
-                débloquer le paiement à la livraison et vendre sans limites.
+        {/* ─────────────────────── FOOTER ─────────────────────── */}
+        <footer className="rounded-[36px] bg-[#F6F7F9] px-3 sm:px-6 pt-6 sm:pt-10 pb-3 sm:pb-6">
+          <div className="max-w-6xl mx-auto rounded-[32px] bg-white border border-[#ECEFF4] overflow-hidden">
+            <div className="px-6 sm:px-12 pt-14 grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_auto]">
+              <div className="space-y-5">
+                <p className="text-xl font-bold tracking-tight max-w-xs leading-snug">
+                  Juula transforme un simple lien en boutique pro — paiements inclus.
+                </p>
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#201D1D] text-white text-sm font-bold hover:bg-black transition"
+                >
+                  Créer ma boutique <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+              <nav aria-label="Produit" className="space-y-2.5 text-[15px]">
+                <p className="font-bold">Produit</p>
+                <Link href="#fonctionnalites" className="block text-[#7A808C] hover:text-[#201D1D]">
+                  Fonctionnalités
+                </Link>
+                <Link href="#tarifs" className="block text-[#7A808C] hover:text-[#201D1D]">
+                  Tarifs
+                </Link>
+                <Link href="#faq" className="block text-[#7A808C] hover:text-[#201D1D]">
+                  FAQ
+                </Link>
+                <Link href="/login" className="block text-[#7A808C] hover:text-[#201D1D]">
+                  Se connecter
+                </Link>
+              </nav>
+              <nav aria-label="Légal" className="space-y-2.5 text-[15px]">
+                <p className="font-bold">Légal</p>
+                <Link href="/conditions" className="block text-[#7A808C] hover:text-[#201D1D]">
+                  Conditions d’utilisation
+                </Link>
+                <Link href="/confidentialite" className="block text-[#7A808C] hover:text-[#201D1D]">
+                  Confidentialité
+                </Link>
+              </nav>
+              <div className="space-y-3">
+                <p className="font-bold text-[15px]">Une question ?</p>
+                <a
+                  href={LEGAL.whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Support WhatsApp"
+                  className="w-12 h-12 rounded-2xl bg-[#F6F7F9] hover:bg-[#ECEFF4] flex items-center justify-center transition"
+                >
+                  <WhatsAppIcon className="w-6 h-6" />
+                </a>
+              </div>
+            </div>
+
+            {/* Oversized wordmark, blurred towards the right */}
+            <div className="relative mt-10 sm:mt-14 select-none" aria-hidden="true">
+              <p className="px-4 text-[30vw] md:text-[19rem] leading-[0.78] font-extrabold tracking-[-0.06em] bg-gradient-to-r from-[#235BF7] via-[#4D7DFF] to-[#9DB6FF] bg-clip-text text-transparent translate-y-[12%]">
+                Juula
               </p>
+              <div
+                className="absolute inset-0 backdrop-blur-[10px]"
+                style={{
+                  maskImage: 'linear-gradient(to right, transparent 45%, black 85%)',
+                  WebkitMaskImage: 'linear-gradient(to right, transparent 45%, black 85%)',
+                }}
+              />
             </div>
-
-            <div className="mt-12 grid gap-6 md:grid-cols-2 items-stretch max-w-4xl mx-auto">
-              {/* Plan Gratuit */}
-              <div className="p-8 rounded-3xl bg-[#F8FAFC] border border-[#E5E9F0] flex flex-col justify-between hover:border-[#CBD5E1] transition-all">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wider text-[#64748B]">
-                      Démarrage
-                    </span>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
-                      Sans abonnement
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-black text-[#0F172A] mt-2">Plan Gratuit</h3>
-                  <p className="text-xs text-[#64748B] mt-1">
-                    Idéal pour tester votre premier produit sans frais fixes.
-                  </p>
-                  <div className="mt-6 flex items-baseline gap-1">
-                    <span className="text-4xl sm:text-5xl font-black text-[#0F172A]">0</span>
-                    <span className="text-lg font-bold text-[#64748B]">FCFA / mois</span>
-                  </div>
-                  <p className="text-xs text-[#64748B] mt-2">
-                    7,5% prélevés sur les paiements en ligne (5% télécoms + 2,5% Juula)
-                  </p>
-
-                  <div className="my-6 border-t border-[#E2E8F0]" />
-
-                  <ul className="space-y-3 text-sm text-[#334155]">
-                    <li className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
-                      <span>
-                        <strong>1 produit actif</strong> maximum
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
-                      <span>
-                        Paiements en ligne sécurisés <strong>Wave & Orange Money</strong>
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
-                      <span>
-                        Lien boutique standard (<code>juula.store/p/…</code>)
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5 text-[#94A3B8]">
-                      <span className="text-xs font-bold px-1.5 py-0.2 rounded bg-neutral-200 text-neutral-500 mr-0.5 shrink-0">
-                        Non inclus
-                      </span>
-                      <span>Paiement à la livraison (réservé Pro)</span>
-                    </li>
-                    <li className="flex items-start gap-2.5 text-[#94A3B8]">
-                      <span className="text-xs font-bold px-1.5 py-0.2 rounded bg-neutral-200 text-neutral-500 mr-0.5 shrink-0">
-                        Non inclus
-                      </span>
-                      <span>Pixels publicitaires Facebook & TikTok</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <Link
-                  href="/signup"
-                  className="mt-8 py-3.5 rounded-2xl bg-white border border-[#CBD5E1] hover:border-[#1E60F8] hover:bg-[#F1F5F9] text-sm font-black text-[#0F172A] text-center transition-all shadow-xs"
-                >
-                  Créer ma boutique gratuite
-                </Link>
-              </div>
-
-              {/* Plan Juula Pro */}
-              <div className="relative p-8 rounded-3xl bg-[#0F172A] text-white shadow-[0_25px_50px_-20px_rgba(30,96,248,0.55)] ring-2 ring-[#1E60F8] flex flex-col justify-between">
-                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-widest bg-[#1E60F8] text-white px-3.5 py-1 rounded-full shadow-md">
-                  Le choix des pros
-                </span>
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wider text-[#38BDF8]">
-                      Scaler sans limites
-                    </span>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      0% commission Juula
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-black text-white mt-2">Plan Juula Pro</h3>
-                  <p className="text-xs text-white/70 mt-1">
-                    Pour les e-commerçants et marques qui scalent leurs ventes.
-                  </p>
-                  <div className="mt-6 flex items-baseline gap-1">
-                    <span className="text-4xl sm:text-5xl font-black text-white">6 000</span>
-                    <span className="text-lg font-bold text-white/80">FCFA / mois</span>
-                  </div>
-                  <p className="text-xs text-emerald-400 mt-2 font-semibold">
-                    0% de commission Juula · 0 F sur le cash · Seuls 5% télécoms sur Wave/OM
-                  </p>
-
-                  <div className="my-6 border-t border-white/10" />
-
-                  <ul className="space-y-3 text-sm text-white/95">
-                    <li className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 text-[#34D399] shrink-0 mt-0.5" />
-                      <span>
-                        <strong>Produits & pages de vente illimités</strong>
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 text-[#34D399] shrink-0 mt-0.5" />
-                      <span>
-                        <strong>Paiement à la livraison (Espèces) débloqué</strong>
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 text-[#34D399] shrink-0 mt-0.5" />
-                      <span>
-                        <strong>Pixels Facebook & TikTok débloqués</strong> pour vos pubs
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 text-[#34D399] shrink-0 mt-0.5" />
-                      <span>
-                        <strong>Sous-domaine personnalisé</strong> (
-                        <code>boutique.juula.store</code>)
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 text-[#34D399] shrink-0 mt-0.5" />
-                      <span>Reçus WhatsApp personnalisés & Support VIP prioritaire 7j/7</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <Link
-                  href="/signup"
-                  className="mt-8 py-3.5 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-sm font-black text-center transition-all shadow-[0_4px_16px_rgba(30,96,248,0.4)]"
-                >
-                  Démarrer avec Juula Pro
-                </Link>
-              </div>
-            </div>
-
-            <p className="mt-8 text-center text-xs text-[#64748B] max-w-xl mx-auto">
-              <strong>Transparence totale :</strong> Les 5% sur les paiements en ligne correspondent
-              exclusivement aux frais techniques des opérateurs de passerelle télécoms (Wave et
-              Orange Money). Juula ne prend 0% de commission sur vos ventes Pro.
-            </p>
           </div>
-        </section>
-
-        {/* ───────────────────── FAQ ───────────────────── */}
-        <section id="faq" className="scroll-mt-24 max-w-3xl mx-auto px-4 py-20">
-          <div className="text-center space-y-3">
-            <Eyebrow>Questions fréquentes</Eyebrow>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-              Vous avez des questions ?
-            </h2>
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 px-4 pt-5 text-xs text-[#7A808C]">
+            <span className="flex items-center gap-2">
+              <JuulaLogo height={18} /> © {year} {LEGAL.companyName || 'Juula Store'}
+            </span>
+            <span className="flex items-center gap-3">
+              <VisaWordmark className="text-sm" />
+              <MastercardIcon className="w-7 h-5" />
+              <span className="font-semibold">Wave · Orange Money</span>
+            </span>
           </div>
-          <div className="mt-10 space-y-3">
-            {FAQ.map((item) => (
-              <details
-                key={item.q}
-                className="group p-5 rounded-2xl bg-white border border-[#E5E9F0] open:border-[#1E60F8]/40 open:shadow-xs"
-              >
-                <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-[#0F172A] [&::-webkit-details-marker]:hidden">
-                  {item.q}
-                  <ChevronDown className="w-5 h-5 text-[#64748B] shrink-0 transition-transform group-open:rotate-180" />
-                </summary>
-                <p className="mt-3 text-sm text-[#475569] leading-relaxed">{item.a}</p>
-              </details>
-            ))}
-          </div>
-          <p className="mt-8 text-center text-sm text-[#475569]">
-            Une autre question ?{' '}
-            <a
-              href="https://wa.me/221774128930"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-bold text-[#1E60F8] hover:underline"
-            >
-              <MessageCircle className="w-4 h-4" /> Écrivez-nous sur WhatsApp
-            </a>
-          </p>
-        </section>
-
-        {/* ───────────────────── FINAL CTA ───────────────────── */}
-        <section className="px-4 pb-20">
-          <div className="max-w-6xl mx-auto relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0F2B6B] via-[#143E9C] to-[#1E60F8] px-6 py-14 sm:px-14 text-center text-white">
-            <div
-              className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-white/10 blur-2xl"
-              aria-hidden="true"
-            />
-            <h2 className="relative text-3xl sm:text-4xl font-black tracking-tight">
-              Votre prochaine vente commence par un lien.
-            </h2>
-            <p className="relative mt-3 text-white/80 max-w-xl mx-auto">
-              Créez votre boutique avec Google en quelques secondes et publiez votre première page
-              produit aujourd&apos;hui.
-            </p>
-            <Link
-              href="/signup"
-              className="relative mt-8 inline-flex items-center gap-2 px-7 py-4 rounded-2xl bg-white text-[#1E60F8] text-sm font-black hover:bg-[#EFF4FF] transition-colors"
-            >
-              Créer ma boutique gratuitement <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </section>
+        </footer>
       </main>
-
-      <SiteFooter />
     </div>
   );
 }

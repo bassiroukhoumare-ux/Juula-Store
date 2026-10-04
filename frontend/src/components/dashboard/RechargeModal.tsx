@@ -5,6 +5,9 @@ import { X, Zap, ArrowRight, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-
 import { PRO_PLAN_PRICE_FCFA } from '@/lib/store/plans';
 import { formatNumber } from '@/lib/orderUtils';
 
+import Link from 'next/link';
+import { api, ApiError } from '@/lib/api';
+
 interface RechargeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,24 +34,26 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
     setIsProcessing(true);
     setErrorMessage(null);
     try {
-      const res = await fetch('/api/store/subscription', {
+      const data = await api<{ checkoutUrl?: string }>('/api/store/subscription', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
       });
-      const data = await res.json().catch(() => null);
 
-      if (!res.ok || !data?.checkoutUrl) {
-        setErrorMessage(
-          data?.message || 'Impossible d’initialiser le paiement. Veuillez réessayer.',
-        );
+      if (!data?.checkoutUrl) {
+        setErrorMessage('Impossible d’initialiser le paiement. Veuillez réessayer.');
         setIsProcessing(false);
         return;
       }
 
       // Redirect merchant to Moneriz secure checkout session (Wave / Orange Money)
       window.location.href = data.checkoutUrl;
-    } catch {
-      setErrorMessage('Erreur réseau. Vérifiez votre connexion.');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setErrorMessage(
+          (err.body?.message as string) || err.message || 'Impossible d’initialiser le paiement.',
+        );
+      } else {
+        setErrorMessage('Erreur réseau. Vérifiez votre connexion.');
+      }
       setIsProcessing(false);
     }
   };
@@ -190,10 +195,16 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
             )}
           </button>
 
-          <p className="text-center text-[11px] text-[#64748B]">
-            Paiement direct par <strong>Wave</strong> ou <strong>Orange Money</strong>. Activation
-            immédiate après règlement.
-          </p>
+          <div className="pt-2 text-center">
+            <Link
+              href="/pro"
+              onClick={onClose}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1E60F8] hover:underline"
+            >
+              <span>Voir la présentation complète & comparatif Juula Pro</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

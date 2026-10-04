@@ -5,7 +5,6 @@ export const runtime = 'nodejs';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/server/middleware';
-import { verifyCsrf } from '@/lib/server/auth';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import {
   createProSubscriptionSession,
@@ -32,8 +31,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
-    const csrfFail = verifyCsrf(req);
-    if (csrfFail) return csrfFail;
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
 
