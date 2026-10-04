@@ -22,6 +22,7 @@ import {
 import { defaultFunnelConfig } from '@/data/mockData';
 import type { FunnelPageConfig } from '@/types/juula';
 import { getStoreCode } from '@/lib/orderUtils';
+import { formatWhatsapp } from '@/lib/store/whatsapp';
 
 const MAX_PRODUCTS_PER_MERCHANT = 200;
 
@@ -84,11 +85,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
     const inherited: Partial<FunnelPageConfig> = latest ? pickStoreWide(productConfig(latest)) : {};
     // The store name chosen at onboarding wins (it is also the order prefix).
-    const store = await prisma.store.findUnique({ where: { userId }, select: { name: true } });
+    const store = await prisma.store.findUnique({
+      where: { userId },
+      select: { name: true, whatsapp: true },
+    });
     if (store?.name) {
       inherited.storeName = store.name;
       inherited.storeCode = getStoreCode(store.name);
     }
+    if (store?.whatsapp) inherited.whatsappSupportNumber = formatWhatsapp(store.whatsapp);
 
     const config: FunnelPageConfig = {
       ...defaultFunnelConfig,

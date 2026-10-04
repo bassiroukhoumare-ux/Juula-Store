@@ -55,8 +55,21 @@ export async function GET() {
     }
   }
 
+  // Which optional providers are configured (booleans only — never values).
+  // Lets an operator spot a missing/blank env var on a deployment.
+  const has = (...names: string[]) => names.every((n) => (process.env[n] ?? '').trim().length > 0);
+  const emailFrom = (process.env.EMAIL_FROM ?? '').trim();
+  const services = {
+    email: has('RESEND_API_KEY', 'EMAIL_FROM'),
+    emailFromLooksValid: /^(.+<)?[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>?$/.test(emailFrom),
+    media: has('CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'),
+    payments: has('MONERIZ_SECRET_KEY'),
+    paymentWebhookSigned: has('MONERIZ_WEBHOOK_SECRET'),
+    googleLogin: has('GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI'),
+  };
+
   return NextResponse.json(
-    { ok: allOk, time: new Date().toISOString(), checks },
+    { ok: allOk, time: new Date().toISOString(), checks, services },
     { status: allOk ? 200 : 503 },
   );
 }

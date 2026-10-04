@@ -51,10 +51,12 @@ let mailer: Mailer | null | undefined;
 
 function getMailer(): Mailer | null {
   if (mailer !== undefined) return mailer;
-  const apiKey = process.env.RESEND_API_KEY ?? '';
-  const from = process.env.EMAIL_FROM ?? '';
+  // trim(): values pasted into a hosting dashboard often carry a stray
+  // newline/space, which Resend rejects.
+  const apiKey = (process.env.RESEND_API_KEY ?? '').trim();
+  const from = (process.env.EMAIL_FROM ?? '').trim();
   mailer = apiKey && from ? createMailer({ RESEND_API_KEY: apiKey, EMAIL_FROM: from }) : null;
-  if (!mailer) log.warn('notify: emails disabled (RESEND_API_KEY / EMAIL_FROM missing)');
+  if (!mailer) log.error('notify: emails disabled (RESEND_API_KEY / EMAIL_FROM missing)');
   return mailer;
 }
 
@@ -291,14 +293,16 @@ async function send(
   html: string,
   text: string,
   kind: string,
-): Promise<void> {
+): Promise<boolean> {
   const m = getMailer();
-  if (!m) return;
+  if (!m) return false;
   try {
     const { id } = await m.send({ to, subject, html, text });
     log.info('notify.sent', { kind, id });
+    return true;
   } catch (err) {
     log.error('notify.failed', { kind, error: err instanceof Error ? err.message : String(err) });
+    return false;
   }
 }
 
@@ -530,6 +534,9 @@ export function withdrawalFailedEmail(w: Withdrawal): RenderedEmail {
  */
 export async function sendWelcomeEmailOnce(userId: string): Promise<void> {
   if (!getMailer()) return;
+  // Only once the store is set up (onboarding finished).
+  const store = await prisma.store.findUnique({ where: { userId }, select: { subdomain: true } });
+  if (!store?.subdomain) return;
   await prisma.store.upsert({ where: { userId }, create: { userId }, update: {} });
   const claim = await prisma.store.updateMany({
     where: { userId, welcomeEmailSentAt: null },
@@ -540,9 +547,14 @@ export async function sendWelcomeEmailOnce(userId: string): Promise<void> {
     where: { id: userId },
     select: { email: true, name: true },
   });
-  if (!user) return;
-  const mail = welcomeEmail(user.name);
-  await send(user.email, mail.subject, mail.html, mail.text, 'welcome');
+  const mail = user ? welcomeEmail(user.name) : null;
+  const sent =
+    user && mail ? await send(user.email, mail.subject, mail.html, mail.text, 'welcome') : false;
+  // Not delivered (provider error, bad config): release the claim so the
+  // next dashboard visit tries again (see GET /api/store).
+  if (!sent) {
+    await prisma.store.updateMany({ where: { userId }, data: { welcomeEmailSentAt: null } });
+  }
 }
 
 export async function sendNewOrderEmail(orderId: string): Promise<void> {

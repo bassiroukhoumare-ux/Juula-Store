@@ -360,6 +360,11 @@ model Store {
   // already shared keep redirecting to the current one.
   name               String?
   subdomain          String?      @unique
+  logoUrl            String? // store logo / profile picture (Cloudinary)
+  whatsapp           String? // support & order confirmations, E.164 without "+" (221…)
+  onlineOnly         Boolean      @default(false) // no physical shop
+  address            String? // physical shop address (when not online-only)
+  city               String?
   facebookPixelId    String?
   tiktokPixelId      String?
   orderCounter       Int          @default(0) // last allocated StoreOrder.number

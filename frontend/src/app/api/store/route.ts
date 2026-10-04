@@ -3,12 +3,14 @@
 export const runtime = 'nodejs';
 
 import 'server-only';
-import { NextResponse, type NextRequest } from 'next/server';
+import { after, NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { prisma } from '@/lib/server/prisma';
+import { sendWelcomeEmailOnce } from '@/lib/server/store/notify';
+import { toStoreProfile } from '@/lib/server/store/profile';
 import {
   FACEBOOK_PIXEL_ID_REGEX,
   normalizeFacebookPixelId,
@@ -39,12 +41,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (auth instanceof NextResponse) return auth;
 
     const store = await prisma.store.findUnique({ where: { userId: auth.user.sub } });
+    // Welcome email not delivered yet (e.g. email was misconfigured at
+    // onboarding time): retry on each dashboard load until it goes out.
+    if (store?.subdomain && !store.welcomeEmailSentAt) {
+      const userId = auth.user.sub;
+      after(() => sendWelcomeEmailOnce(userId));
+    }
     const pixels: StorePixels = {
       facebookPixelId: store?.facebookPixelId ?? null,
       tiktokPixelId: store?.tiktokPixelId ?? null,
     };
     return NextResponse.json(
-      { store: { ...pixels, name: store?.name ?? null, subdomain: store?.subdomain ?? null } },
+      { store: { ...pixels, ...toStoreProfile(store) } },
       { headers: { 'x-request-id': ctx.requestId } },
     );
   });

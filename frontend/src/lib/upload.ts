@@ -78,7 +78,9 @@ function sendToCloudinary(
             ? 'Format de fichier non accepté.'
             : /size|large/i.test(msg)
               ? 'Fichier trop lourd.'
-              : 'L’envoi du fichier a échoué. Réessayez.',
+              : msg
+                ? `L'envoi a échoué : ${msg}`
+                : 'L’envoi du fichier a échoué. Réessayez.',
         ),
       );
     };
@@ -106,7 +108,11 @@ export async function uploadMedia(
     const message =
       err instanceof ApiError && typeof err.body.message === 'string'
         ? err.body.message
-        : 'Impossible de préparer l’envoi. Vérifiez votre connexion.';
+        : err instanceof ApiError && typeof err.body.error === 'string'
+          ? err.body.error
+          : err instanceof Error
+            ? err.message
+            : 'Impossible de préparer l’envoi. Vérifiez votre connexion.';
     throw new Error(message);
   }
   options.onProgress?.(0);

@@ -16,7 +16,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 import { z } from 'zod';
 import { verifyCsrf } from '@/lib/server/auth';
-import { requireAuth } from '@/lib/server/middleware';
+import { optionalAuth } from '@/lib/server/middleware';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { MEDIA_RULES, type MediaKind } from '@/lib/upload-rules';
 
@@ -26,10 +26,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
     const headers = { 'x-request-id': ctx.requestId };
-    const csrfFail = verifyCsrf(req);
-    if (csrfFail) return csrfFail;
-    const auth = await requireAuth();
-    if (auth instanceof NextResponse) return auth;
 
     const parsed = Body.safeParse(await req.json().catch(() => null));
     if (!parsed.success) {
@@ -52,11 +48,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Authenticated users get their dedicated folder; guest merchants upload to juula/products
+    const auth = await optionalAuth();
+    if (auth) {
+      const csrfFail = verifyCsrf(req);
+      if (csrfFail) return csrfFail;
+    }
+
     const kind: MediaKind = parsed.data.kind;
     const rule = MEDIA_RULES[kind];
+    const userFolder = auth ? auth.user.sub : 'products';
     const params = {
       timestamp: Math.floor(Date.now() / 1000),
-      folder: `juula/${auth.user.sub}/${kind}`,
+      folder: `juula/${userFolder}/${kind}`,
       allowed_formats: rule.formats.join(','),
     };
     const signature = cloudinary.utils.api_sign_request(params, apiSecret);

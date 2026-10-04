@@ -16,10 +16,13 @@ const Body = z
   .object({
     name: z.string().trim().min(2).max(60).optional(),
     subdomain: z.string().trim().min(1).max(80).optional(),
+    logoUrl: z.string().url().max(500).nullable().optional(),
+    whatsapp: z.string().trim().min(6).max(25).optional(),
+    onlineOnly: z.boolean().optional(),
+    address: z.string().trim().max(200).nullable().optional(),
+    city: z.string().trim().max(80).nullable().optional(),
   })
-  .refine((b) => b.name !== undefined || b.subdomain !== undefined, {
-    message: 'Nothing to update',
-  });
+  .refine((b) => Object.values(b).some((v) => v !== undefined), { message: 'Nothing to update' });
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
@@ -33,7 +36,10 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     const parsed = Body.safeParse(await req.json().catch(() => null));
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'VALIDATION_FAILED', message: 'Nom de boutique : 2 à 60 caractères.' },
+        {
+          error: 'VALIDATION_FAILED',
+          message: 'Informations invalides (nom : 2 à 60 caractères).',
+        },
         { status: 400, headers },
       );
     }
