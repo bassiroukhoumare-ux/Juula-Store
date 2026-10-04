@@ -10,7 +10,7 @@ import {
 } from './BrandIcons';
 
 /** White Juula cart mark (from the favicon), for the central tile. */
-const JuulaMark: React.FC<{ className?: string }> = ({ className = 'w-16 h-16' }) => (
+export const JuulaMark: React.FC<{ className?: string }> = ({ className = 'w-16 h-16' }) => (
   <svg viewBox="60 40 230 270" className={className} fill="#FFFFFF" aria-hidden="true">
     <path d="m156.72,283.91c-.07,7.68-6.31,13.88-13.93,13.85-7.45-.04-13.67-6.43-13.61-14,.07-7.45,6.4-13.48,14.1-13.41,7.3.05,13.51,6.31,13.44,13.56Z" />
     <path d="m205.56,283.91c-.07,7.68-6.31,13.88-13.93,13.85-7.45-.04-13.67-6.43-13.61-14,.07-7.45,6.4-13.48,14.1-13.41,7.3.05,13.51,6.31,13.44,13.56Z" />
@@ -28,11 +28,11 @@ type Node = { x: number; y: number; float?: string; el: React.ReactNode };
 
 const NODES: Node[] = [
   {
-    x: 120,
+    x: 125,
     y: 175,
     float: 'motion-safe:animate-[float_7s_ease-in-out_infinite]',
     el: (
-      <div className="w-48 p-3 rounded-2xl bg-white border border-[#ECEFF4] shadow-[0_18px_40px_-22px_rgba(32,29,29,0.4)]">
+      <div className="w-44 lg:w-48 p-3 rounded-2xl bg-white border border-[#ECEFF4] shadow-[0_18px_40px_-22px_rgba(32,29,29,0.4)]">
         <div className="flex items-center gap-2.5">
           <span className="w-9 h-9 rounded-full bg-[#ECFDF3] text-[#16A34A] flex items-center justify-center">
             <BadgeCheck className="w-5 h-5" />
@@ -124,24 +124,34 @@ function linkPath(n: Node): { d: string; dot: { x: number; y: number } } {
 }
 
 export const HeroNetwork: React.FC = () => (
-  <div className="relative w-full max-w-5xl mx-auto h-[340px]" aria-hidden="true">
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      className="absolute inset-0 w-full h-full"
-    >
+  <div className="relative w-full max-w-5xl mx-auto aspect-[1000/340]" aria-hidden="true">
+    <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 w-full h-full overflow-visible">
       {NODES.map((n, i) => {
         const { d, dot } = linkPath(n);
         return (
           <g key={i}>
+            {/* Line draws itself on load */}
             <path
               d={d}
+              pathLength={1}
+              className="hero-line"
               fill="none"
               stroke="#D9DEE7"
               strokeWidth="1.5"
-              vectorEffect="non-scaling-stroke"
+              strokeDasharray="1"
+              strokeDashoffset="1"
+              style={{ animation: `draw 1.4s cubic-bezier(.4,0,.2,1) ${0.35 + i * 0.12}s forwards` }}
             />
-            <circle cx={dot.x} cy={dot.y} r="4" fill="#235BF7" vectorEffect="non-scaling-stroke" />
+            <circle cx={dot.x} cy={dot.y} r="4.5" fill="#235BF7" />
+            <circle cx={dot.x} cy={dot.y} r="4.5" fill="#235BF7" opacity="0.35">
+              <animate attributeName="r" values="4.5;11;4.5" dur="2.6s" begin={`${i * 0.4}s`} repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.35;0;0.35" dur="2.6s" begin={`${i * 0.4}s`} repeatCount="indefinite" />
+            </circle>
+            {/* Data packet travelling to the Juula hub */}
+            <circle r="3.5" fill="#235BF7" className="hero-packet">
+              <animateMotion dur="2.8s" begin={`${1.6 + i * 0.45}s`} repeatCount="indefinite" path={d} />
+              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="2.8s" begin={`${1.6 + i * 0.45}s`} repeatCount="indefinite" />
+            </circle>
           </g>
         );
       })}
@@ -150,15 +160,20 @@ export const HeroNetwork: React.FC = () => (
     {NODES.map((n, i) => (
       <div
         key={i}
-        className={`absolute -translate-x-1/2 -translate-y-1/2 ${n.float ?? ''}`}
+        className="absolute -translate-x-1/2 -translate-y-1/2"
         style={{ left: `${(n.x / W) * 100}%`, top: `${(n.y / H) * 100}%` }}
       >
-        {n.el}
+        <div
+          className="opacity-0 motion-reduce:opacity-100"
+          style={{ animation: `rise 900ms cubic-bezier(.2,.75,.2,1) ${0.25 + i * 0.12}s forwards` }}
+        >
+          <div className={`${n.float ?? ''} transition-transform duration-300 hover:scale-110`}>{n.el}</div>
+        </div>
       </div>
     ))}
 
     <div
-      className="absolute -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-[38px] bg-gradient-to-br from-[#4D7DFF] to-[#1F4FE0] flex items-center justify-center shadow-[0_30px_60px_-24px_rgba(35,91,247,0.75),inset_0_2px_0_rgba(255,255,255,0.35)]"
+      className="absolute -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-[38px] bg-gradient-to-br from-[#4D7DFF] to-[#1F4FE0] flex items-center justify-center motion-safe:animate-[glow_3.2s_ease-in-out_infinite] shadow-[0_30px_60px_-24px_rgba(35,91,247,0.75)]"
       style={{ left: '50%', top: `${(C.y / H) * 100}%` }}
     >
       <div className="w-24 h-24 rounded-full border-[3px] border-white/85 flex items-center justify-center">

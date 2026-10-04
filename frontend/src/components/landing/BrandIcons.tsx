@@ -36,29 +36,33 @@ export const VisaWordmark: React.FC<IconProps> = ({ className = '' }) => (
   <span className={`font-black italic tracking-tight text-[#1A1F71] ${className}`}>VISA</span>
 );
 
-/** Wave wordmark on its sky-blue brand tile. */
-export const WaveTile: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }) => {
-  const s =
-    size === 'lg' ? 'w-16 h-16 text-xl' : size === 'sm' ? 'w-10 h-10 text-xs' : 'w-12 h-12 text-sm';
+const SIZES = { sm: 40, md: 48, lg: 64 } as const;
+
+/** Official Wave logo (public/brands/wave.png, round). */
+export const WaveTile: React.FC<{ size?: keyof typeof SIZES }> = ({ size = 'md' }) => {
+  const px = SIZES[size];
   return (
-    <span
-      className={`${s} rounded-2xl bg-[#1DC8FF] text-white font-black flex items-center justify-center lowercase tracking-tight`}
-    >
-      wave
-    </span>
+    <img
+      src="/brands/wave.png"
+      alt="Wave"
+      width={px}
+      height={px}
+      loading="lazy"
+      className="rounded-full shrink-0"
+      style={{ width: px, height: px }}
+    />
   );
 };
 
-/** Orange Money mark: white "orange" wordmark on the orange square. */
-export const OrangeMoneyTile: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }) => {
-  const s = size === 'lg' ? 'w-16 h-16' : size === 'sm' ? 'w-10 h-10' : 'w-12 h-12';
-  const t = size === 'lg' ? 'text-[11px]' : 'text-[8px]';
+/** Official Orange Money logo on a white tile. */
+export const OrangeMoneyTile: React.FC<{ size?: keyof typeof SIZES }> = ({ size = 'md' }) => {
+  const px = SIZES[size];
   return (
     <span
-      className={`${s} rounded-2xl bg-[#FF7900] text-white flex flex-col items-center justify-center leading-none`}
+      className="rounded-2xl bg-white border border-[#ECEFF4] flex items-center justify-center shrink-0"
+      style={{ width: px, height: px, padding: Math.round(px * 0.14) }}
     >
-      <span className={`${t} font-black`}>orange</span>
-      <span className={`${t} font-semibold opacity-90`}>money</span>
+      <img src="/brands/orange-money.png" alt="Orange Money" loading="lazy" className="w-full h-full object-contain" />
     </span>
   );
 };
