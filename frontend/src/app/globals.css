@@ -48,3 +48,13 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
 }
+/* Landing page floating cards (used via animate-[float_…], motion-safe only) */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}

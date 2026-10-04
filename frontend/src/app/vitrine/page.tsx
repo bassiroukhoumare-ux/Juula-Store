@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Sparkles, Smartphone, Monitor } from 'lucide-react';
+import { ArrowLeft, Smartphone, Monitor } from 'lucide-react';
 import { ImmersiveShowcase } from '@/components/showcase/ImmersiveShowcase';
 import { defaultFunnelConfig } from '@/data/mockData';
 import { FunnelPageConfig } from '@/types/juula';
@@ -16,7 +16,7 @@ export default function VitrineStandalonePage() {
       {/* Top Banner with Navigation & Device Switcher */}
       <div className="w-full bg-[#0F172A] text-white py-2.5 px-4 sm:px-8 flex items-center justify-between text-xs sticky top-0 z-50 shadow-md">
         <Link
-          href="/"
+          href="/dashboard"
           className="inline-flex items-center gap-1.5 font-bold hover:text-white/80 transition-colors bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />

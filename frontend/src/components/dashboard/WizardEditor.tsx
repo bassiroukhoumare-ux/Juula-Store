@@ -17,38 +17,37 @@ import {
   Trash2,
   ExternalLink,
   Wand2,
-  Mic,
   Film,
   Camera,
   Headphones,
   Phone,
-  CreditCard,
-  Banknote,
   Layers,
-  Sliders,
   CheckCircle2,
-  Tag,
   ListOrdered,
-  MessageSquare,
   Store,
   Smartphone,
-  Eye,
-  Copy,
-  Power,
   PowerOff,
   Globe,
-  Globe2,
-  FileText,
   AlertCircle,
   X,
   Palette,
   Box,
 } from 'lucide-react';
-import { FunnelPageConfig, FunnelPageItem, FunnelPageStatus, MediaItem, ProofItem, QuantityDiscountTier, ProductColorOption } from '@/types/juula';
+import {
+  FunnelPageConfig,
+  FunnelPageItem,
+  FunnelPageStatus,
+  MediaItem,
+  ProofItem,
+  QuantityDiscountTier,
+  ProductColorOption,
+} from '@/types/juula';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
-import { formatNumber, formatFCFA } from '@/lib/orderUtils';
+import { formatFCFA } from '@/lib/orderUtils';
+import { uploadImage } from '@/lib/upload';
+import { useToast } from '@/contexts/ToastContext';
 
 interface WizardEditorProps {
   initialConfig: FunnelPageConfig;
@@ -75,6 +74,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
   onUpdatePageStatus,
   onDeletePage,
 }) => {
+  const { toast } = useToast();
   const [config, setConfig] = useState<FunnelPageConfig>(initialConfig);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isSaved, setIsSaved] = useState(false);
@@ -153,58 +153,41 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
       if (!file.type.startsWith('image/')) return;
       const localMediaId = `med-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
-      // 1. Aperçu instantané sans aucun délai
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const resultUrl = event.target?.result as string;
-        if (resultUrl) {
-          const previewMedia: MediaItem = {
-            id: localMediaId,
-            type: 'image',
-            url: resultUrl,
-            isPrimary: config.mediaItems.length === 0,
-          };
+      // 1. Aperçu instantané (URL locale, jamais enregistrée en base)
+      const previewUrl = URL.createObjectURL(file);
+      const previewMedia: MediaItem = {
+        id: localMediaId,
+        type: 'image',
+        url: previewUrl,
+        isPrimary: config.mediaItems.length === 0,
+      };
+      setConfig((prev) => {
+        if (prev.mediaItems.length >= 5) return prev;
+        return { ...prev, mediaItems: [...prev.mediaItems, previewMedia] };
+      });
+
+      // 2. Téléversement sécurisé vers Cloudinary (CDN), puis sauvegarde
+      setIsUploadingPhoto(true);
+      uploadImage(file)
+        .then((url) => {
           setConfig((prev) => {
-            if (prev.mediaItems.length >= 5) return prev;
             const updated = {
               ...prev,
-              mediaItems: [...prev.mediaItems, previewMedia],
+              mediaItems: prev.mediaItems.map((m) => (m.id === localMediaId ? { ...m, url } : m)),
             };
             onSaveConfig(updated);
             return updated;
           });
-        }
-      };
-      reader.readAsDataURL(file);
-
-      // 2. Téléversement automatique vers Cloudinary pour hébergement permanent CDN
-      setIsUploadingPhoto(true);
-      const formData = new FormData();
-      formData.append('file', file);
-
-      fetch('/api/upload/cloudinary', {
-        method: 'POST',
-        body: formData,
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data?.url) {
-            setConfig((prev) => {
-              const updated = {
-                ...prev,
-                mediaItems: prev.mediaItems.map((m) =>
-                  m.id === localMediaId ? { ...m, url: data.url } : m
-                ),
-              };
-              onSaveConfig(updated);
-              return updated;
-            });
-          }
         })
-        .catch((err) => {
-          console.warn('[Cloudinary sync notice, conserving local dataURL]:', err);
+        .catch((err: unknown) => {
+          setConfig((prev) => ({
+            ...prev,
+            mediaItems: prev.mediaItems.filter((m) => m.id !== localMediaId),
+          }));
+          toast(err instanceof Error ? err.message : "L'envoi de l'image a échoué.", 'error');
         })
         .finally(() => {
+          URL.revokeObjectURL(previewUrl);
           setIsUploadingPhoto(false);
         });
     });
@@ -342,11 +325,14 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
       title: finalTitle,
       authorName: newProofAuthor.trim() || 'Client vérifié',
       city: newProofCity.trim() || undefined,
-      duration: newProofDuration.trim() || (newProofType === 'audio' ? '0:35' : newProofType === 'video' ? '0:18' : undefined),
+      duration:
+        newProofDuration.trim() ||
+        (newProofType === 'audio' ? '0:35' : newProofType === 'video' ? '0:18' : undefined),
       thumbnailUrl: newProofType === 'video' ? config.mediaItems[0]?.url : undefined,
     };
 
-    const currentProofs = config.proofItems && config.proofItems.length > 0 ? config.proofItems : [];
+    const currentProofs =
+      config.proofItems && config.proofItems.length > 0 ? config.proofItems : [];
     setConfig({
       ...config,
       proofItems: [newProof, ...currentProofs],
@@ -428,10 +414,14 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
             <div className="min-w-0 flex-1">
               <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight truncate">
-                {config.productTitle || activePage?.config?.productTitle || activePage?.internalName || 'Montre Automatique Royale Saphir Noire'}
+                {config.productTitle ||
+                  activePage?.config?.productTitle ||
+                  activePage?.internalName ||
+                  'Montre Automatique Royale Saphir Noire'}
               </h2>
               <p className="text-xs text-[#64748B] mt-0.5 max-w-2xl truncate">
-                Édition en direct • Page de vente immersive avec vidéo verticale, commande 1-clic COD / Wave et avis clients.
+                Édition en direct • Page de vente immersive avec vidéo verticale, commande 1-clic
+                COD / Wave et avis clients.
               </p>
             </div>
           </div>
@@ -539,7 +529,6 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                 const isSelected = p.id === (activePageId || config.id);
                 const isPublished = p.status === 'published';
                 const isDraft = p.status === 'draft';
-                const isInactive = p.status === 'inactive';
 
                 return (
                   <div
@@ -603,7 +592,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          const nextStatus: FunnelPageStatus = isPublished ? 'inactive' : 'published';
+                          const nextStatus: FunnelPageStatus = isPublished
+                            ? 'inactive'
+                            : 'published';
                           onUpdatePageStatus?.(p.id, nextStatus);
                         }}
                         className={`px-2 py-1 rounded-lg font-bold transition-colors cursor-pointer border text-[10px] ${
@@ -622,7 +613,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
             <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] text-slate-400 leading-relaxed">
               <span className="font-bold text-white block mb-0.5">🔒 Organisation Interne</span>
-              Les noms internes sont réservés à votre équipe et ne sont jamais visibles sur la boutique en ligne.
+              Les noms internes sont réservés à votre équipe et ne sont jamais visibles sur la
+              boutique en ligne.
             </div>
           </div>
         </aside>
@@ -657,8 +649,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                       isActive
                         ? 'bg-white/20 text-white'
                         : isPast
-                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                        : 'bg-[#F1F5F9] text-[#64748B]'
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                          : 'bg-[#F1F5F9] text-[#64748B]'
                     }`}
                   >
                     {isPast ? <Check className="w-4 h-4 stroke-[3]" /> : step.num}
@@ -693,9 +685,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
           {/* Quick Info Box */}
           <div className="p-4 rounded-3xl bg-[#EFF4FF] border border-[#BFDBFE]/60 space-y-2 text-xs">
-            <span className="font-extrabold text-[#1E60F8] block">
-              Boutique Actuelle
-            </span>
+            <span className="font-extrabold text-[#1E60F8] block">Boutique Actuelle</span>
             <div className="text-[#1E3A8A] leading-relaxed text-[11px] space-y-1">
               <div className="flex justify-between">
                 <span className="text-[#64748B]">Nom :</span>
@@ -707,7 +697,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-[#64748B]">Format commande :</span>
-                <span className="font-mono font-bold text-[#1E60F8]">CMD-{config.storeCode || 'BDE'}-000001</span>
+                <span className="font-mono font-bold text-[#1E60F8]">
+                  CMD-{config.storeCode || 'BDE'}-000001
+                </span>
               </div>
             </div>
           </div>
@@ -727,7 +719,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   Étape 1 : Galerie Médias & Vidéo Démo
                 </h3>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  Importez jusqu'à 5 photos haute résolution et votre vidéo verticale pour captiver les visiteurs.
+                  Importez jusqu'à 5 photos haute résolution et votre vidéo verticale pour captiver
+                  les visiteurs.
                 </p>
               </div>
 
@@ -864,7 +857,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   Étape 2 : Titre du Produit, IA & Tarifs
                 </h3>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  Utilisez l'assistant IA en saisissant vos mots-clés, définissez votre prix et configurez vos frais de livraison.
+                  Utilisez l'assistant IA en saisissant vos mots-clés, définissez votre prix et
+                  configurez vos frais de livraison.
                 </p>
               </div>
 
@@ -882,7 +876,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1E60F8] bg-[#EFF4FF] hover:bg-[#DBEAFE] px-3 py-1.5 rounded-xl transition-all cursor-pointer"
                   >
                     <Wand2 className="w-3.5 h-3.5" />
-                    <span>{isAiBoxOpen ? 'Masquer l’assistant IA' : 'Générer des titres avec l’IA'}</span>
+                    <span>
+                      {isAiBoxOpen ? 'Masquer l’assistant IA' : 'Générer des titres avec l’IA'}
+                    </span>
                   </button>
                 </div>
 
@@ -900,7 +896,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                         <Sparkles className="w-4 h-4 text-[#1E60F8]" />
                         <span>Générateur de Titres IA pour E-commerce Africain</span>
                       </span>
-                      <span className="text-[10px] text-[#64748B]">Spécialement optimisé pour l'Afrique de l'Ouest</span>
+                      <span className="text-[10px] text-[#64748B]">
+                        Spécialement optimisé pour l'Afrique de l'Ouest
+                      </span>
                     </div>
 
                     <div className="space-y-2">
@@ -929,7 +927,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
                     {/* Tone Options */}
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="text-[11px] text-[#64748B] font-semibold">Ton du titre :</span>
+                      <span className="text-[11px] text-[#64748B] font-semibold">
+                        Ton du titre :
+                      </span>
                       <div className="flex gap-1.5">
                         {[
                           { id: 'luxe', label: 'Prestige & Luxe' },
@@ -939,7 +939,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                           <button
                             key={t.id}
                             type="button"
-                            onClick={() => setAiTone(t.id as any)}
+                            onClick={() => setAiTone(t.id as typeof aiTone)}
                             className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
                               aiTone === t.id
                                 ? 'bg-[#1E60F8] text-white'
@@ -1017,7 +1017,12 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   <button
                     type="button"
                     onClick={() =>
-                      setConfig({ ...config, deliveryPricingType: 'free', fixedDeliveryFee: 0, deliveryFree: true })
+                      setConfig({
+                        ...config,
+                        deliveryPricingType: 'free',
+                        fixedDeliveryFee: 0,
+                        deliveryFree: true,
+                      })
                     }
                     className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center border cursor-pointer ${
                       config.deliveryPricingType !== 'fixed'
@@ -1054,7 +1059,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                       label="Montant des frais de livraison (FCFA)"
                       type="number"
                       value={config.fixedDeliveryFee || 1500}
-                      onChange={(e) => setConfig({ ...config, fixedDeliveryFee: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setConfig({ ...config, fixedDeliveryFee: Number(e.target.value) })
+                      }
                       helperText="Ce montant s'ajoutera automatiquement au total du panier lors du paiement en ligne ou COD."
                     />
                   </div>
@@ -1071,7 +1078,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                       Paliers de Réductions par Quantité (Packs Dégressifs)
                     </span>
                     <p className="text-[11px] text-[#64748B] mt-0.5">
-                      Permettez aux acheteurs de bénéficier d'une remise quand ils prennent 2, 3 ou 4 pièces.
+                      Permettez aux acheteurs de bénéficier d'une remise quand ils prennent 2, 3 ou
+                      4 pièces.
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -1089,14 +1097,35 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
                 {config.quantityDiscountsEnabled !== false && (
                   <div className="space-y-3 pt-1">
-                    {(config.quantityDiscounts || [
-                      { id: 't1', minQty: 1, discountType: 'percent', discountValue: 0, label: '1 Pièce (Prix unitaire)' },
-                      { id: 't2', minQty: 2, discountType: 'percent', discountValue: 10, label: 'Pack Duo — 2 Pièces (-10%)' },
-                      { id: 't3', minQty: 3, discountType: 'percent', discountValue: 20, label: 'Pack Famille — 3 Pièces (-20%)' },
-                    ]).map((tier, idx) => {
-                      const unitDiscounted = tier.discountValue > 0
-                        ? Math.round(config.price * (1 - tier.discountValue / 100))
-                        : config.price;
+                    {(
+                      config.quantityDiscounts || [
+                        {
+                          id: 't1',
+                          minQty: 1,
+                          discountType: 'percent',
+                          discountValue: 0,
+                          label: '1 Pièce (Prix unitaire)',
+                        },
+                        {
+                          id: 't2',
+                          minQty: 2,
+                          discountType: 'percent',
+                          discountValue: 10,
+                          label: 'Pack Duo — 2 Pièces (-10%)',
+                        },
+                        {
+                          id: 't3',
+                          minQty: 3,
+                          discountType: 'percent',
+                          discountValue: 20,
+                          label: 'Pack Famille — 3 Pièces (-20%)',
+                        },
+                      ]
+                    ).map((tier, idx) => {
+                      const unitDiscounted =
+                        tier.discountValue > 0
+                          ? Math.round(config.price * (1 - tier.discountValue / 100))
+                          : config.price;
                       const tierTotal = unitDiscounted * tier.minQty;
 
                       return (
@@ -1130,7 +1159,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-2.5 py-1.5 rounded-xl border border-[#E2E8F0]">
-                              <span className="text-[11px] font-semibold text-[#64748B]">Remise :</span>
+                              <span className="text-[11px] font-semibold text-[#64748B]">
+                                Remise :
+                              </span>
                               <input
                                 type="number"
                                 min="0"
@@ -1153,7 +1184,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const updated = (config.quantityDiscounts || []).filter((_, i) => i !== idx);
+                                  const updated = (config.quantityDiscounts || []).filter(
+                                    (_, i) => i !== idx,
+                                  );
                                   setConfig({ ...config, quantityDiscounts: updated });
                                 }}
                                 className="p-1.5 text-[#94A3B8] hover:text-rose-600 transition-colors cursor-pointer"
@@ -1171,11 +1204,26 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                       type="button"
                       onClick={() => {
                         const currentTiers = config.quantityDiscounts || [
-                          { id: 't1', minQty: 1, discountType: 'percent', discountValue: 0, label: '1 Pièce' },
-                          { id: 't2', minQty: 2, discountType: 'percent', discountValue: 10, label: 'Pack Duo (-10%)' },
+                          {
+                            id: 't1',
+                            minQty: 1,
+                            discountType: 'percent',
+                            discountValue: 0,
+                            label: '1 Pièce',
+                          },
+                          {
+                            id: 't2',
+                            minQty: 2,
+                            discountType: 'percent',
+                            discountValue: 10,
+                            label: 'Pack Duo (-10%)',
+                          },
                         ];
                         const nextQty = (currentTiers[currentTiers.length - 1]?.minQty || 2) + 1;
-                        const nextDiscount = Math.min(40, (currentTiers[currentTiers.length - 1]?.discountValue || 10) + 10);
+                        const nextDiscount = Math.min(
+                          40,
+                          (currentTiers[currentTiers.length - 1]?.discountValue || 10) + 10,
+                        );
                         const newTier: QuantityDiscountTier = {
                           id: `tier-${Date.now()}`,
                           minQty: nextQty,
@@ -1247,13 +1295,15 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                         Couleurs & Variantes du Produit (Optionnel)
                       </h4>
                       <p className="text-xs text-[#64748B]">
-                        Permet au client de sélectionner sa couleur préférée directement sur la page de commande.
+                        Permet au client de sélectionner sa couleur préférée directement sur la page
+                        de commande.
                       </p>
                     </div>
                   </div>
                   {(config.availableColors?.length ?? 0) > 0 && (
                     <span className="text-[11px] font-bold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-1 rounded-full">
-                      {config.availableColors?.length} couleur{(config.availableColors?.length ?? 0) > 1 ? 's' : ''}
+                      {config.availableColors?.length} couleur
+                      {(config.availableColors?.length ?? 0) > 1 ? 's' : ''}
                     </span>
                   )}
                 </div>
@@ -1266,7 +1316,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   <div className="flex flex-wrap gap-2">
                     {quickPalette.map((item) => {
                       const isAlreadyAdded = (config.availableColors || []).some(
-                        (c) => c.name.toLowerCase() === item.name.toLowerCase()
+                        (c) => c.name.toLowerCase() === item.name.toLowerCase(),
                       );
                       return (
                         <button
@@ -1414,7 +1464,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   Étape 3 : Bénéfices & Arguments de Vente
                 </h3>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  Présentez les 3 à 5 atouts majeurs qui rassurent et déclenchent l'achat chez le client.
+                  Présentez les 3 à 5 atouts majeurs qui rassurent et déclenchent l'achat chez le
+                  client.
                 </p>
               </div>
 
@@ -1494,7 +1545,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   Étape 4 : Témoignages & Preuves Réelles (Photos, Vidéos, Audios)
                 </h3>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  Configurez vos vraies preuves de livraison : photos reçues, vidéos unboxing ou notes vocales WhatsApp.
+                  Configurez vos vraies preuves de livraison : photos reçues, vidéos unboxing ou
+                  notes vocales WhatsApp.
                 </p>
               </div>
 
@@ -1565,7 +1617,13 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   {/* Choix de la source : Import local depuis machine ou Saisie de lien */}
                   <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] space-y-3">
                     <span className="text-xs font-bold text-[#0F172A] block">
-                      Fichier média ({newProofType === 'audio' ? 'Note vocale audio' : newProofType === 'video' ? 'Vidéo MP4/WebM' : 'Photo'}) *
+                      Fichier média (
+                      {newProofType === 'audio'
+                        ? 'Note vocale audio'
+                        : newProofType === 'video'
+                          ? 'Vidéo MP4/WebM'
+                          : 'Photo'}
+                      ) *
                     </span>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1579,8 +1637,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                           {newProofType === 'audio'
                             ? 'MP3, WAV, M4A, OGG'
                             : newProofType === 'video'
-                            ? 'MP4, MOV, WebM'
-                            : 'JPG, PNG, WebP'}
+                              ? 'MP4, MOV, WebM'
+                              : 'JPG, PNG, WebP'}
                         </span>
                         <input
                           type="file"
@@ -1588,8 +1646,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                             newProofType === 'audio'
                               ? 'audio/*'
                               : newProofType === 'video'
-                              ? 'video/*'
-                              : 'image/*'
+                                ? 'video/*'
+                                : 'image/*'
                           }
                           onChange={(e) => {
                             const file = e.target.files?.[0];
@@ -1619,8 +1677,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                             newProofType === 'audio'
                               ? 'https://.../vocal.mp3'
                               : newProofType === 'video'
-                              ? 'https://.../unboxing.mp4'
-                              : 'https://.../photo.jpg'
+                                ? 'https://.../unboxing.mp4'
+                                : 'https://.../photo.jpg'
                           }
                           className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white"
                         />
@@ -1700,7 +1758,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   Preuves Actuellement Affichées sur la Vitrine ({config.proofItems?.length || 0})
                 </span>
 
-                {(!config.proofItems || config.proofItems.length === 0) ? (
+                {!config.proofItems || config.proofItems.length === 0 ? (
                   <p className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-center text-xs text-[#94A3B8]">
                     Aucune preuve configurée. Utilisez le formulaire ci-dessus pour en ajouter.
                   </p>
@@ -1717,8 +1775,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                               item.type === 'audio'
                                 ? 'bg-[#25D366]'
                                 : item.type === 'video'
-                                ? 'bg-[#1E60F8]'
-                                : 'bg-[#0F172A]'
+                                  ? 'bg-[#1E60F8]'
+                                  : 'bg-[#0F172A]'
                             }`}
                           >
                             {item.type === 'audio' ? (
@@ -1735,7 +1793,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                               {item.title}
                             </span>
                             <span className="text-[10px] text-[#64748B] block truncate">
-                              {item.authorName} &bull; {item.city} {item.duration ? `(${item.duration})` : ''}
+                              {item.authorName} &bull; {item.city}{' '}
+                              {item.duration ? `(${item.duration})` : ''}
                             </span>
                           </div>
                         </div>
@@ -1785,7 +1844,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   Étape 5 : Checkout, Logistique & Support Client
                 </h3>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  Finalisez vos promesses de livraison, garantie zéro risque et numéro de contact direct.
+                  Finalisez vos promesses de livraison, garantie zéro risque et numéro de contact
+                  direct.
                 </p>
               </div>
 
@@ -1831,7 +1891,13 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   variant="primary"
                   size="lg"
                   onClick={handleSave}
-                  icon={isSaved ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
+                  icon={
+                    isSaved ? (
+                      <Check className="w-4 h-4 text-emerald-300" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )
+                  }
                 >
                   {isSaved ? 'Tunnel Enregistré avec Succès !' : 'Enregistrer & Publier'}
                 </Button>
@@ -1850,9 +1916,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                 <div className="w-8 h-8 rounded-xl bg-[#EFF4FF] text-[#1E60F8] flex items-center justify-center font-bold">
                   <Plus className="w-4 h-4 stroke-[3]" />
                 </div>
-                <h3 className="text-base font-black text-[#0F172A]">
-                  Créer une nouvelle page
-                </h3>
+                <h3 className="text-base font-black text-[#0F172A]">Créer une nouvelle page</h3>
               </div>
               <button
                 onClick={() => setIsNewPageModalOpen(false)}
@@ -1879,7 +1943,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                 <p className="text-[11px] text-[#64748B] flex items-start gap-1 pt-1">
                   <AlertCircle className="w-3.5 h-3.5 text-[#1E60F8] shrink-0 mt-0.5" />
                   <span>
-                    Ce nom sert uniquement à votre organisation interne et ne sera jamais affiché aux clients sur le site.
+                    Ce nom sert uniquement à votre organisation interne et ne sera jamais affiché
+                    aux clients sur le site.
                   </span>
                 </p>
               </div>

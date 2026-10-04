@@ -42,11 +42,14 @@ model User {
   withdrawals       Withdrawal[]
   oauthAccounts     OAuthAccount[]
   adminActions      AdminAction[]
+  store             Store?
+  products          Product[]
+  storeOrders       StoreOrder[]
 
   // Multi-tenancy is opt-in per project: by default no resource is org-scoped.
   // Apps that need it (marketplace, B2B SaaS, classifieds) wire owner relations
   // on their domain models.
-  ownedOrganizations Organization[]      @relation("OrgOwner")
+  ownedOrganizations Organization[]       @relation("OrgOwner")
   memberships        OrganizationMember[] @relation("OrgMembership")
 
   @@index([email])
@@ -95,14 +98,14 @@ model AdminAction {
 // used as a stable URL segment.
 // ───────────────────────────────────────────────────────────────────────
 model Organization {
-  id        String   @id @default(cuid())
-  slug      String   @unique
+  id        String               @id @default(cuid())
+  slug      String               @unique
   name      String
   ownerId   String
-  owner     User     @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  owner     User                 @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   members   OrganizationMember[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
 
   @@index([ownerId])
 }
@@ -273,21 +276,21 @@ model WebhookLog {
 // at the call site — the schema is currency-agnostic.
 // ───────────────────────────────────────────────────────────────────────
 model Order {
-  id              String    @id @default(cuid())
-  userId          String? // nullable — guest checkout supported
-  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  amount          Int // gross amount, smallest unit
-  currency        String    @default("XOF") // ISO 4217
-  status          String    @default("PENDING") // PENDING | PAID | EXPIRED | FAILED | REFUNDED
-  customerEmail   String?
-  customerPhone   String?
-  customerName    String?
-  metadata        Json? // app-specific fields
+  id            String  @id @default(cuid())
+  userId        String? // nullable — guest checkout supported
+  user          User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  amount        Int // gross amount, smallest unit
+  currency      String  @default("XOF") // ISO 4217
+  status        String  @default("PENDING") // PENDING | PAID | EXPIRED | FAILED | REFUNDED
+  customerEmail String?
+  customerPhone String?
+  customerName  String?
+  metadata      Json? // app-specific fields
 
   // Stripe-grade idempotency. Required header on POST /api/orders; replay
   // with same value returns the original Order row instead of double-charging.
   // Nullable so existing rows pre-migration don't break the @unique constraint.
-  idempotencyKey  String?   @unique
+  idempotencyKey String? @unique
 
   // Provider reference
   provider         String // e.g. "bictorys"
@@ -311,12 +314,12 @@ model Order {
 }
 
 model Withdrawal {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user        User   @relation(fields: [userId], references: [id], onDelete: Restrict)
   amount      Int // requested amount, smallest unit
-  currency    String   @default("XOF")
-  status      String   @default("PENDING") // PENDING | PROCESSING | COMPLETED | FAILED | CANCELLED
+  currency    String @default("XOF")
+  status      String @default("PENDING") // PENDING | PROCESSING | COMPLETED | FAILED | CANCELLED
   destination Json // { method: "WAVE" | "ORANGE_MONEY" | ..., phone: "+221...", accountName?: "..." }
 
   // Provider reference
@@ -331,4 +334,91 @@ model Withdrawal {
   @@index([userId, requestedAt])
   @@index([status, requestedAt])
   @@index([provider, providerPayoutId])
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Juula Store — merchant storefront.
+//
+// One Store per merchant (User). Holds the ad-tracking pixel IDs injected
+// on every public product page (/p/[slug]).
+//
+// Product.config is the full `FunnelPageConfig` (src/types/juula.ts) the
+// WizardEditor edits; `slug`, `status`, `price` are lifted out as columns
+// so the public page can be looked up and the server can price orders
+// without trusting the browser.
+//
+// StoreOrder is a cash-on-delivery / mobile-money lead captured on a
+// public product page. Distinct from the generic `Order` (provider charge).
+// Amounts are integers in FCFA.
+// ───────────────────────────────────────────────────────────────────────
+model Store {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  facebookPixelId String?
+  tiktokPixelId   String?
+  orderCounter    Int      @default(0) // last allocated StoreOrder.number
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug         String   @unique
+  internalName String
+  status       String   @default("draft") // draft | published | inactive
+  price        Int      @default(0)
+  config       Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders StoreOrder[]
+
+  @@index([userId, updatedAt])
+}
+
+model StoreOrder {
+  id              String   @id @default(cuid())
+  merchantId      String
+  merchant        User     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  number          Int // per-merchant sequence, formatted CMD-<storeCode>-000001
+  reference       String // formatted order id shown to customer + merchant
+  productName     String
+  productImage    String?
+  quantity        Int      @default(1)
+  selectedColor   String?
+  amount          Int // subtotal after quantity discount
+  deliveryFee     Int      @default(0)
+  totalAmount     Int
+  currency        String   @default("FCFA")
+  customerName    String
+  phone           String
+  whatsappNumber  String
+  neighborhood    String?
+  city            String?
+  deliveryAddress String?
+  deliveryNotes   String?
+  paymentType     String   @default("cod") // cod | online_wave | online_orange
+  paymentStatus   String   @default("pending_cod") // pending_cod | pending_online | paid
+  status          String   @default("new") // new | confirmed | delivered | cancelled
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Online payment (Moneriz). Set only after the payment is re-verified
+  // against the Moneriz API — never from client input or a raw webhook body.
+  providerSessionId String?   @unique // Moneriz checkout session id (cs_…)
+  providerPaymentId String?
+  paidAt            DateTime?
+  // paidAt + payout hold (72h): the provider settles funds after 72h, so
+  // the amount only becomes withdrawable by the merchant from this date.
+  availableAt       DateTime?
+  netAmount         Int? // credited to the merchant wallet (totalAmount - platform commission)
+
+  @@unique([merchantId, number])
+  @@index([merchantId, createdAt])
+  @@index([merchantId, paymentStatus])
 }

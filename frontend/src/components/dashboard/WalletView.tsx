@@ -11,20 +11,14 @@ import {
   TrendingUp,
   Receipt,
   Smartphone,
-  Calendar,
   Filter,
   ArrowDownLeft,
-  Download,
   MapPin,
   Clock,
-  Sparkles,
-  ExternalLink,
-  ChevronRight,
-  Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { WalletState, OrderLead, InflowRecord, PayoutRecord } from '@/types/juula';
-import { formatNumber, formatFCFA } from '@/lib/orderUtils';
+import { formatFCFA } from '@/lib/orderUtils';
 
 interface WalletViewProps {
   wallet: WalletState;
@@ -88,14 +82,14 @@ export const WalletView: React.FC<WalletViewProps> = ({
 
   // Real-time calculation of delivered COD from orders if present
   const deliveredCodOrders = orders.filter(
-    (o) => o.status === 'delivered' && o.paymentType === 'cod'
+    (o) => o.status === 'delivered' && o.paymentType === 'cod',
   );
   const deliveredCodTotal = deliveredCodOrders.reduce(
     (sum, o) => sum + (o.totalAmount || o.amount + (o.deliveryFee || 0)),
-    0
+    0,
   );
   const effectiveCodCollected =
-    deliveredCodTotal > 0 ? deliveredCodTotal : (wallet.codCollectedAmount || 0);
+    deliveredCodTotal > 0 ? deliveredCodTotal : wallet.codCollectedAmount || 0;
 
   // Inflows list
   const rawInflows: InflowRecord[] = wallet.inflowHistory || [];
@@ -123,7 +117,8 @@ export const WalletView: React.FC<WalletViewProps> = ({
             Portefeuille & Retraits Marchand
           </h2>
           <p className="text-xs sm:text-sm text-[#64748B] max-w-xl">
-            Suivi des recettes, encaissements Wave / Orange Money / Espèces & virements marchands vers vos comptes.
+            Suivi des recettes, encaissements Wave / Orange Money / Espèces & virements marchands
+            vers vos comptes.
           </p>
         </div>
 
@@ -221,8 +216,27 @@ export const WalletView: React.FC<WalletViewProps> = ({
             </div>
 
             <p className="text-xs text-[#64748B] mt-1.5 leading-relaxed">
-              Fonds garantis par Wave & Orange Money prêts au virement immédiat.
+              Paiements en ligne retirables {wallet.payoutHoldHours ?? 72} h après leur réception.
             </p>
+            {(wallet.pendingOnlineAmount ?? 0) > 0 && (
+              <div className="mt-2 flex items-start gap-1.5 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-xl">
+                <Clock className="w-3.5 h-3.5 shrink-0 mt-px" />
+                <span>
+                  + {formatFCFA(wallet.pendingOnlineAmount ?? 0)} en attente
+                  {wallet.nextReleaseAt
+                    ? ` · prochain déblocage le ${new Date(wallet.nextReleaseAt).toLocaleString(
+                        'fr-FR',
+                        {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        },
+                      )}`
+                    : ''}
+                </span>
+              </div>
+            )}
           </div>
 
           <Button
@@ -292,7 +306,9 @@ export const WalletView: React.FC<WalletViewProps> = ({
 
           <div className="flex items-center gap-1.5 text-[11px] text-[#059669] font-bold bg-[#ECFDF5] p-2 rounded-xl border border-[#A7F3D0]">
             <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-[#10B981]" />
-            <span className="truncate">{wallet.payoutHistory.length} virements réalisés • 0 incident</span>
+            <span className="truncate">
+              {wallet.payoutHistory.length} virements réalisés • 0 incident
+            </span>
           </div>
         </div>
       </div>
@@ -538,50 +554,61 @@ export const WalletView: React.FC<WalletViewProps> = ({
                     </tr>
                   ) : (
                     wallet.payoutHistory.map((payout) => (
-                    <tr key={payout.id} className="hover:bg-[#F8FAFC] transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-[#0F172A] whitespace-nowrap">
-                        {payout.reference}
-                      </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                            payout.provider === 'wave'
-                              ? 'bg-[#EFF4FF] text-[#1E60F8]'
-                              : 'bg-[#FFF5EB] text-[#EA580C]'
-                          }`}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                          {payout.provider === 'wave' ? 'Wave Sénégal' : 'Orange Money'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 font-medium text-[#0F172A] whitespace-nowrap">
-                        {payout.phoneNumber}
-                      </td>
-                      <td className="py-3.5 px-4 text-[#64748B] whitespace-nowrap">
-                        {payout.date}
-                      </td>
-                      <td className="py-3.5 px-4 font-black text-sm text-[#0F172A] whitespace-nowrap">
-                        {formatFCFA(payout.amount)}
-                      </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-1 rounded-full">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Virement Effectué</span>
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedReceipt(payout)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#334155] font-bold text-[11px] transition-colors cursor-pointer"
-                        >
-                          <Receipt className="w-3 h-3" />
-                          <span>Voir reçu</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                      <tr key={payout.id} className="hover:bg-[#F8FAFC] transition-colors">
+                        <td className="py-3.5 px-4 font-mono font-bold text-[#0F172A] whitespace-nowrap">
+                          {payout.reference}
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                              payout.provider === 'wave'
+                                ? 'bg-[#EFF4FF] text-[#1E60F8]'
+                                : 'bg-[#FFF5EB] text-[#EA580C]'
+                            }`}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                            {payout.provider === 'wave' ? 'Wave Sénégal' : 'Orange Money'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-medium text-[#0F172A] whitespace-nowrap">
+                          {payout.phoneNumber}
+                        </td>
+                        <td className="py-3.5 px-4 text-[#64748B] whitespace-nowrap">
+                          {payout.date}
+                        </td>
+                        <td className="py-3.5 px-4 font-black text-sm text-[#0F172A] whitespace-nowrap">
+                          {formatFCFA(payout.amount)}
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          {payout.status === 'completed' ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-1 rounded-full">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Virement Effectué</span>
+                            </span>
+                          ) : payout.status === 'failed' ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-700 bg-red-50 px-2.5 py-1 rounded-full">
+                              <span>Échoué — montant recrédité</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+                              <Clock className="w-3 h-3" />
+                              <span>En cours</span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReceipt(payout)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#334155] font-bold text-[11px] transition-colors cursor-pointer"
+                          >
+                            <Receipt className="w-3 h-3" />
+                            <span>Voir reçu</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -632,7 +659,9 @@ export const WalletView: React.FC<WalletViewProps> = ({
             <div className="space-y-2 text-xs">
               <div className="flex justify-between py-1.5 border-b border-[#F1F5F9]">
                 <span className="text-[#64748B]">Référence transaction :</span>
-                <span className="font-mono font-bold text-[#0F172A]">{selectedReceipt.reference}</span>
+                <span className="font-mono font-bold text-[#0F172A]">
+                  {selectedReceipt.reference}
+                </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-[#F1F5F9]">
                 <span className="text-[#64748B]">Opérateur financier :</span>

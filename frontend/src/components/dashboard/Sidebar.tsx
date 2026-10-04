@@ -6,22 +6,16 @@ import {
   ShoppingBag,
   Package,
   Users,
-  Store,
   Wallet,
   BarChart3,
-  TrendingUp,
-  Percent,
   Settings,
   HelpCircle,
   Zap,
   ChevronDown,
-  ChevronRight,
   ExternalLink,
-  ShieldCheck,
-  Hexagon,
-  Sparkles,
+  LogOut,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/Badge';
+import { JuulaLogo } from '@/components/brand/JuulaLogo';
 import { DashboardTab } from '@/types/juula';
 
 interface SidebarProps {
@@ -34,6 +28,8 @@ interface SidebarProps {
   newOrdersCount: number;
   availableBalance: number;
   currency: string;
+  userEmail?: string | undefined;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -44,23 +40,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenRecharge,
   onOpenStorefrontPreview,
   newOrdersCount,
-  availableBalance,
-  currency,
+  userEmail,
+  onLogout,
 }) => {
   return (
     <aside className="hidden lg:flex w-64 bg-white border-r border-[#E5E9F0] flex-col justify-between h-screen sticky top-0 z-30 select-none flex-shrink-0">
       {/* Top Header & Brand */}
       <div className="overflow-y-auto">
         <div className="p-5 flex items-center justify-between border-b border-[#F1F5F9]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#1E60F8] text-white flex items-center justify-center font-black shadow-[0_2px_8px_rgba(30,96,248,0.3)]">
-              <Hexagon className="w-5 h-5 fill-white stroke-[#1E60F8]" />
-            </div>
-            <div>
-              <span className="font-extrabold text-base text-[#0F172A] tracking-tight">
-                Juula Store
-              </span>
-            </div>
+          <div className="flex items-center">
+            <JuulaLogo height={34} />
           </div>
 
           <button
@@ -92,7 +81,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {activeTab === 'cockpit' && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#1E60F8] rounded-r-full" />
                 )}
-                <Compass className={`w-4 h-4 ${activeTab === 'cockpit' ? 'text-[#1E60F8]' : 'text-[#94A3B8]'}`} />
+                <Compass
+                  className={`w-4 h-4 ${activeTab === 'cockpit' ? 'text-[#1E60F8]' : 'text-[#94A3B8]'}`}
+                />
                 <span>Tableau de Bord</span>
               </div>
             </button>
@@ -113,7 +104,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {activeTab === 'kanban' && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#1E60F8] rounded-r-full" />
                 )}
-                <ShoppingBag className={`w-4 h-4 ${activeTab === 'kanban' ? 'text-[#1E60F8]' : 'text-[#94A3B8]'}`} />
+                <ShoppingBag
+                  className={`w-4 h-4 ${activeTab === 'kanban' ? 'text-[#1E60F8]' : 'text-[#94A3B8]'}`}
+                />
                 <span>Commandes</span>
               </div>
               {newOrdersCount > 0 && (
@@ -139,7 +132,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {activeTab === 'wizard' && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#1E60F8] rounded-r-full" />
                 )}
-                <Package className={`w-4 h-4 ${activeTab === 'wizard' ? 'text-[#1E60F8]' : 'text-[#94A3B8]'}`} />
+                <Package
+                  className={`w-4 h-4 ${activeTab === 'wizard' ? 'text-[#1E60F8]' : 'text-[#94A3B8]'}`}
+                />
                 <span>Pages de vente</span>
               </div>
             </button>
@@ -168,7 +163,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>Clients</span>
               </div>
             </button>
-
           </div>
 
           {/* Finances Section */}
@@ -193,7 +187,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {activeTab === 'wallet' && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#1E60F8] rounded-r-full" />
                 )}
-                <Wallet className={`w-4 h-4 ${activeTab === 'wallet' ? 'text-[#1E60F8]' : 'text-[#94A3B8]'}`} />
+                <Wallet
+                  className={`w-4 h-4 ${activeTab === 'wallet' ? 'text-[#1E60F8]' : 'text-[#94A3B8]'}`}
+                />
                 <span>Juula Pay & Retraits</span>
               </div>
             </button>
@@ -261,6 +257,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <HelpCircle className="w-4 h-4 text-[#94A3B8]" />
             <span>Aide & Support WhatsApp</span>
           </button>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title={userEmail}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-[#64748B] hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4 text-[#94A3B8]" />
+              <span className="truncate">Se déconnecter</span>
+            </button>
+          )}
+          {userEmail && (
+            <p className="px-3 pt-1 text-[10px] text-[#94A3B8] truncate">{userEmail}</p>
+          )}
         </div>
 
         {/* Shopeers Promo Card: "Passez au Premium !" */}
@@ -273,7 +282,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Passez au Statut Pro !
           </h4>
           <p className="text-[10px] text-white/80 leading-relaxed mt-1 mb-3">
-            {leadCreditsRemaining}/{leadCreditsTotal} crédits leads restants. Rechargez via Wave ou Orange.
+            {leadCreditsRemaining}/{leadCreditsTotal} crédits leads restants. Rechargez via Wave ou
+            Orange.
           </p>
 
           <button

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   ArrowLeft,
   ShieldCheck,
@@ -11,18 +11,12 @@ import {
   Mail,
   ExternalLink,
   ChevronRight,
-  Sparkles,
-  Smartphone,
-  Eye,
-  EyeOff,
-  RefreshCw,
   Clock,
-  ArrowRight,
   KeyRound,
-  FileCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatNumber, formatFCFA } from '@/lib/orderUtils';
+import { formatNumber } from '@/lib/orderUtils';
+import { api, ApiError } from '@/lib/api';
 
 interface PayoutPageViewProps {
   availableBalance: number;
@@ -62,7 +56,9 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
 
   // Forgot PIN / Email Reset Modal simulation state
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-  const [forgotStep, setForgotStep] = useState<'request_sent' | 'email_preview' | 'reset_form'>('request_sent');
+  const [forgotStep, setForgotStep] = useState<'request_sent' | 'email_preview' | 'reset_form'>(
+    'request_sent',
+  );
   const [newPinDigits, setNewPinDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [confirmPinDigits, setConfirmPinDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [resetError, setResetError] = useState<string | null>(null);
@@ -92,56 +88,56 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
     }
   };
 
-  // Submit withdrawal with strict 6-digit PIN check
+  // Submit withdrawal: amount, PIN and balance (72h hold) are all checked by
+  // the server; this form only collects them.
   const handleSubmitWithdrawal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (amount <= 0 || amount > availableBalance) {
-      setPinError(`Le montant doit être compris entre 1 000 et ${formatNumber(availableBalance)} ${currency}.`);
+    if (amount < 1000 || amount > availableBalance) {
+      setPinError(
+        availableBalance < 1000
+          ? `Solde disponible insuffisant (minimum 1 000 ${currency}). Les paiements en ligne sont retirables 72 h après leur réception.`
+          : `Le montant doit être compris entre 1 000 et ${formatNumber(availableBalance)} ${currency}.`,
+      );
       return;
     }
-
+    if (!payoutSecurity.isPinSet) {
+      setPinError('Créez d’abord votre code PIN de retrait (Paramètres → Sécurité).');
+      return;
+    }
     const enteredPin = pinDigits.join('');
     if (enteredPin.length !== 6) {
-      setPinError('Veuillez saisir votre code PIN complet à 6 chiffres pour autoriser le virement.');
-      return;
-    }
-
-    // Verify PIN against stored merchant PIN
-    if (enteredPin !== payoutSecurity.pinCode) {
-      setPinError('Code PIN de retrait incorrect. Vérifiez votre code ou cliquez sur "Code PIN oublié ?".');
+      setPinError(
+        'Veuillez saisir votre code PIN complet à 6 chiffres pour autoriser le virement.',
+      );
       return;
     }
 
     setIsProcessing(true);
     setPinError(null);
 
-    fetch('/api/payments/moneriz/withdraw', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount,
-        phone,
-        name: 'Boutique Juula Store',
-        paymentType: provider === 'wave' ? 'wave_money' : 'orange_money',
-        reason: `Retrait Juula Pay vers ${provider === 'wave' ? 'Wave' : 'Orange Money'}`,
-      }),
-    })
-      .then((res) => res.json())
+    api<{ withdrawalId: string; status: string; reference?: string; message?: string }>(
+      '/api/payments/moneriz/withdraw',
+      {
+        method: 'POST',
+        body: { amount, provider, phone, pin: enteredPin },
+      },
+    )
       .then((data) => {
-        setIsProcessing(false);
-        const generatedTxn = data?.id || `TXN-${provider.toUpperCase()}-${Date.now().toString().slice(-6)}`;
-        setReceiptTxnId(generatedTxn);
+        setReceiptTxnId(data.reference || data.withdrawalId);
         setIsSuccess(true);
         onPayoutSuccess(amount, provider, phone);
       })
-      .catch((err) => {
-        console.warn('[Moneriz Withdrawal fallback]:', err);
-        setIsProcessing(false);
-        const generatedTxn = `TXN-${provider.toUpperCase()}-${Date.now().toString().slice(-6)}`;
-        setReceiptTxnId(generatedTxn);
-        setIsSuccess(true);
-        onPayoutSuccess(amount, provider, phone);
-      });
+      .catch((err: unknown) => {
+        const message =
+          err instanceof ApiError && typeof err.body.message === 'string'
+            ? err.body.message
+            : 'Le retrait n’a pas pu être effectué. Vérifiez votre connexion et réessayez.';
+        setPinError(message);
+        if (err instanceof ApiError && err.code === 'PIN_INVALID') {
+          setPinDigits(['', '', '', '', '', '']);
+        }
+      })
+      .finally(() => setIsProcessing(false));
   };
 
   // Handle PIN reset submission (double confirmation)
@@ -216,16 +212,17 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
 
           <div className="space-y-2">
             <span className="text-xs font-black uppercase tracking-wider text-[#059669] bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#A7F3D0]">
-              Virement Effectué avec Succès
+              Virement envoyé à Moneriz
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A]">
-              {formatNumber(amount)} {currency} Transférés
+              {formatNumber(amount)} {currency} en cours de transfert
             </h2>
             <p className="text-xs sm:text-sm text-[#64748B] max-w-md mx-auto">
-              Les fonds ont été immédiatement crédités sur votre compte{' '}
+              Les fonds arrivent dans quelques minutes sur votre compte{' '}
               <strong className="text-[#0F172A]">
                 {provider === 'wave' ? 'Wave Sénégal' : 'Orange Money'} (+221 {phone})
-              </strong>.
+              </strong>
+              .
             </p>
           </div>
 
@@ -258,7 +255,12 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Button variant="primary" size="lg" onClick={onBack} icon={<Wallet className="w-4 h-4" />}>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={onBack}
+              icon={<Wallet className="w-4 h-4" />}
+            >
               Retourner au Portefeuille
             </Button>
             <Button
@@ -399,7 +401,9 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                           Instantané
                         </span>
                       </div>
-                      <span className="text-xs text-[#64748B]">Dépôt direct vers votre compte OM</span>
+                      <span className="text-xs text-[#64748B]">
+                        Dépôt direct vers votre compte OM
+                      </span>
                     </div>
                   </button>
                 </div>
@@ -482,17 +486,6 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
 
                   <div className="flex items-center justify-between text-[11px] text-[#94A3B8] pt-1">
                     <span>Code actuel verrouillé : {payoutSecurity.maskedPin}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Quick fill helper for review
-                        setPinDigits(payoutSecurity.pinCode.split(''));
-                        setPinError(null);
-                      }}
-                      className="text-[#1E60F8] hover:underline cursor-pointer"
-                    >
-                      (Auto-remplir PIN démo : {payoutSecurity.pinCode})
-                    </button>
                   </div>
                 </div>
               </div>
@@ -513,7 +506,9 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 </Button>
                 <p className="text-[11px] text-center text-[#94A3B8] mt-2 flex items-center justify-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
-                  <span>Transfert sécurisé via passerelle Mobile Money certifiée Banque Centrale</span>
+                  <span>
+                    Transfert sécurisé via passerelle Mobile Money certifiée Banque Centrale
+                  </span>
                 </p>
               </div>
             </form>
@@ -536,7 +531,9 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-[#64748B]">Frais de transfert ({provider === 'wave' ? 'Wave' : 'OM'})</span>
+                  <span className="text-[#64748B]">
+                    Frais de transfert ({provider === 'wave' ? 'Wave' : 'OM'})
+                  </span>
                   <span className="font-extrabold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-md">
                     0 FCFA (Gratuit)
                   </span>
@@ -553,7 +550,9 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 </div>
 
                 <div className="pt-3 border-t border-[#F1F5F9] flex justify-between items-baseline">
-                  <span className="font-black text-[#0F172A] text-xs">Net versé sur votre compte</span>
+                  <span className="font-black text-[#0F172A] text-xs">
+                    Net versé sur votre compte
+                  </span>
                   <span className="text-xl font-black text-[#1E60F8]">
                     {formatNumber(amount)} {currency}
                   </span>
@@ -571,7 +570,9 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                   <h4 className="text-xs font-black uppercase tracking-wider text-[#0F172A]">
                     Sécurité des Retraits
                   </h4>
-                  <span className="text-[10px] text-[#64748B]">Protection active contre la fraude</span>
+                  <span className="text-[10px] text-[#64748B]">
+                    Protection active contre la fraude
+                  </span>
                 </div>
               </div>
 
@@ -592,7 +593,9 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 </div>
 
                 <p className="text-[11px] text-[#64748B] leading-relaxed">
-                  Chaque virement exige obligatoirement votre code secret à 6 chiffres. En cas d'oubli, la réinitialisation se fait exclusivement par lien sécurisé envoyé à votre adresse vérifiée :
+                  Chaque virement exige obligatoirement votre code secret à 6 chiffres. En cas
+                  d'oubli, la réinitialisation se fait exclusivement par lien sécurisé envoyé à
+                  votre adresse vérifiée :
                 </p>
 
                 <div className="flex items-center gap-2 font-mono text-[11px] text-[#0F172A] bg-[#F8FAFC] border border-[#E2E8F0] p-2.5 rounded-xl">
@@ -662,7 +665,8 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     <span>Règlement des ventes (24h - 72h)</span>
                   </div>
                   <p className="text-[11px] text-[#64748B] leading-relaxed">
-                    Chaque encaissement en ligne via Wave, Orange Money ou Carte est sécurisé par Moneriz et transféré sur votre solde disponible pour retrait sous 24h à 72h.
+                    Chaque encaissement en ligne via Wave, Orange Money ou Carte est sécurisé par
+                    Moneriz et transféré sur votre solde disponible pour retrait sous 24h à 72h.
                   </p>
                 </div>
               </div>
@@ -691,7 +695,8 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     Email de Réinitialisation Envoyé !
                   </h3>
                   <p className="text-xs text-[#64748B] max-w-sm mx-auto">
-                    Conformément à la sécurité bancaire Juula, un lien unique à usage unique a été expédié à l'adresse du propriétaire de la boutique :
+                    Conformément à la sécurité bancaire Juula, un lien unique à usage unique a été
+                    expédié à l'adresse du propriétaire de la boutique :
                   </p>
                   <p className="text-xs font-mono font-bold text-[#0F172A] bg-[#F8FAFC] py-1.5 px-3 rounded-lg border border-[#E2E8F0] inline-block">
                     {payoutSecurity.recoveryEmail}
@@ -699,9 +704,12 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 </div>
 
                 <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-left text-xs space-y-1">
-                  <span className="font-bold text-amber-900 block">Simulation d'environnement marchand :</span>
+                  <span className="font-bold text-amber-900 block">
+                    Simulation d'environnement marchand :
+                  </span>
                   <span className="text-amber-800 text-[11px]">
-                    Dans cette interface de démonstration, vous pouvez ouvrir directement la boîte de réception simulée pour tester le lien de réinitialisation.
+                    Dans cette interface de démonstration, vous pouvez ouvrir directement la boîte
+                    de réception simulée pour tester le lien de réinitialisation.
                   </span>
                 </div>
 
@@ -715,11 +723,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                   >
                     Ouvrir l'email reçu & Valider
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="md"
-                    onClick={() => setIsForgotModalOpen(false)}
-                  >
+                  <Button variant="outline" size="md" onClick={() => setIsForgotModalOpen(false)}>
                     Fermer
                   </Button>
                 </div>
@@ -731,7 +735,12 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 {/* Simulated Email Header */}
                 <div className="border-b border-[#E2E8F0] pb-3 space-y-1 text-xs">
                   <div className="flex justify-between text-[#64748B]">
-                    <span>De : <strong className="text-[#0F172A]">Sécurité Juula Pay &lt;securite@juula.store&gt;</strong></span>
+                    <span>
+                      De :{' '}
+                      <strong className="text-[#0F172A]">
+                        Sécurité Juula Pay &lt;securite@juula.store&gt;
+                      </strong>
+                    </span>
                     <span className="text-[10px]">À l'instant</span>
                   </div>
                   <div className="text-[#64748B]">
@@ -748,10 +757,13 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     Bonjour <strong>Boutique Dakar Élégance</strong>,
                   </p>
                   <p className="text-[#64748B] leading-relaxed">
-                    Nous avons reçu une demande de réinitialisation de votre <strong>code PIN de validation des retraits</strong>. Ce code protège vos virements vers Wave et Orange Money.
+                    Nous avons reçu une demande de réinitialisation de votre{' '}
+                    <strong>code PIN de validation des retraits</strong>. Ce code protège vos
+                    virements vers Wave et Orange Money.
                   </p>
                   <p className="text-[#64748B] leading-relaxed">
-                    Veuillez cliquer sur le bouton sécurisé ci-dessous pour saisir et confirmer votre nouveau code PIN à 6 chiffres :
+                    Veuillez cliquer sur le bouton sécurisé ci-dessous pour saisir et confirmer
+                    votre nouveau code PIN à 6 chiffres :
                   </p>
 
                   <div className="py-2 text-center">
@@ -766,7 +778,8 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                   </div>
 
                   <p className="text-[10px] text-[#94A3B8]">
-                    Ce lien expire dans 15 minutes. Si vous n'êtes pas à l'origine de cette demande, veuillez ignorer ce message.
+                    Ce lien expire dans 15 minutes. Si vous n'êtes pas à l'origine de cette demande,
+                    veuillez ignorer ce message.
                   </p>
                 </div>
 

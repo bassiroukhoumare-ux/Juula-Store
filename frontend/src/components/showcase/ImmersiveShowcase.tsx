@@ -16,14 +16,12 @@ import {
   Banknote,
   MapPin,
   User,
-  ShoppingBag,
   Award,
   Send,
   Maximize2,
   Lock,
   Phone,
   Mic,
-  MicOff,
   Pause,
   Play,
   RotateCcw,
@@ -36,10 +34,14 @@ import {
   Minus,
   ArrowLeft,
   Palette,
-  Zap,
-  Flame,
 } from 'lucide-react';
-import { FunnelPageConfig, OrderLead, CustomerReview, ProofItem, QuantityDiscountTier } from '@/types/juula';
+import {
+  FunnelPageConfig,
+  OrderLead,
+  CustomerReview,
+  ProofItem,
+  QuantityDiscountTier,
+} from '@/types/juula';
 import { Button } from '@/components/ui/Button';
 import { formatOrderId, formatNumber, formatFCFA } from '@/lib/orderUtils';
 import { MonerizCheckoutModal } from '@/components/payments/MonerizCheckoutModal';
@@ -51,27 +53,53 @@ const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' 
   </svg>
 );
 
+/** What the server returns once a public order is saved. */
+export interface SubmittedOrder {
+  /** Server-side order id (used to start and verify the online payment). */
+  id: string;
+  reference: string;
+  amount: number;
+  deliveryFee: number;
+  totalAmount: number;
+}
+
 interface ImmersiveShowcaseProps {
   config: FunnelPageConfig;
   onOrderCreated?: (order: Partial<OrderLead>) => void;
+  /**
+   * Public product page mode: persist the order server-side before showing
+   * the confirmation. The resolved reference/amounts (priced by the server)
+   * replace the locally computed ones. A rejection's message is shown.
+   */
+  submitOrder?: (order: OrderLead) => Promise<SubmittedOrder>;
+  /**
+   * Public mode: ask the server to verify an online payment with Moneriz
+   * (the iframe's "paid" message alone is not trusted). Resolves true when
+   * the server confirmed it.
+   */
+  confirmPayment?: (orderId: string) => Promise<boolean>;
+  /** Fired when the customer opens the order form (pixel InitiateCheckout). */
+  onCheckoutOpened?: (info: { quantity: number; value: number }) => void;
   isInsideMockup?: boolean;
 }
 
 export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   config,
   onOrderCreated,
+  submitOrder,
+  confirmPayment,
+  onCheckoutOpened,
   isInsideMockup = false,
 }) => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [isCheckoutPageOpen, setIsCheckoutPageOpen] = useState(false);
-  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [quantity, setQuantity] = useState<number>(1);
   const [paymentChoice, setPaymentChoice] = useState<'cod' | 'wave' | 'orange'>('cod');
   const [selectedColor, setSelectedColor] = useState<string>(
     config.availableColors && config.availableColors.length > 0
       ? config.availableColors[0]?.name || ''
-      : ''
+      : '',
   );
 
   useEffect(() => {
@@ -81,9 +109,11 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   }, [config.availableColors, selectedColor]);
 
   // Moneriz Checkout Modal state
-  const [monerizSession, setMonerizSession] = useState<any>(null);
+  const [monerizSession, setMonerizSession] =
+    useState<React.ComponentProps<typeof MonerizCheckoutModal>['session']>(null);
   const [isMonerizModalOpen, setIsMonerizModalOpen] = useState(false);
   const [pendingOnlineOrder, setPendingOnlineOrder] = useState<OrderLead | null>(null);
+  const [pendingOrderDbId, setPendingOrderDbId] = useState<string | null>(null);
 
   // Address Input Mode: text vs voice
   const [addressInputMode, setAddressInputMode] = useState<'text' | 'voice'>('text');
@@ -92,18 +122,17 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isRecordingPaused, setIsRecordingPaused] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [voiceNoteBlob, setVoiceNoteBlob] = useState<Blob | null>(null);
+  const [, setVoiceNoteBlob] = useState<Blob | null>(null);
   const [voiceNoteUrl, setVoiceNoteUrl] = useState<string | null>(null);
-  const [isPlayingRecordedVoice, setIsPlayingRecordedVoice] = useState(false);
+  const [, setIsPlayingRecordedVoice] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const recordedAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Review modal state
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewsList, setReviewsList] = useState<CustomerReview[]>(
-    config.reviews && config.reviews.length > 0 ? config.reviews : []
+    config.reviews && config.reviews.length > 0 ? config.reviews : [],
   );
 
   // New review form
@@ -114,14 +143,17 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   // Proof Items (Images, Videos, WhatsApp Voice Notes)
-  const [activeProofFilter, setActiveProofFilter] = useState<'all' | 'audio' | 'video' | 'image'>('all');
+  const [activeProofFilter, setActiveProofFilter] = useState<'all' | 'audio' | 'video' | 'image'>(
+    'all',
+  );
   const [playingProofAudioId, setPlayingProofAudioId] = useState<string | null>(null);
   const [selectedProofModalItem, setSelectedProofModalItem] = useState<ProofItem | null>(null);
 
   const proofAudioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
 
-  const allProofItems: ProofItem[] = config.proofItems && config.proofItems.length > 0 ? config.proofItems : [];
+  const allProofItems: ProofItem[] =
+    config.proofItems && config.proofItems.length > 0 ? config.proofItems : [];
 
   const filteredProofItems =
     activeProofFilter === 'all'
@@ -134,32 +166,34 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   const [neighborhood, setNeighborhood] = useState('Almadies');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<OrderLead | null>(null);
-
-  const quickNeighborhoods = [
-    'Almadies',
-    'Grand Dakar',
-    'Mermoz',
-    'Plateau',
-    'Point E',
-    'Sacré-Cœur',
-    'Yoff',
-    'Guédiawaye',
-    'Pikine',
-  ];
 
   const deliveryFee =
     config.deliveryPricingType === 'fixed'
       ? config.fixedDeliveryFee || 0
       : config.deliveryFree
-      ? 0
-      : config.deliveryFee ?? 0;
+        ? 0
+        : (config.deliveryFee ?? 0);
 
   // Paliers de réductions par volume (Pack Duo, Trio, etc.)
   const defaultTiers: QuantityDiscountTier[] = [
     { id: 't1', minQty: 1, discountType: 'percent', discountValue: 0, label: '1 Pièce (Standard)' },
-    { id: 't2', minQty: 2, discountType: 'percent', discountValue: 10, label: 'Pack Duo — 2 Pièces (-10%)', isPopular: true },
-    { id: 't3', minQty: 3, discountType: 'percent', discountValue: 20, label: 'Pack Famille — 3 Pièces (-20%)' },
+    {
+      id: 't2',
+      minQty: 2,
+      discountType: 'percent',
+      discountValue: 10,
+      label: 'Pack Duo — 2 Pièces (-10%)',
+      isPopular: true,
+    },
+    {
+      id: 't3',
+      minQty: 3,
+      discountType: 'percent',
+      discountValue: 20,
+      label: 'Pack Famille — 3 Pièces (-20%)',
+    },
   ];
 
   const quantityTiers =
@@ -304,17 +338,6 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
     setIsPlayingRecordedVoice(false);
   };
 
-  const togglePlayRecordedVoice = () => {
-    if (!recordedAudioRef.current) return;
-    if (isPlayingRecordedVoice) {
-      recordedAudioRef.current.pause();
-      setIsPlayingRecordedVoice(false);
-    } else {
-      recordedAudioRef.current.play();
-      setIsPlayingRecordedVoice(true);
-    }
-  };
-
   const formatTimer = (totalSec: number) => {
     const mins = Math.floor(totalSec / 60);
     const secs = totalSec % 60;
@@ -345,7 +368,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   const handleOpenCheckout = (choice: 'cod' | 'wave') => {
     setPaymentChoice(choice);
     setOrderSuccess(null);
+    setSubmitError(null);
     setIsCheckoutPageOpen(true);
+    onCheckoutOpened?.({ quantity, value: totalAmount });
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -394,8 +419,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
           paymentChoice === 'wave'
             ? 'online_wave'
             : paymentChoice === 'orange'
-            ? 'online_orange'
-            : 'cod',
+              ? 'online_orange'
+              : 'cod',
         paymentStatus: isOnline ? 'paid' : 'pending_cod',
         deliveryNotes: isOnline
           ? `Payé en ligne via ${paymentChoice === 'wave' ? 'Wave' : 'Orange Money'}`
@@ -403,37 +428,63 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
         selectedColor: selectedColor || (config.availableColors?.[0]?.name ?? undefined),
       };
 
-      if (isOnline) {
-        // Déclenchement sécurisé de la session de paiement Moneriz (Wave · OM · Carte)
+      // Paiement en ligne Moneriz (Wave · OM · Carte). Le serveur fixe le
+      // montant à partir de la commande enregistrée : seul son id est envoyé.
+      const startOnlinePayment = (order: OrderLead, orderDbId: string) => {
+        const failOnline = (message?: string) => {
+          setIsSubmitting(false);
+          setSubmitError(
+            `${message || 'Le paiement en ligne n’a pas pu démarrer.'} Votre commande ${order.id} est enregistrée : vous pouvez réessayer ou payer à la livraison.`,
+          );
+        };
         fetch('/api/payments/moneriz/checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId: generatedId,
-            amount: totalAmount,
-            title: quantity > 1 ? `${config.productTitle} (×${quantity})` : config.productTitle,
-            customerName,
-            customerPhone: whatsappNumber,
-            integrationMode: 'iframe',
-          }),
+          body: JSON.stringify({ orderId: orderDbId, integrationMode: 'iframe' }),
         })
-          .then((res) => res.json())
-          .then((data) => {
+          .then(async (res) => ({ ok: res.ok, data: await res.json().catch(() => null) }))
+          .then(({ ok, data }) => {
+            if (!ok || !data?.checkoutUrl) {
+              failOnline(data?.message);
+              return;
+            }
             setIsSubmitting(false);
-            if (data?.checkoutUrl) {
-              setPendingOnlineOrder(newOrder);
-              setMonerizSession(data);
-              setIsMonerizModalOpen(true);
+            setPendingOnlineOrder(order);
+            setPendingOrderDbId(orderDbId);
+            setMonerizSession(data);
+            setIsMonerizModalOpen(true);
+          })
+          .catch(() => failOnline());
+      };
+
+      // Page publique : la commande est d'abord enregistrée et chiffrée par
+      // le serveur, puis (si besoin) le paiement en ligne démarre.
+      if (submitOrder) {
+        setSubmitError(null);
+        submitOrder(newOrder)
+          .then((saved) => {
+            const persisted: OrderLead = {
+              ...newOrder,
+              id: saved.reference,
+              amount: saved.amount,
+              deliveryFee: saved.deliveryFee,
+              totalAmount: saved.totalAmount,
+              paymentStatus: isOnline ? 'pending_online' : 'pending_cod',
+            };
+            if (isOnline) {
+              startOnlinePayment(persisted, saved.id);
             } else {
-              if (onOrderCreated) onOrderCreated(newOrder);
-              setOrderSuccess(newOrder);
+              setIsSubmitting(false);
+              setOrderSuccess(persisted);
             }
           })
-          .catch((err) => {
-            console.warn('[Moneriz error, fallback]:', err);
+          .catch((err: unknown) => {
             setIsSubmitting(false);
-            if (onOrderCreated) onOrderCreated(newOrder);
-            setOrderSuccess(newOrder);
+            setSubmitError(
+              err instanceof Error && err.message
+                ? err.message
+                : "La commande n'a pas pu être envoyée. Vérifiez votre connexion et réessayez.",
+            );
           });
         return;
       }
@@ -474,7 +525,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   };
 
   const discountPercent = Math.round(
-    ((config.originalPrice - config.price) / config.originalPrice) * 100
+    ((config.originalPrice - config.price) / config.originalPrice) * 100,
   );
 
   // ========================================================
@@ -483,7 +534,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
     const cleanPhone = (config.whatsappSupportNumber || '').replace(/[^0-9+]/g, '');
     const whatsappUrl = cleanPhone
       ? `https://wa.me/${cleanPhone.replace('+', '')}?text=${encodeURIComponent(
-          `Bonjour ${config.storeName || 'Ma Boutique'} ! J'aimerais me renseigner sur vos produits disponibles.`
+          `Bonjour ${config.storeName || 'Ma Boutique'} ! J'aimerais me renseigner sur vos produits disponibles.`,
         )}`
       : '#';
 
@@ -505,7 +556,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               Cette offre est actuellement désactivée
             </h2>
             <p className="text-xs text-[#64748B] leading-relaxed">
-              La boutique <span className="font-bold text-[#0F172A]">{config.storeName}</span> a temporairement suspendu l'accès à ce tunnel de vente. Pour toute question, vous pouvez contacter directement le support client sur WhatsApp.
+              La boutique <span className="font-bold text-[#0F172A]">{config.storeName}</span> a
+              temporairement suspendu l'accès à ce tunnel de vente. Pour toute question, vous pouvez
+              contacter directement le support client sur WhatsApp.
             </p>
           </div>
 
@@ -577,7 +630,10 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   Merci {orderSuccess.customerName} !
                 </h2>
                 <p className="text-xs sm:text-sm text-[#64748B] max-w-md mx-auto">
-                  Votre commande <span className="font-bold text-[#0F172A]">#{orderSuccess.id}</span> pour {orderSuccess.productName} a bien été enregistrée et transmise à notre équipe logistique à Dakar.
+                  Votre commande{' '}
+                  <span className="font-bold text-[#0F172A]">#{orderSuccess.id}</span> pour{' '}
+                  {orderSuccess.productName} a bien été enregistrée et transmise à notre équipe
+                  logistique à Dakar.
                 </p>
               </div>
 
@@ -626,11 +682,13 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="text-[#64748B]">Mode de règlement :</span>
                   <span className="font-bold text-emerald-700">
-                    {orderSuccess.paymentType === 'online_wave'
-                      ? 'Payé en ligne via Wave'
-                      : orderSuccess.paymentType === 'online_orange'
-                      ? 'Payé en ligne via Orange Money'
-                      : 'Paiement en espèces à la livraison (COD)'}
+                    {orderSuccess.paymentType === 'cod'
+                      ? 'Paiement en espèces à la livraison (COD)'
+                      : orderSuccess.paymentStatus === 'pending_online'
+                        ? 'Paiement en ligne — confirmation en cours'
+                        : orderSuccess.paymentType === 'online_orange'
+                          ? 'Payé en ligne via Orange Money'
+                          : 'Payé en ligne via Wave'}
                   </span>
                 </div>
               </div>
@@ -638,7 +696,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               <div className="space-y-2.5 pt-2">
                 <a
                   href={`https://wa.me/${config.whatsappSupportNumber.replace(/\D/g, '')}?text=${encodeURIComponent(
-                    `Bonjour, je viens de passer la commande #${orderSuccess.id} pour ${orderSuccess.productName}. Mon adresse : ${orderSuccess.deliveryAddress || orderSuccess.neighborhood}.`
+                    `Bonjour, je viens de passer la commande #${orderSuccess.id} pour ${orderSuccess.productName}. Mon adresse : ${orderSuccess.deliveryAddress || orderSuccess.neighborhood}.`,
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -663,14 +721,22 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
           </main>
         ) : (
           /* Dedicated Checkout Page */
-          <main className={`flex-1 ${isInsideMockup ? 'w-full p-3 sm:p-4' : 'max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8'} animate-in fade-in duration-200`}>
-            <div className={isInsideMockup ? 'flex flex-col space-y-4' : 'grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start'}>
+          <main
+            className={`flex-1 ${isInsideMockup ? 'w-full p-3 sm:p-4' : 'max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8'} animate-in fade-in duration-200`}
+          >
+            <div
+              className={
+                isInsideMockup
+                  ? 'flex flex-col space-y-4'
+                  : 'grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start'
+              }
+            >
               {/* LEFT COLUMN: PRODUCT RECAP, QUANTITY DISCOUNTS & SUMMARY */}
               <div className={isInsideMockup ? 'w-full space-y-4' : 'lg:col-span-7 space-y-5'}>
                 {/* Product Card */}
                 <div className="p-4 sm:p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
                   <img
-                    src={images[currentMediaIndex]?.url || images[0]?.url || ''}
+                    src={images[currentMediaIndex]?.url || images[0]?.url || undefined}
                     alt={config.productTitle}
                     className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover bg-black shrink-0 border border-[#E2E8F0]"
                   />
@@ -681,8 +747,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       </span>
                       {config.stockQuantity !== undefined && config.showStockBadge !== false ? (
                         <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-                          ⚡ Plus que {config.stockQuantity} pièces restantes
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />⚡
+                          Plus que {config.stockQuantity} pièces restantes
                         </span>
                       ) : (
                         <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -713,9 +779,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Palette className="w-4 h-4 text-[#1E60F8]" />
-                        <h4 className="text-sm font-black text-[#0F172A]">
-                          Couleur / Modèle
-                        </h4>
+                        <h4 className="text-sm font-black text-[#0F172A]">Couleur / Modèle</h4>
                       </div>
                       <span className="text-xs font-black text-[#1E60F8]">
                         {selectedColor || config.availableColors[0]?.name}
@@ -724,7 +788,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
                     <div className="flex flex-wrap gap-2">
                       {config.availableColors.map((color) => {
-                        const isSelected = (selectedColor || config.availableColors?.[0]?.name) === color.name;
+                        const isSelected =
+                          (selectedColor || config.availableColors?.[0]?.name) === color.name;
                         return (
                           <button
                             key={color.id}
@@ -741,7 +806,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                               style={{ backgroundColor: color.hex }}
                             />
                             <span>{color.name}</span>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />}
+                            {isSelected && (
+                              <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                            )}
                           </button>
                         );
                       })}
@@ -753,9 +820,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <div className="p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-sm font-black text-[#0F172A]">
-                        Quantité commandée
-                      </h4>
+                      <h4 className="text-sm font-black text-[#0F172A]">Quantité commandée</h4>
                       <p className="text-xs text-[#64748B]">
                         Choisissez votre pack ou ajustez manuellement
                       </p>
@@ -785,75 +850,79 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   </div>
 
                   {/* Cartes de Paliers Dégressifs (Packs) */}
-                  {config.quantityDiscountsEnabled && config.quantityDiscounts && config.quantityDiscounts.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-                      {/* Pack 1 pièce */}
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(1)}
-                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                          quantity === 1
-                            ? 'border-[#1E60F8] bg-[#EFF4FF] ring-2 ring-[#1E60F8]/20 shadow-xs'
-                            : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-[#0F172A]">1 Article</span>
-                          {quantity === 1 && (
-                            <Check className="w-3.5 h-3.5 text-[#1E60F8] stroke-[3]" />
-                          )}
-                        </div>
-                        <span className="text-[11px] text-[#64748B] block mt-0.5">Prix standard</span>
-                        <span className="text-xs font-black text-[#0F172A] block mt-1">
-                          {formatFCFA(config.price)}
-                        </span>
-                      </button>
+                  {config.quantityDiscountsEnabled &&
+                    config.quantityDiscounts &&
+                    config.quantityDiscounts.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                        {/* Pack 1 pièce */}
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(1)}
+                          className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                            quantity === 1
+                              ? 'border-[#1E60F8] bg-[#EFF4FF] ring-2 ring-[#1E60F8]/20 shadow-xs'
+                              : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#0F172A]">1 Article</span>
+                            {quantity === 1 && (
+                              <Check className="w-3.5 h-3.5 text-[#1E60F8] stroke-[3]" />
+                            )}
+                          </div>
+                          <span className="text-[11px] text-[#64748B] block mt-0.5">
+                            Prix standard
+                          </span>
+                          <span className="text-xs font-black text-[#0F172A] block mt-1">
+                            {formatFCFA(config.price)}
+                          </span>
+                        </button>
 
-                      {/* Tiers configurés par le commerçant */}
-                      {config.quantityDiscounts.map((tier) => {
-                        const isSelected = quantity === tier.minQty;
-                        const tierSubtotal = config.price * tier.minQty;
-                        const tierDisc =
-                          tier.discountType === 'percent'
-                            ? Math.round(tierSubtotal * (tier.discountValue / 100))
-                            : tier.discountValue;
-                        const tierTotal = tierSubtotal - tierDisc;
+                        {/* Tiers configurés par le commerçant */}
+                        {config.quantityDiscounts.map((tier) => {
+                          const isSelected = quantity === tier.minQty;
+                          const tierSubtotal = config.price * tier.minQty;
+                          const tierDisc =
+                            tier.discountType === 'percent'
+                              ? Math.round(tierSubtotal * (tier.discountValue / 100))
+                              : tier.discountValue;
+                          const tierTotal = tierSubtotal - tierDisc;
 
-                        return (
-                          <button
-                            key={tier.id}
-                            type="button"
-                            onClick={() => setQuantity(tier.minQty)}
-                            className={`p-3 rounded-2xl border text-left transition-all relative cursor-pointer ${
-                              isSelected
-                                ? 'border-[#1E60F8] bg-[#EFF4FF] ring-2 ring-[#1E60F8]/20 shadow-xs'
-                                : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
-                            }`}
-                          >
-                            <span className="absolute -top-2 right-2 text-[9px] font-black uppercase tracking-wider text-white bg-emerald-600 px-1.5 py-0.5 rounded-full shadow-xs">
-                              {tier.discountType === 'percent'
-                                ? `-${tier.discountValue}%`
-                                : `-${formatFCFA(tier.discountValue)}`}
-                            </span>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-[#0F172A] truncate">
-                                {tier.label}
+                          return (
+                            <button
+                              key={tier.id}
+                              type="button"
+                              onClick={() => setQuantity(tier.minQty)}
+                              className={`p-3 rounded-2xl border text-left transition-all relative cursor-pointer ${
+                                isSelected
+                                  ? 'border-[#1E60F8] bg-[#EFF4FF] ring-2 ring-[#1E60F8]/20 shadow-xs'
+                                  : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
+                              }`}
+                            >
+                              <span className="absolute -top-2 right-2 text-[9px] font-black uppercase tracking-wider text-white bg-emerald-600 px-1.5 py-0.5 rounded-full shadow-xs">
+                                {tier.discountType === 'percent'
+                                  ? `-${tier.discountValue}%`
+                                  : `-${formatFCFA(tier.discountValue)}`}
                               </span>
-                              {isSelected && (
-                                <Check className="w-3.5 h-3.5 text-[#1E60F8] stroke-[3]" />
-                              )}
-                            </div>
-                            <span className="text-[11px] text-emerald-700 font-semibold block mt-0.5">
-                              Économie {formatFCFA(tierDisc)}
-                            </span>
-                            <span className="text-xs font-black text-[#0F172A] block mt-1">
-                              {formatFCFA(tierTotal)}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-[#0F172A] truncate">
+                                  {tier.label}
+                                </span>
+                                {isSelected && (
+                                  <Check className="w-3.5 h-3.5 text-[#1E60F8] stroke-[3]" />
+                                )}
+                              </div>
+                              <span className="text-[11px] text-emerald-700 font-semibold block mt-0.5">
+                                Économie {formatFCFA(tierDisc)}
+                              </span>
+                              <span className="text-xs font-black text-[#0F172A] block mt-1">
+                                {formatFCFA(tierTotal)}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                 </div>
 
                 {/* Récapitulatif des Prix */}
@@ -863,7 +932,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   </h4>
 
                   <div className="flex items-center justify-between text-[#475569]">
-                    <span>Sous-total ({quantity} {quantity > 1 ? 'articles' : 'article'}) :</span>
+                    <span>
+                      Sous-total ({quantity} {quantity > 1 ? 'articles' : 'article'}) :
+                    </span>
                     <span className="font-semibold text-[#0F172A]">{formatFCFA(baseSubtotal)}</span>
                   </div>
 
@@ -919,7 +990,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               </div>
 
               {/* RIGHT COLUMN: DELIVERY & PAYMENT FORM */}
-              <div className={`${isInsideMockup ? 'w-full' : 'lg:col-span-5'} bg-white rounded-3xl p-5 sm:p-6 border border-[#E2E8F0] shadow-sm space-y-5`}>
+              <div
+                className={`${isInsideMockup ? 'w-full' : 'lg:col-span-5'} bg-white rounded-3xl p-5 sm:p-6 border border-[#E2E8F0] shadow-sm space-y-5`}
+              >
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-[#0F172A]">
                     Adresse de livraison & Paiement
@@ -946,7 +1019,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         }`}
                       >
                         <Banknote className="w-4 h-4 mx-auto mb-1" />
-                        <span className="text-[11px] font-bold block leading-tight">À la livraison</span>
+                        <span className="text-[11px] font-bold block leading-tight">
+                          À la livraison
+                        </span>
                         <span className="text-[9px] opacity-75 block">Espèces</span>
                       </button>
 
@@ -1015,7 +1090,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         className="flex-1 px-3.5 py-2.5 rounded-r-xl border border-[#CBD5E1] bg-[#F8FAFC] text-xs font-semibold text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white transition-all"
                       />
                     </div>
-                    <span className="text-[10px] text-[#64748B]">Le coursier vous contactera sur ce numéro.</span>
+                    <span className="text-[10px] text-[#64748B]">
+                      Le coursier vous contactera sur ce numéro.
+                    </span>
                   </div>
 
                   {/* Quartier Dakar */}
@@ -1025,20 +1102,22 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       Quartier de livraison *
                     </label>
                     <div className="flex flex-wrap gap-1.5 pb-1">
-                      {['Almadies', 'Mermoz', 'Plateau', 'Point E', 'Yoff', 'Sacré-Cœur'].map((q) => (
-                        <button
-                          key={q}
-                          type="button"
-                          onClick={() => setNeighborhood(q)}
-                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
-                            neighborhood.includes(q)
-                              ? 'bg-[#1E60F8] text-white border-[#1E60F8]'
-                              : 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0] hover:bg-white'
-                          }`}
-                        >
-                          {q}
-                        </button>
-                      ))}
+                      {['Almadies', 'Mermoz', 'Plateau', 'Point E', 'Yoff', 'Sacré-Cœur'].map(
+                        (q) => (
+                          <button
+                            key={q}
+                            type="button"
+                            onClick={() => setNeighborhood(q)}
+                            className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                              neighborhood.includes(q)
+                                ? 'bg-[#1E60F8] text-white border-[#1E60F8]'
+                                : 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0] hover:bg-white'
+                            }`}
+                          >
+                            {q}
+                          </button>
+                        ),
+                      )}
                     </div>
                   </div>
 
@@ -1113,7 +1192,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                               <div className="flex items-center gap-2">
                                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
                                 <span className="text-xs font-bold text-rose-600">
-                                  {isRecordingPaused ? 'Enregistrement en pause' : 'Enregistrement en cours...'}
+                                  {isRecordingPaused
+                                    ? 'Enregistrement en pause'
+                                    : 'Enregistrement en cours...'}
                                 </span>
                               </div>
                               <span className="font-mono font-bold text-xs text-[#0F172A]">
@@ -1178,7 +1259,15 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   </div>
 
                   {/* Bouton de Soumission */}
-                  <div className="pt-2">
+                  <div className="pt-2 space-y-2">
+                    {submitError && (
+                      <p
+                        role="alert"
+                        className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2"
+                      >
+                        {submitError}
+                      </p>
+                    )}
                     <Button
                       type="submit"
                       variant="primary"
@@ -1259,18 +1348,28 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
       {/* ======================================================== */}
       <div
         className={`w-full ${
-          isInsideMockup
-            ? 'p-0 max-w-full'
-            : 'max-w-6xl mx-auto px-0 sm:px-6 lg:px-8 lg:py-8'
+          isInsideMockup ? 'p-0 max-w-full' : 'max-w-6xl mx-auto px-0 sm:px-6 lg:px-8 lg:py-8'
         }`}
       >
-        <div className={isInsideMockup ? 'flex flex-col space-y-3' : 'grid grid-cols-1 lg:grid-cols-12 lg:gap-10 items-start'}>
+        <div
+          className={
+            isInsideMockup
+              ? 'flex flex-col space-y-3'
+              : 'grid grid-cols-1 lg:grid-cols-12 lg:gap-10 items-start'
+          }
+        >
           {/* ======================================================== */}
           {/* LEFT COLUMN: PRODUCT MEDIA GALLERY                       */}
           {/* ======================================================== */}
-          <div className={isInsideMockup ? 'w-full space-y-2' : 'lg:col-span-6 lg:sticky lg:top-20 space-y-3'}>
+          <div
+            className={
+              isInsideMockup ? 'w-full space-y-2' : 'lg:col-span-6 lg:sticky lg:top-20 space-y-3'
+            }
+          >
             {/* PRODUCT HERO IMAGE / VIDEO (SANS LES BADGES COMME DEMANDÉ AUDIO 2) */}
-            <div className={`relative w-full ${isInsideMockup ? 'h-[360px] rounded-none sm:rounded-b-2xl' : 'h-[62vh] min-h-[400px] max-h-[580px] lg:h-[520px] lg:max-h-none lg:rounded-3xl'} bg-black overflow-hidden flex-shrink-0 shadow-sm`}>
+            <div
+              className={`relative w-full ${isInsideMockup ? 'h-[360px] rounded-none sm:rounded-b-2xl' : 'h-[62vh] min-h-[400px] max-h-[580px] lg:h-[520px] lg:max-h-none lg:rounded-3xl'} bg-black overflow-hidden flex-shrink-0 shadow-sm`}
+            >
               {config.hasVideo && config.videoUrl && currentMediaIndex === 0 ? (
                 <div className="relative w-full h-full">
                   <video
@@ -1294,7 +1393,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     src={
                       images[config.hasVideo ? currentMediaIndex - 1 : currentMediaIndex]?.url ||
                       images[0]?.url ||
-                      ''
+                      undefined
                     }
                     alt={config.productTitle}
                     className="w-full h-full object-cover transition-opacity duration-300"
@@ -1306,13 +1405,17 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               {totalSlides > 1 && (
                 <>
                   <button
-                    onClick={() => setCurrentMediaIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))}
+                    onClick={() =>
+                      setCurrentMediaIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))
+                    }
                     className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 backdrop-blur-xs text-white flex items-center justify-center hover:bg-black/70 transition-colors cursor-pointer"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => setCurrentMediaIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1))}
+                    onClick={() =>
+                      setCurrentMediaIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1))
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 backdrop-blur-xs text-white flex items-center justify-center hover:bg-black/70 transition-colors cursor-pointer"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -1368,7 +1471,11 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           : 'border-[#E2E8F0] opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <img src={img.url} alt={`Aperçu ${i + 1}`} className="w-full h-full object-cover" />
+                      <img
+                        src={img.url || undefined}
+                        alt={`Aperçu ${i + 1}`}
+                        className="w-full h-full object-cover"
+                      />
                     </button>
                   );
                 })}
@@ -1379,7 +1486,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
           {/* ======================================================== */}
           {/* RIGHT COLUMN: CONTENT STRICTEMENT SELON VOS CONSIGNES    */}
           {/* ======================================================== */}
-          <div className={`${isInsideMockup ? 'w-full px-4 pt-1 pb-24 space-y-4' : 'lg:col-span-6 px-5 lg:px-0 pt-3 lg:pt-0 pb-28 lg:pb-12 space-y-5 -mt-4 lg:mt-0'} relative z-10`}>
+          <div
+            className={`${isInsideMockup ? 'w-full px-4 pt-1 pb-24 space-y-4' : 'lg:col-span-6 px-5 lg:px-0 pt-3 lg:pt-0 pb-28 lg:pb-12 space-y-5 -mt-4 lg:mt-0'} relative z-10`}
+          >
             {/* 1. Header Badges: Stock Garanti & Nom Boutique */}
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-flex items-center gap-1.5">
@@ -1447,12 +1556,16 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold uppercase tracking-wider text-[#64748B] flex items-center gap-1.5">
                     <Palette className="w-3.5 h-3.5 text-[#1E60F8]" />
-                    Couleur : <strong className="text-[#0F172A]">{selectedColor || config.availableColors[0]?.name}</strong>
+                    Couleur :{' '}
+                    <strong className="text-[#0F172A]">
+                      {selectedColor || config.availableColors[0]?.name}
+                    </strong>
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {config.availableColors.map((color) => {
-                    const isSelected = (selectedColor || config.availableColors?.[0]?.name) === color.name;
+                    const isSelected =
+                      (selectedColor || config.availableColors?.[0]?.name) === color.name;
                     return (
                       <button
                         key={color.id}
@@ -1469,7 +1582,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           style={{ backgroundColor: color.hex }}
                         />
                         <span>{color.name}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />}
+                        {isSelected && (
+                          <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                        )}
                       </button>
                     );
                   })}
@@ -1526,7 +1641,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <span>{config.deliveryNotice || 'Expédition locale sous 2h à 4h à Dakar'}</span>
               </div>
               <p className="text-xs text-[#64748B] leading-relaxed">
-                Notre service logistique vous contacte immédiatement sur WhatsApp pour coordonner l'heure exacte et l'adresse de livraison.
+                Notre service logistique vous contacte immédiatement sur WhatsApp pour coordonner
+                l'heure exacte et l'adresse de livraison.
               </p>
             </div>
 
@@ -1689,22 +1805,25 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                             <div className="flex-1 space-y-1">
                               {/* Audio wave bars animation */}
                               <div className="flex items-center gap-0.5 h-6">
-                                {[14, 22, 10, 24, 18, 26, 12, 20, 24, 16, 22, 12, 18, 24, 14, 20, 16, 22, 10].map(
-                                  (h, idx) => (
-                                    <span
-                                      key={idx}
-                                      style={{ height: `${h}px` }}
-                                      className={`w-1 rounded-full transition-all duration-200 ${
-                                        playingProofAudioId === item.id
-                                          ? 'bg-[#25D366] animate-pulse'
-                                          : 'bg-white/30'
-                                      }`}
-                                    />
-                                  )
-                                )}
+                                {[
+                                  14, 22, 10, 24, 18, 26, 12, 20, 24, 16, 22, 12, 18, 24, 14, 20,
+                                  16, 22, 10,
+                                ].map((h, idx) => (
+                                  <span
+                                    key={idx}
+                                    style={{ height: `${h}px` }}
+                                    className={`w-1 rounded-full transition-all duration-200 ${
+                                      playingProofAudioId === item.id
+                                        ? 'bg-[#25D366] animate-pulse'
+                                        : 'bg-white/30'
+                                    }`}
+                                  />
+                                ))}
                               </div>
                               <div className="flex justify-between text-[10px] text-white/60">
-                                <span>{playingProofAudioId === item.id ? 'Lecture...' : 'Message audio'}</span>
+                                <span>
+                                  {playingProofAudioId === item.id ? 'Lecture...' : 'Message audio'}
+                                </span>
                                 <span>{item.duration || '0:38'}</span>
                               </div>
                             </div>
@@ -1724,7 +1843,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all"
                       >
                         <img
-                          src={item.thumbnailUrl || images[0]?.url || ''}
+                          src={item.thumbnailUrl || images[0]?.url || undefined}
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
@@ -1749,7 +1868,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all"
                       >
                         <img
-                          src={item.url}
+                          src={item.url || undefined}
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
@@ -1839,9 +1958,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       </div>
                     </div>
 
-                    <p className="text-xs text-[#334155] leading-relaxed">
-                      "{rev.comment}"
-                    </p>
+                    <p className="text-xs text-[#334155] leading-relaxed">"{rev.comment}"</p>
                   </div>
                 ))}
               </div>
@@ -1954,9 +2071,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
                   <Check className="w-6 h-6 stroke-[3]" />
                 </div>
-                <h4 className="text-base font-black text-[#0F172A]">
-                  Merci pour votre avis !
-                </h4>
+                <h4 className="text-base font-black text-[#0F172A]">Merci pour votre avis !</h4>
                 <p className="text-xs text-[#64748B]">
                   Votre commentaire a été validé et publié avec le badge "Achat vérifié".
                 </p>
@@ -1978,7 +2093,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       >
                         <Star
                           className={`w-6 h-6 ${
-                            star <= newReviewRating ? 'fill-current text-amber-500' : 'text-[#CBD5E1]'
+                            star <= newReviewRating
+                              ? 'fill-current text-amber-500'
+                              : 'text-[#CBD5E1]'
                           }`}
                         />
                       </button>
@@ -2066,14 +2183,14 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
             {selectedProofModalItem.type === 'video' ? (
               <video
-                src={selectedProofModalItem.url}
+                src={selectedProofModalItem.url || undefined}
                 controls
                 autoPlay
                 className="w-full max-h-[75vh] object-contain"
               />
             ) : (
               <img
-                src={selectedProofModalItem.url}
+                src={selectedProofModalItem.url || undefined}
                 alt={selectedProofModalItem.title}
                 className="w-full max-h-[75vh] object-contain"
               />
@@ -2101,20 +2218,25 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
         isOpen={isMonerizModalOpen}
         onClose={() => setIsMonerizModalOpen(false)}
         session={monerizSession}
-        onPaymentSuccess={(paymentInfo) => {
-          if (pendingOnlineOrder) {
-            const confirmed: OrderLead = {
-              ...pendingOnlineOrder,
-              paymentStatus: 'paid',
-              status: 'confirmed',
-              deliveryNotes: `Paiement en ligne confirmé via Moneriz (Réf: ${paymentInfo?.paymentId || monerizSession?.id})`,
-            };
-            if (onOrderCreated) {
-              onOrderCreated(confirmed);
-            }
-            setOrderSuccess(confirmed);
-          }
+        onPaymentSuccess={() => {
           setIsMonerizModalOpen(false);
+          if (!pendingOnlineOrder) return;
+          const order = pendingOnlineOrder;
+          // Le message de l'iframe n'est qu'un signal : le serveur revérifie
+          // le paiement auprès de Moneriz avant de le marquer payé.
+          const verify =
+            confirmPayment && pendingOrderDbId
+              ? confirmPayment(pendingOrderDbId).catch(() => false)
+              : Promise.resolve(false);
+          void verify.then((paid) => {
+            setOrderSuccess({
+              ...order,
+              paymentStatus: paid ? 'paid' : 'pending_online',
+              deliveryNotes: paid
+                ? 'Paiement en ligne confirmé'
+                : 'Paiement reçu, confirmation en cours (quelques minutes)',
+            });
+          });
         }}
       />
     </div>

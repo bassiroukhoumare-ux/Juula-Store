@@ -8,21 +8,14 @@ import {
   Moon,
   Calendar,
   SlidersHorizontal,
-  Download,
   Plus,
   ChevronDown,
-  Sparkles,
   Layers,
   Smartphone,
-  ExternalLink,
-  Hexagon,
-  Check,
   X,
-  CreditCard,
-  Truck,
-  CheckCircle2,
 } from 'lucide-react';
 import { DashboardTab } from '@/types/juula';
+import { JuulaLogo } from '@/components/brand/JuulaLogo';
 
 export interface HeaderWidgetsState {
   kpiCards: boolean;
@@ -57,12 +50,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
-  leadCreditsRemaining,
-  availableBalance,
-  currency,
-  onOpenRecharge,
-  onOpenPayoutModal,
-  onOpenStorefrontPreview,
   currentViewMode,
   onToggleViewMode,
   onCreatePageClick,
@@ -124,16 +111,8 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top Search Bar, Mobile Brand & User Actions */}
       <div className="flex items-center justify-between gap-4">
         {/* Mobile Brand (Visible only when sidebar is hidden on mobile) */}
-        <div className="flex items-center gap-2 lg:hidden">
-          <div className="w-8 h-8 rounded-xl bg-[#1E60F8] text-white flex items-center justify-center font-black shadow-[0_2px_8px_rgba(30,96,248,0.25)]">
-            <Hexagon className="w-4 h-4 fill-white stroke-[#1E60F8]" />
-          </div>
-          <div>
-            <span className="font-extrabold text-sm text-[#0F172A] tracking-tight block leading-none">
-              Juula Store
-            </span>
-            <span className="text-[10px] text-[#64748B] font-semibold">Marchand</span>
-          </div>
+        <div className="flex items-center lg:hidden shrink-0">
+          <JuulaLogo height={28} />
         </div>
 
         {/* Search input with shortcut ⌘K (Desktop) */}
@@ -236,7 +215,9 @@ export const Header: React.FC<HeaderProps> = ({
                   {notifications.length === 0 ? (
                     <div className="py-8 text-center text-xs text-[#94A3B8] space-y-1">
                       <p className="font-semibold text-[#64748B]">Aucune notification</p>
-                      <p className="text-[11px]">Les alertes de commandes et retraits s'afficheront ici en direct.</p>
+                      <p className="text-[11px]">
+                        Les alertes de commandes et retraits s'afficheront ici en direct.
+                      </p>
                     </div>
                   ) : (
                     notifications.map((notif) => (
@@ -358,24 +339,28 @@ export const Header: React.FC<HeaderProps> = ({
 
             {isPeriodOpen && (
               <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl p-2 border border-[#E5E9F0] shadow-xl z-50 animate-in fade-in slide-in-from-top-1">
-                {['Aujourd’hui', '7 derniers jours', '14 derniers jours', '30 derniers jours', 'Ce mois'].map(
-                  (period) => (
-                    <button
-                      key={period}
-                      onClick={() => {
-                        onSelectPeriod?.(period);
-                        setIsPeriodOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                        selectedPeriod === period
-                          ? 'bg-[#EFF4FF] text-[#1E60F8]'
-                          : 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
-                      }`}
-                    >
-                      {period}
-                    </button>
-                  )
-                )}
+                {[
+                  'Aujourd’hui',
+                  '7 derniers jours',
+                  '14 derniers jours',
+                  '30 derniers jours',
+                  'Ce mois',
+                ].map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => {
+                      onSelectPeriod?.(period);
+                      setIsPeriodOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      selectedPeriod === period
+                        ? 'bg-[#EFF4FF] text-[#1E60F8]'
+                        : 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
+                    }`}
+                  >
+                    {period}
+                  </button>
+                ))}
               </div>
             )}
           </div>

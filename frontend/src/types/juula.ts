@@ -9,7 +9,7 @@ export type DashboardTab =
 
 export type OrderStatus = 'new' | 'confirmed' | 'delivered' | 'cancelled';
 export type PaymentType = 'cod' | 'online_wave' | 'online_orange';
-export type PaymentStatus = 'paid' | 'pending_cod';
+export type PaymentStatus = 'paid' | 'pending_cod' | 'pending_online';
 
 export interface OrderLead {
   id: string;
@@ -72,7 +72,9 @@ export interface InflowRecord {
   source: 'online_wave' | 'online_orange' | 'cod_cash';
   amount: number;
   date: string;
+  /** received = paid but inside the 72h hold; confirmed = withdrawable. */
   status: 'received' | 'confirmed';
+  availableAt?: string;
 }
 
 export interface WalletState {
@@ -81,6 +83,11 @@ export interface WalletState {
   monthRevenue?: number;
   codCollectedAmount?: number;
   pendingCodAmount: number;
+  /** Paid online but still inside the payout hold (not yet withdrawable). */
+  pendingOnlineAmount?: number;
+  /** ISO date of the next hold release, if any. */
+  nextReleaseAt?: string | null;
+  payoutHoldHours?: number;
   totalWithdrawn: number;
   currency: string;
   payoutHistory: PayoutRecord[];
@@ -94,7 +101,7 @@ export interface PayoutRecord {
   phoneNumber: string;
   recipientName: string;
   date: string;
-  status: 'completed' | 'processing';
+  status: 'completed' | 'processing' | 'failed';
   reference: string;
 }
 

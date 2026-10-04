@@ -1,536 +1,648 @@
-'use client';
+// Public landing page (/). The merchant dashboard lives at /dashboard.
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import {
+  ArrowRight,
+  BadgeCheck,
+  Banknote,
+  BarChart3,
+  Check,
+  ChevronDown,
+  Clock,
+  Link2,
+  MessageCircle,
+  Mic,
+  PackageCheck,
+  Radar,
+  Rocket,
+  Share2,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  Star,
+  Truck,
+  Wallet,
+  Zap,
+} from 'lucide-react';
+import { SiteHeader } from '@/components/site/SiteHeader';
+import { SiteFooter } from '@/components/site/SiteFooter';
+import { LEAD_PACKS, WELCOME_CREDITS } from '@/lib/store/plans';
+import { formatNumber } from '@/lib/orderUtils';
 
-import React, { useState } from 'react';
-import { Sidebar } from '@/components/dashboard/Sidebar';
-import { Header, HeaderWidgetsState } from '@/components/dashboard/Header';
-import { CockpitView } from '@/components/dashboard/CockpitView';
-import { KanbanView } from '@/components/dashboard/KanbanView';
-import { WalletView } from '@/components/dashboard/WalletView';
-import { WizardEditor } from '@/components/dashboard/WizardEditor';
-import { ImmersiveShowcase } from '@/components/showcase/ImmersiveShowcase';
-import { RechargeModal } from '@/components/dashboard/RechargeModal';
-import { PayoutPageView } from '@/components/dashboard/PayoutPageView';
-import { MobileBottomNav } from '@/components/dashboard/MobileBottomNav';
-import { initialKpis, initialOrders, defaultFunnelConfig, initialWallet, initialFunnelPages } from '@/data/mockData';
-import { CustomersView } from '@/components/dashboard/CustomersView';
-import { AnalyticsView } from '@/components/dashboard/AnalyticsView';
-import { SettingsView } from '@/components/dashboard/SettingsView';
-import { formatOrderId, getStoreCode } from '@/lib/orderUtils';
-import { DashboardTab, FunnelPageConfig, FunnelPageItem, FunnelPageStatus, KpiMetrics, OrderLead, WalletState, PayoutRecord } from '@/types/juula';
-import { ArrowLeft, Sparkles, Smartphone, Layers, CheckCircle2, Monitor } from 'lucide-react';
+export const metadata: Metadata = {
+  title: 'Juula Store — Vendez en ligne avec paiement à la livraison et Mobile Money',
+  description:
+    'Créez une page produit qui convertit, partagez son lien sur Facebook, TikTok et WhatsApp, recevez vos commandes et encaissez par Wave, Orange Money ou à la livraison.',
+  ...(process.env.APP_URL ? { metadataBase: new URL(process.env.APP_URL) } : {}),
+  openGraph: {
+    type: 'website',
+    title: 'Juula Store — La boutique en ligne des marchands africains',
+    description:
+      'Pages produits, commandes WhatsApp, paiement à la livraison, Wave et Orange Money. Lancez votre boutique en 2 minutes.',
+    images: [{ url: '/logo-juula.svg' }],
+  },
+};
 
-export default function JuulaStoreApp() {
-  const [activeTab, setActiveTab] = useState<DashboardTab>('cockpit');
-  const [viewMode, setViewMode] = useState<'dashboard' | 'vitrine'>('dashboard');
-  const [previewDevice, setPreviewDevice] = useState<'responsive' | 'mobile'>('responsive');
-  const [orders, setOrders] = useState<OrderLead[]>(initialOrders);
-  const [kpis, setKpis] = useState<KpiMetrics>(initialKpis);
-  const [wallet, setWallet] = useState<WalletState>(initialWallet);
+const PAYMENT_BADGES = [
+  'Paiement à la livraison',
+  'Wave',
+  'Orange Money',
+  'Carte bancaire',
+  'Pixel Meta',
+  'Pixel TikTok',
+];
 
-  // Multi-Pages / Multi-Tunnels Management State
-  const [funnelPages, setFunnelPages] = useState<FunnelPageItem[]>(initialFunnelPages);
-  const [activePageId, setActivePageId] = useState<string>(initialFunnelPages[0]?.id || 'fnl-royale-01');
-  const [funnelConfig, setFunnelConfig] = useState<FunnelPageConfig>(
-    initialFunnelPages[0]?.config || defaultFunnelConfig
-  );
+const STEPS = [
+  {
+    icon: Rocket,
+    title: 'Créez votre page produit',
+    text: 'Photos, prix, avantages, avis clients et offres par quantité : votre page de vente est prête en 2 minutes, sans compétence technique.',
+  },
+  {
+    icon: Share2,
+    title: 'Partagez votre lien',
+    text: 'Chaque produit a son lien unique, avec un bel aperçu sur Facebook, TikTok, Instagram et WhatsApp. Copiez, collez, vendez.',
+  },
+  {
+    icon: PackageCheck,
+    title: 'Recevez et encaissez',
+    text: 'Les commandes arrivent dans votre tableau de bord. Vos clients paient à la livraison ou en ligne par Wave et Orange Money.',
+  },
+];
 
-  // Filter & Dashboard Widget Customization States
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('30 derniers jours');
-  const [selectedDateRange, setSelectedDateRange] = useState<string>('1 Jan, 2026 - 4 Oct, 2026');
-  const [activeWidgets, setActiveWidgets] = useState<HeaderWidgetsState>({
-    kpiCards: true,
-    profitChart: true,
-    segmentation: true,
-    activeDays: true,
-    deliveryRate: true,
-    aiAssistant: true,
-    bestProducts: true,
-  });
+const FEATURES = [
+  {
+    icon: Smartphone,
+    title: 'Pages produits qui convertissent',
+    text: 'Galerie photo et vidéo, badges d’urgence, preuves clients en photo, vidéo ou note vocale, avis vérifiés.',
+  },
+  {
+    icon: Truck,
+    title: 'Paiement à la livraison',
+    text: 'Le mode préféré de vos clients. Ils commandent en un formulaire, vous confirmez sur WhatsApp et vous livrez.',
+  },
+  {
+    icon: Wallet,
+    title: 'Wave & Orange Money intégrés',
+    text: 'Paiement en ligne sécurisé, portefeuille marchand et retraits vers votre compte Mobile Money protégés par code PIN.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Toutes vos commandes au même endroit',
+    text: 'Tableau Kanban — nouvelles, confirmées, livrées — chiffre d’affaires et statistiques mis à jour en temps réel.',
+  },
+  {
+    icon: Radar,
+    title: 'Pixels Meta & TikTok',
+    text: 'Collez vos identifiants de pixel : visites, ajouts et achats remontent automatiquement pour optimiser vos pubs.',
+  },
+  {
+    icon: Mic,
+    title: 'Adresse par note vocale',
+    text: 'Vos clients qui préfèrent parler peuvent décrire leur adresse de livraison par message vocal, directement sur la page.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Offres par quantité',
+    text: 'Pack Duo, Pack Famille : augmentez votre panier moyen avec des remises automatiques par palier.',
+  },
+  {
+    icon: Link2,
+    title: 'Un lien pour chaque produit',
+    text: 'Des liens permanents et propres, prêts pour vos bios, vos stories et vos campagnes sponsorisées.',
+  },
+];
 
-  const [isRechargeOpen, setIsRechargeOpen] = useState(false);
-  const [isPayoutPageOpen, setIsPayoutPageOpen] = useState(false);
-  const [payoutSecurity, setPayoutSecurity] = useState({
-    isPinSet: false,
-    pinCode: '',
-    maskedPin: 'Non configuré',
-    recoveryEmail: '',
-  });
+const FAQ = [
+  {
+    q: 'Combien coûte Juula Store ?',
+    a: `L’inscription est gratuite et vous recevez ${WELCOME_CREDITS} crédits leads offerts. Vous rechargez ensuite selon vos besoins, sans abonnement : un crédit correspond à une commande reçue.`,
+  },
+  {
+    q: 'Comment mes clients paient-ils ?',
+    a: 'À la livraison en espèces, ou en ligne par Wave, Orange Money ou carte bancaire. Vous choisissez les modes de paiement proposés sur chaque page.',
+  },
+  {
+    q: 'Quand puis-je retirer l’argent des paiements en ligne ?',
+    a: 'Notre partenaire de paiement règle les fonds 72 heures après chaque paiement. Le montant devient alors retirable vers votre compte Wave ou Orange Money, à partir de 1 000 FCFA, avec votre code PIN.',
+  },
+  {
+    q: 'Ai-je besoin d’un site web ou d’un développeur ?',
+    a: 'Non. Vous vous connectez avec Google, vous créez votre page produit dans l’éditeur et vous partagez le lien. C’est tout.',
+  },
+  {
+    q: 'Puis-je suivre mes publicités Facebook et TikTok ?',
+    a: 'Oui. Ajoutez l’identifiant de votre Pixel Meta et de votre Pixel TikTok dans les Paramètres : les événements de visite, de formulaire et de commande sont envoyés automatiquement.',
+  },
+  {
+    q: 'Mes données et celles de mes clients sont-elles protégées ?',
+    a: 'Les échanges sont chiffrés, chaque paiement est vérifié auprès du prestataire avant d’être crédité et votre code PIN est stocké de façon chiffrée. Les détails sont dans notre politique de confidentialité.',
+  },
+  {
+    q: 'Puis-je vendre plusieurs produits ?',
+    a: 'Oui, vous créez autant de pages produits que nécessaire, chacune avec son propre lien, et vous les publiez ou désactivez quand vous voulez.',
+  },
+];
 
-  // Funnel pages operations
-  const handleSelectPage = (pageId: string) => {
-    const target = funnelPages.find((p) => p.id === pageId);
-    if (target) {
-      setActivePageId(pageId);
-      setFunnelConfig(target.config);
-    }
-  };
-
-  const handleCreateNewPage = (internalName: string) => {
-    const newId = `fnl-${Date.now().toString().slice(-5)}`;
-    const newConfig: FunnelPageConfig = {
-      ...defaultFunnelConfig,
-      id: newId,
-      internalName: internalName.trim() || 'Nouvelle Page de Vente',
-      status: 'draft',
-      productTitle: internalName.trim() || 'Nouveau Produit Sans Titre',
-      slug: `page-${newId}`,
-      mediaItems: [],
-      videoUrl: '',
-      hasVideo: false,
-      price: 0,
-      originalPrice: 0,
-      stockQuantity: 10,
-      showStockBadge: false,
-      availableColors: [],
-      benefits: [],
-      proofItems: [],
-      reviews: [],
-    };
-    const newPageItem: FunnelPageItem = {
-      id: newId,
-      internalName: internalName.trim() || 'Nouvelle Page de Vente',
-      status: 'draft',
-      createdAt: "Aujourd'hui",
-      updatedAt: "À l'instant",
-      config: newConfig,
-    };
-    setFunnelPages((prev) => [newPageItem, ...prev]);
-    setActivePageId(newId);
-    setFunnelConfig(newConfig);
-  };
-
-  const handleTogglePageStatus = (pageId: string, newStatus: FunnelPageStatus) => {
-    setFunnelPages((prev) =>
-      prev.map((p) => {
-        if (p.id === pageId) {
-          const updatedConfig = { ...p.config, status: newStatus };
-          if (p.id === activePageId) {
-            setFunnelConfig(updatedConfig);
-          }
-          return {
-            ...p,
-            status: newStatus,
-            updatedAt: "À l'instant",
-            config: updatedConfig,
-          };
-        }
-        return p;
-      })
-    );
-  };
-
-  const handleDeletePage = (pageId: string) => {
-    if (funnelPages.length <= 1) return;
-    const filtered = funnelPages.filter((p) => p.id !== pageId);
-    setFunnelPages(filtered);
-    if (activePageId === pageId) {
-      const next = filtered[0];
-      if (next) {
-        setActivePageId(next.id);
-        setFunnelConfig(next.config);
-      }
-    }
-  };
-
-  const handleSaveFunnelConfig = (updated: FunnelPageConfig) => {
-    setFunnelConfig(updated);
-    setFunnelPages((prev) =>
-      prev.map((page) =>
-        page.id === updated.id
-          ? {
-              ...page,
-              internalName: updated.internalName || page.internalName,
-              status: updated.status || page.status,
-              updatedAt: "À l'instant",
-              config: updated,
-            }
-          : page
-      )
-    );
-  };
-
-  // When a new order is captured from showcase
-  const handleOrderCreated = (newOrderPartial: Partial<OrderLead>) => {
-    const isOnline =
-      newOrderPartial.paymentType === 'online_wave' ||
-      newOrderPartial.paymentType === 'online_orange';
-
-    const deliveryFee =
-      funnelConfig.deliveryPricingType === 'fixed'
-        ? (funnelConfig.fixedDeliveryFee || 0)
-        : 0;
-    const totalAmount = (newOrderPartial.amount || funnelConfig.price) + deliveryFee;
-    const storeCode = funnelConfig.storeCode || getStoreCode(funnelConfig.storeName || 'Juula Store');
-    const orderId = newOrderPartial.id || formatOrderId(storeCode, orders.length + 1);
-
-    const fullOrder: OrderLead = {
-      id: orderId,
-      customerName: newOrderPartial.customerName || 'Nouveau Client',
-      phone: newOrderPartial.phone || '+221 77 000 00 00',
-      whatsappNumber: newOrderPartial.whatsappNumber || '221770000000',
-      neighborhood: newOrderPartial.neighborhood || 'Dakar',
-      city: 'Dakar',
-      productName: funnelConfig.productTitle,
-      productImage: newOrderPartial.productImage || funnelConfig.mediaItems[0]?.url || 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=300&q=80',
-      amount: funnelConfig.price,
-      quantity: newOrderPartial.quantity || 1,
-      currency: funnelConfig.currency,
-      status: 'new',
-      createdAt: "À l'instant",
-      paymentType: newOrderPartial.paymentType || 'cod',
-      paymentStatus: isOnline ? 'paid' : 'pending_cod',
-      deliveryNotes: newOrderPartial.deliveryNotes || '',
-      deliveryAddress: newOrderPartial.deliveryAddress || '',
-      hasVoiceNote: newOrderPartial.hasVoiceNote || false,
-      voiceNoteUrl: newOrderPartial.voiceNoteUrl,
-      deliveryFee: deliveryFee,
-      totalAmount: totalAmount,
-    };
-
-    setOrders((prev) => [fullOrder, ...prev]);
-
-    // Update KPIs dynamically
-    setKpis((prev) => ({
-      ...prev,
-      ordersBreakdown: {
-        ...prev.ordersBreakdown,
-        total: prev.ordersBreakdown.total + 1,
-        codCount: isOnline ? prev.ordersBreakdown.codCount : prev.ordersBreakdown.codCount + 1,
-        onlineCount: isOnline ? prev.ordersBreakdown.onlineCount + 1 : prev.ordersBreakdown.onlineCount,
-      },
-      revenue: {
-        ...prev.revenue,
-        total: prev.revenue.total + totalAmount,
-        onlineAmount: isOnline ? prev.revenue.onlineAmount + totalAmount : prev.revenue.onlineAmount,
-        codAmount: isOnline ? prev.revenue.codAmount : prev.revenue.codAmount + totalAmount,
-      },
-      leadCredits: {
-        ...prev.leadCredits,
-        remaining: Math.max(0, prev.leadCredits.remaining - 1),
-      },
-    }));
-
-    // Update Merchant Wallet: If paid online, directly into available balance!
-    if (isOnline) {
-      setWallet((prev) => ({
-        ...prev,
-        availableBalance: prev.availableBalance + totalAmount,
-      }));
-    } else {
-      setWallet((prev) => ({
-        ...prev,
-        pendingCodAmount: prev.pendingCodAmount + totalAmount,
-      }));
-    }
-  };
-
-  // Recharging credits
-  const handleRecharged = (creditsAdded: number) => {
-    setKpis((prev) => ({
-      ...prev,
-      leadCredits: {
-        ...prev.leadCredits,
-        remaining: prev.leadCredits.remaining + creditsAdded,
-        total: prev.leadCredits.total + creditsAdded,
-      },
-    }));
-  };
-
-  // Payout request success
-  const handlePayoutSuccess = (
-    amount: number,
-    provider: 'wave' | 'orange_money',
-    phoneNumber: string
-  ) => {
-    const newRecord: PayoutRecord = {
-      id: `RET-${Date.now().toString().slice(-4)}`,
-      amount,
-      provider,
-      phoneNumber: `+221 ${phoneNumber}`,
-      recipientName: funnelConfig.storeName || 'Ma Boutique',
-      date: "À l'instant",
-      status: 'completed',
-      reference: `${provider === 'wave' ? 'WAV-SN' : 'OM-SN'}-${Math.floor(1000000 + Math.random() * 9000000)}`,
-    };
-
-    setWallet((prev) => ({
-      ...prev,
-      availableBalance: Math.max(0, prev.availableBalance - amount),
-      totalWithdrawn: prev.totalWithdrawn + amount,
-      payoutHistory: [newRecord, ...prev.payoutHistory],
-    }));
-  };
-
-  const newOrdersCount = orders.filter((o) => o.status === 'new').length;
-
+function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#F2F4F7] text-[#0F172A] flex flex-col font-sans">
-      {/* ======================================================== */}
-      {/* VUE 2 : VITRINE IMMERSIVE (DESKTOP & MOBILE RESPONSIVE)  */}
-      {/* ======================================================== */}
-      {viewMode === 'vitrine' ? (
-        <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
-          {/* Top Control & Return Bar */}
-          <div className="w-full bg-[#0F172A] text-white py-2.5 px-4 sm:px-8 flex items-center justify-between text-xs sticky top-0 z-50 shadow-md">
-            <button
-              onClick={() => setViewMode('dashboard')}
-              className="inline-flex items-center gap-1.5 font-bold hover:text-white/80 transition-colors cursor-pointer bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Retour au Dashboard Marchand</span>
-            </button>
+    <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#1E60F8] bg-[#EFF4FF] px-3 py-1 rounded-full">
+      {children}
+    </span>
+  );
+}
 
-            {/* Mode Switcher : Plein Écran Responsive vs Simulateur Mobile */}
-            <div className="flex items-center gap-1 bg-white/10 p-1 rounded-xl">
-              <button
-                onClick={() => setPreviewDevice('responsive')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
-                  previewDevice === 'responsive'
-                    ? 'bg-[#1E60F8] text-white shadow-xs'
-                    : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <Monitor className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Plein Écran (PC / Responsive)</span>
-                <span className="sm:hidden">PC</span>
-              </button>
+/** Stylised product page + dashboard notifications (pure HTML, no images). */
+function HeroMockup() {
+  return (
+    <div className="relative mx-auto w-full max-w-[420px]" aria-hidden="true">
+      <div className="absolute -inset-8 bg-gradient-to-tr from-[#1E60F8]/20 via-[#60A5FA]/10 to-transparent blur-3xl rounded-full" />
 
-              <button
-                onClick={() => setPreviewDevice('mobile')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
-                  previewDevice === 'mobile'
-                    ? 'bg-[#1E60F8] text-white shadow-xs'
-                    : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Simulateur Mobile</span>
-                <span className="sm:hidden">Mobile</span>
-              </button>
+      <div className="relative mx-auto w-[290px] sm:w-[310px] rounded-[2.6rem] border-[9px] border-[#0F172A] bg-white shadow-[0_30px_60px_-20px_rgba(15,23,42,0.45)] overflow-hidden">
+        <div className="h-44 bg-gradient-to-br from-[#1E60F8] via-[#3B82F6] to-[#93C5FD] relative">
+          <span className="absolute top-3 left-3 text-[10px] font-black text-white bg-[#EF4444] px-2 py-0.5 rounded-full">
+            -38% aujourd&apos;hui
+          </span>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-3xl bg-white/25 backdrop-blur-sm border border-white/40 flex items-center justify-center">
+              <PackageCheck className="w-11 h-11 text-white" />
             </div>
-
-            <span className="hidden md:flex items-center gap-1.5 text-amber-300 font-bold bg-amber-400/10 px-2.5 py-1 rounded-xl">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Aperçu Client Final</span>
+          </div>
+        </div>
+        <div className="p-4 space-y-2.5">
+          <div className="flex items-center gap-1 text-[#F59E0B]">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Star key={i} className="w-3 h-3 fill-current" />
+            ))}
+            <span className="text-[10px] text-[#64748B] font-semibold ml-1">
+              Avis clients vérifiés
             </span>
           </div>
+          <p className="text-sm font-black text-[#0F172A] leading-tight">
+            Montre Élégance — Édition Dakar
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-black text-[#1E60F8]">15 000 F</span>
+            <span className="text-xs text-[#94A3B8] line-through">24 000 F</span>
+          </div>
+          <div className="space-y-1">
+            {['Livraison express à Dakar', 'Garantie satisfait ou remboursé'].map((t) => (
+              <p key={t} className="flex items-center gap-1.5 text-[11px] text-[#334155]">
+                <Check className="w-3 h-3 text-[#10B981]" /> {t}
+              </p>
+            ))}
+          </div>
+          <div className="w-full py-2.5 rounded-xl bg-[#1E60F8] text-white text-xs font-black text-center">
+            Commander — paiement à la livraison
+          </div>
+          <div className="w-full py-2 rounded-xl bg-[#F1F5F9] text-[#0F172A] text-[11px] font-bold text-center">
+            Payer avec Wave · Orange Money
+          </div>
+        </div>
+      </div>
 
-          {/* Container according to chosen mode */}
-          <div className="flex-1 flex justify-center p-0">
-            {previewDevice === 'mobile' ? (
-              <div className="py-6 px-4 w-full flex justify-center bg-slate-950 min-h-[calc(100vh-50px)]">
-                {/* Modern Smartphone Mockup Frame */}
-                <div className="w-[390px] max-w-full h-[820px] max-h-[calc(100vh-80px)] bg-[#F8FAFC] rounded-[3.2rem] border-[10px] border-neutral-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] overflow-hidden relative flex flex-col ring-1 ring-white/10">
-                  {/* Dynamic Island Notch */}
-                  <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-50 flex items-center justify-end pr-2 pointer-events-none shadow-sm">
-                    <div className="w-2.5 h-2.5 rounded-full bg-neutral-900 border border-neutral-700" />
-                  </div>
+      <div className="absolute -left-2 sm:-left-10 top-16 w-52 p-3 rounded-2xl bg-white border border-[#E5E9F0] shadow-xl motion-safe:animate-[float_6s_ease-in-out_infinite]">
+        <div className="flex items-center gap-2">
+          <span className="w-8 h-8 rounded-xl bg-[#ECFDF5] text-[#10B981] flex items-center justify-center">
+            <BadgeCheck className="w-4 h-4" />
+          </span>
+          <div>
+            <p className="text-[11px] font-black text-[#0F172A]">Nouvelle commande</p>
+            <p className="text-[10px] text-[#64748B] font-mono">CMD-JLA-000124 · 32 000 F</p>
+          </div>
+        </div>
+      </div>
 
-                  {/* Scrollable Mobile Screen Content */}
-                  <div className="flex-1 overflow-y-auto scrollbar-thin">
-                    <ImmersiveShowcase
-                      config={funnelConfig}
-                      onOrderCreated={handleOrderCreated}
-                      isInsideMockup={true}
-                    />
-                  </div>
+      <div className="absolute -right-2 sm:-right-8 -bottom-4 w-48 p-3 rounded-2xl bg-white border border-[#E5E9F0] shadow-xl motion-safe:animate-[float_7s_ease-in-out_infinite_1s]">
+        <div className="flex items-center gap-2">
+          <span className="w-8 h-8 rounded-xl bg-[#EFF4FF] text-[#1E60F8] flex items-center justify-center">
+            <Wallet className="w-4 h-4" />
+          </span>
+          <div>
+            <p className="text-[11px] font-black text-[#0F172A]">Retrait Wave envoyé</p>
+            <p className="text-[10px] text-[#64748B]">50 000 FCFA</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-                  {/* iOS Style Home Indicator Bar */}
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-black/40 rounded-full z-50 pointer-events-none" />
+export default function LandingPage() {
+  const [discovery, growth, scaler] = LEAD_PACKS;
+
+  return (
+    <div className="min-h-screen bg-[#F2F4F7] text-[#0F172A] overflow-x-hidden">
+      <SiteHeader />
+
+      <main>
+        {/* ───────────────────────── HERO ───────────────────────── */}
+        <section className="max-w-6xl mx-auto px-4 pt-12 sm:pt-20 pb-16 grid gap-14 lg:grid-cols-2 items-center">
+          <div className="space-y-6 text-center lg:text-left">
+            <Eyebrow>
+              <Zap className="w-3.5 h-3.5" /> Pour les marchands du Sénégal et d&apos;Afrique de
+              l&apos;Ouest
+            </Eyebrow>
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.4rem] font-black tracking-tight leading-[1.05]">
+              Vendez plus avec une page produit{' '}
+              <span className="text-[#1E60F8]">qui convertit.</span>
+            </h1>
+            <p className="text-base sm:text-lg text-[#475569] leading-relaxed max-w-xl mx-auto lg:mx-0">
+              Créez votre page de vente, partagez son lien sur Facebook, TikTok et WhatsApp, et
+              encaissez vos commandes à la livraison ou par Wave et Orange Money. Tout depuis un
+              seul tableau de bord.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-sm font-black shadow-[0_6px_20px_rgba(30,96,248,0.35)] transition-colors"
+              >
+                Créer ma boutique gratuitement <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="#tarifs"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white hover:bg-[#F8FAFC] border border-[#E2E8F0] text-sm font-bold text-[#0F172A] transition-colors"
+              >
+                Voir les tarifs
+              </Link>
+            </div>
+            <ul className="flex flex-wrap gap-x-5 gap-y-2 justify-center lg:justify-start text-sm text-[#475569]">
+              {[
+                `${WELCOME_CREDITS} crédits offerts`,
+                'Sans abonnement',
+                'Connexion avec Google',
+              ].map((t) => (
+                <li key={t} className="flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-[#10B981]" /> {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <HeroMockup />
+        </section>
+
+        {/* ───────────────────── PAYMENT BADGES ───────────────────── */}
+        <section
+          aria-label="Moyens de paiement et intégrations"
+          className="border-y border-[#E5E9F0] bg-white"
+        >
+          <div className="max-w-6xl mx-auto px-4 py-5 flex flex-wrap items-center justify-center gap-2.5">
+            {PAYMENT_BADGES.map((b) => (
+              <span
+                key={b}
+                className="px-3.5 py-1.5 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-bold text-[#334155]"
+              >
+                {b}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        {/* ───────────────────── HOW IT WORKS ───────────────────── */}
+        <section id="comment-ca-marche" className="scroll-mt-24 max-w-6xl mx-auto px-4 py-20">
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <Eyebrow>Comment ça marche</Eyebrow>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+              De l&apos;idée à la vente en 3 étapes
+            </h2>
+            <p className="text-[#475569]">
+              Pas de site à construire, pas de développeur à payer. Juula Store s&apos;occupe de la
+              technique, vous vous occupez de vendre.
+            </p>
+          </div>
+          <ol className="mt-12 grid gap-5 md:grid-cols-3">
+            {STEPS.map((step, i) => (
+              <li
+                key={step.title}
+                className="relative p-6 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs"
+              >
+                <span className="absolute top-5 right-6 text-5xl font-black text-[#EFF4FF] select-none">
+                  {i + 1}
+                </span>
+                <span className="w-12 h-12 rounded-2xl bg-[#1E60F8] text-white flex items-center justify-center shadow-[0_4px_14px_rgba(30,96,248,0.3)]">
+                  <step.icon className="w-6 h-6" />
+                </span>
+                <h3 className="mt-5 text-lg font-black">{step.title}</h3>
+                <p className="mt-2 text-sm text-[#475569] leading-relaxed">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-10 text-center">
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 text-sm font-black text-[#1E60F8] hover:underline"
+            >
+              Créer ma première page produit <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </section>
+
+        {/* ───────────────────── FEATURES ───────────────────── */}
+        <section id="fonctionnalites" className="scroll-mt-24 bg-white border-y border-[#E5E9F0]">
+          <div className="max-w-6xl mx-auto px-4 py-20">
+            <div className="text-center max-w-2xl mx-auto space-y-3">
+              <Eyebrow>Fonctionnalités</Eyebrow>
+              <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+                Tout ce qu&apos;il faut pour vendre en Afrique
+              </h2>
+              <p className="text-[#475569]">
+                Pensé pour le paiement à la livraison, le Mobile Money et la vente sur les réseaux
+                sociaux.
+              </p>
+            </div>
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {FEATURES.map((f) => (
+                <div
+                  key={f.title}
+                  className="p-5 rounded-3xl bg-[#F8FAFC] border border-[#E5E9F0] hover:border-[#1E60F8]/40 hover:bg-white transition-colors"
+                >
+                  <span className="w-10 h-10 rounded-xl bg-[#EFF4FF] text-[#1E60F8] flex items-center justify-center">
+                    <f.icon className="w-5 h-5" />
+                  </span>
+                  <h3 className="mt-4 text-sm font-black">{f.title}</h3>
+                  <p className="mt-1.5 text-sm text-[#475569] leading-relaxed">{f.text}</p>
                 </div>
-              </div>
-            ) : (
-              <div className="w-full">
-                <ImmersiveShowcase
-                  config={funnelConfig}
-                  onOrderCreated={handleOrderCreated}
-                  isInsideMockup={false}
-                />
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-        </div>
-      ) : (
-        /* ======================================================== */
-        /* VUE 1 : DASHBOARD MARCHAND                               */
-        /* ======================================================== */
-        <div className="flex min-h-screen">
-          {/* Sidebar */}
-          <Sidebar
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            leadCreditsRemaining={kpis.leadCredits.remaining}
-            leadCreditsTotal={kpis.leadCredits.total}
-            onOpenRecharge={() => setIsRechargeOpen(true)}
-            onOpenStorefrontPreview={() => setViewMode('vitrine')}
-            newOrdersCount={newOrdersCount}
-            availableBalance={wallet.availableBalance}
-            currency={wallet.currency}
-          />
+        </section>
 
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-w-0 bg-[#F2F4F7]">
-            {/* Header */}
-            <Header
-              activeTab={activeTab}
-              onTabChange={(tab) => {
-                setIsPayoutPageOpen(false);
-                setActiveTab(tab);
-              }}
-              leadCreditsRemaining={kpis.leadCredits.remaining}
-              availableBalance={wallet.availableBalance}
-              currency={wallet.currency}
-              onOpenRecharge={() => setIsRechargeOpen(true)}
-              onOpenPayoutModal={() => setIsPayoutPageOpen(true)}
-              onOpenStorefrontPreview={() => setViewMode('vitrine')}
-              currentViewMode={viewMode}
-              onToggleViewMode={setViewMode}
-              onCreatePageClick={() => {
-                setIsPayoutPageOpen(false);
-                setActiveTab('wizard');
-              }}
-              selectedPeriod={selectedPeriod}
-              onSelectPeriod={setSelectedPeriod}
-              selectedDateRange={selectedDateRange}
-              onSelectDateRange={setSelectedDateRange}
-              activeWidgets={activeWidgets}
-              onToggleWidget={(key) =>
-                setActiveWidgets((prev) => ({
-                  ...prev,
-                  [key]: !prev[key],
-                }))
-              }
-            />
-
-            {/* Dynamic Content View */}
-            <main className="flex-1 p-4 sm:p-8 pb-28 lg:pb-8 max-w-7xl w-full mx-auto">
-              {isPayoutPageOpen ? (
-                <PayoutPageView
-                  availableBalance={wallet.availableBalance}
-                  currency={wallet.currency}
-                  onBack={() => setIsPayoutPageOpen(false)}
-                  onPayoutSuccess={(amount, provider, phone) => {
-                    handlePayoutSuccess(amount, provider, phone);
-                  }}
-                  payoutSecurity={payoutSecurity}
-                  onUpdateSecurityPin={(newPin) => {
-                    setPayoutSecurity({
-                      ...payoutSecurity,
-                      isPinSet: true,
-                      pinCode: newPin,
-                      maskedPin: `•••• ${newPin.slice(-2)}`,
-                    });
-                  }}
-                  onGoToSettings={() => {
-                    setIsPayoutPageOpen(false);
-                    setActiveTab('settings');
-                  }}
-                />
-              ) : (
-                <>
-                  {activeTab === 'cockpit' && (
-                    <CockpitView
-                      kpis={kpis}
-                      wallet={wallet}
-                      funnelConfig={funnelConfig}
-                      recentOrders={orders}
-                      onCreatePageClick={() => setActiveTab('wizard')}
-                      onOpenRecharge={() => setIsRechargeOpen(true)}
-                      onOpenPayoutModal={() => setIsPayoutPageOpen(true)}
-                      onOpenStorefrontPreview={() => setViewMode('vitrine')}
-                      onOpenKanban={() => setActiveTab('kanban')}
-                      onOpenWallet={() => setActiveTab('wallet')}
-                      activeWidgets={activeWidgets}
-                      selectedPeriod={selectedPeriod}
-                      selectedDateRange={selectedDateRange}
-                    />
-                  )}
-
-                  {activeTab === 'kanban' && (
-                    <KanbanView
-                      orders={orders}
-                      onOrdersChange={setOrders}
-                      onOpenStorefrontPreview={() => setViewMode('vitrine')}
-                    />
-                  )}
-
-                  {activeTab === 'wallet' && (
-                    <WalletView
-                      wallet={wallet}
-                      orders={orders}
-                      onOpenPayoutModal={() => setIsPayoutPageOpen(true)}
-                    />
-                  )}
-
-                  {activeTab === 'wizard' && (
-                    <WizardEditor
-                      initialConfig={funnelConfig}
-                      onSaveConfig={handleSaveFunnelConfig}
-                      onOpenStorefrontPreview={() => setViewMode('vitrine')}
-                      onOpenMobileSimulator={() => {
-                        setViewMode('vitrine');
-                        setPreviewDevice('mobile');
-                      }}
-                      pages={funnelPages}
-                      activePageId={activePageId}
-                      onSelectPage={handleSelectPage}
-                      onCreatePage={handleCreateNewPage}
-                      onUpdatePageStatus={handleTogglePageStatus}
-                      onDeletePage={handleDeletePage}
-                    />
-                  )}
-
-                  {activeTab === 'customers' && (
-                    <CustomersView orders={orders} storeName={funnelConfig.storeName} />
-                  )}
-
-                  {activeTab === 'analytics' && (
-                    <AnalyticsView
-                      kpis={kpis}
-                      orders={orders}
-                      onOpenStorefrontPreview={() => setViewMode('vitrine')}
-                    />
-                  )}
-
-                  {activeTab === 'settings' && (
-                    <SettingsView
-                      funnelConfig={funnelConfig}
-                      onSaveConfig={(updated) => setFunnelConfig(updated)}
-                      payoutSecurity={payoutSecurity}
-                      onUpdateSecurityPin={(newPin) => {
-                        setPayoutSecurity({
-                          ...payoutSecurity,
-                          isPinSet: true,
-                          pinCode: newPin,
-                          maskedPin: `•••• ${newPin.slice(-2)}`,
-                        });
-                      }}
-                    />
-                  )}
-                </>
-              )}
-            </main>
-
-            {/* Mobile Bottom Navigation Bar */}
-            <MobileBottomNav
-              activeTab={activeTab}
-              onTabChange={(tab) => {
-                setIsPayoutPageOpen(false);
-                setActiveTab(tab);
-              }}
-              onOpenStorefrontPreview={() => setViewMode('vitrine')}
-              newOrdersCount={newOrdersCount}
-            />
+        {/* ───────────────────── DASHBOARD / WALLET ───────────────────── */}
+        <section className="max-w-6xl mx-auto px-4 py-20 grid gap-12 lg:grid-cols-2 items-center">
+          <div className="space-y-5">
+            <Eyebrow>Votre argent, en sécurité</Eyebrow>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+              Un portefeuille clair, des retraits vers Wave et Orange Money
+            </h2>
+            <p className="text-[#475569] leading-relaxed">
+              Chaque paiement en ligne est vérifié auprès de notre partenaire de paiement avant
+              d&apos;être crédité. Vous voyez ce qui est disponible, ce qui est en attente, et vous
+              retirez quand vous voulez.
+            </p>
+            <ul className="space-y-3">
+              {[
+                {
+                  icon: Clock,
+                  t: 'Fonds disponibles 72 h après chaque paiement, date de déblocage affichée',
+                },
+                { icon: ShieldCheck, t: 'Retraits protégés par votre code PIN à 6 chiffres' },
+                {
+                  icon: Banknote,
+                  t: 'Paiement à la livraison suivi séparément de vos encaissements en ligne',
+                },
+              ].map(({ icon: Icon, t }) => (
+                <li key={t} className="flex items-start gap-3 text-sm text-[#334155]">
+                  <span className="w-8 h-8 rounded-xl bg-[#ECFDF5] text-[#10B981] flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4" />
+                  </span>
+                  <span className="pt-1.5">{t}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
-      )}
 
-      {/* Recharge Modal */}
-      <RechargeModal
-        isOpen={isRechargeOpen}
-        onClose={() => setIsRechargeOpen(false)}
-        onRecharged={handleRecharged}
-      />
+          <div
+            className="p-5 sm:p-6 rounded-3xl bg-white border border-[#E5E9F0] shadow-[0_20px_50px_-25px_rgba(15,23,42,0.35)] space-y-4"
+            aria-hidden="true"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-black">Portefeuille</p>
+              <span className="text-[10px] font-bold text-[#64748B] bg-[#F1F5F9] px-2 py-1 rounded-lg">
+                Exemple
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 rounded-2xl border border-[#E5E9F0] border-t-4 border-t-[#10B981]">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+                  Disponible
+                </p>
+                <p className="text-xl font-black mt-1">185 000 F</p>
+              </div>
+              <div className="p-4 rounded-2xl border border-[#E5E9F0] border-t-4 border-t-[#F59E0B]">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+                  En attente 72 h
+                </p>
+                <p className="text-xl font-black mt-1">64 000 F</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {[
+                {
+                  ref: 'CMD-JLA-000124',
+                  who: 'Awa · Mermoz',
+                  amt: '32 000 F',
+                  s: 'Payé · Wave',
+                  c: 'text-[#059669] bg-[#ECFDF5]',
+                },
+                {
+                  ref: 'CMD-JLA-000123',
+                  who: 'Moussa · Yoff',
+                  amt: '15 000 F',
+                  s: 'À la livraison',
+                  c: 'text-[#0284C7] bg-[#F0F9FF]',
+                },
+                {
+                  ref: 'CMD-JLA-000122',
+                  who: 'Fatou · Plateau',
+                  amt: '28 500 F',
+                  s: 'Payé · OM',
+                  c: 'text-[#059669] bg-[#ECFDF5]',
+                },
+              ].map((o) => (
+                <div
+                  key={o.ref}
+                  className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#F8FAFC] border border-[#F1F5F9]"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-mono font-bold text-[#0F172A]">{o.ref}</p>
+                    <p className="text-[11px] text-[#64748B] truncate">{o.who}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-black">{o.amt}</p>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${o.c}`}>
+                      {o.s}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ───────────────────── PRICING ───────────────────── */}
+        <section id="tarifs" className="scroll-mt-24 bg-white border-y border-[#E5E9F0]">
+          <div className="max-w-6xl mx-auto px-4 py-20">
+            <div className="text-center max-w-2xl mx-auto space-y-3">
+              <Eyebrow>Tarifs</Eyebrow>
+              <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+                Payez seulement quand vous vendez
+              </h2>
+              <p className="text-[#475569]">
+                Pas d&apos;abonnement. Un crédit lead = une commande reçue. Rechargez par Wave ou
+                Orange Money quand vous en avez besoin.
+              </p>
+            </div>
+
+            <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4 items-stretch">
+              <div className="p-6 rounded-3xl bg-[#F8FAFC] border border-[#E5E9F0] flex flex-col">
+                <p className="text-sm font-black">Démarrage</p>
+                <p className="text-xs text-[#64748B] mt-1">Pour lancer votre boutique</p>
+                <p className="mt-5 text-4xl font-black">0 F</p>
+                <p className="text-sm text-[#475569] mt-1">
+                  {WELCOME_CREDITS} crédits leads offerts
+                </p>
+                <ul className="mt-5 space-y-2 text-sm text-[#334155] flex-1">
+                  {[
+                    'Pages produits illimitées',
+                    'Paiement à la livraison',
+                    'Wave & Orange Money',
+                    'Pixels Meta & TikTok',
+                  ].map((t) => (
+                    <li key={t} className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-[#10B981] shrink-0" /> {t}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/signup"
+                  className="mt-6 py-3 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#1E60F8] text-sm font-black text-center transition-colors"
+                >
+                  Commencer gratuitement
+                </Link>
+              </div>
+
+              {[discovery, growth, scaler].filter(Boolean).map((pack) => {
+                const p = pack!;
+                return (
+                  <div
+                    key={p.label}
+                    className={`relative p-6 rounded-3xl flex flex-col ${
+                      p.popular
+                        ? 'bg-[#0F172A] text-white shadow-[0_25px_50px_-20px_rgba(30,96,248,0.55)] ring-2 ring-[#1E60F8]'
+                        : 'bg-white border border-[#E5E9F0]'
+                    }`}
+                  >
+                    {p.popular && (
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-wider bg-[#1E60F8] text-white px-3 py-1 rounded-full">
+                        Le plus choisi
+                      </span>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-black">{p.label}</p>
+                      {p.discount && (
+                        <span
+                          className={`text-[10px] font-black px-2 py-0.5 rounded-full ${p.popular ? 'bg-[#10B981] text-white' : 'bg-[#ECFDF5] text-[#059669]'}`}
+                        >
+                          {p.discount}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-xs mt-1 ${p.popular ? 'text-white/70' : 'text-[#64748B]'}`}>
+                      {p.tagline}
+                    </p>
+                    <p className="mt-5 text-4xl font-black">
+                      {formatNumber(p.price)} <span className="text-lg">F</span>
+                    </p>
+                    <p className={`text-sm mt-1 ${p.popular ? 'text-white/80' : 'text-[#475569]'}`}>
+                      {p.credits} crédits leads · {p.costPerLead}
+                    </p>
+                    <ul
+                      className={`mt-5 space-y-2 text-sm flex-1 ${p.popular ? 'text-white/90' : 'text-[#334155]'}`}
+                    >
+                      {[
+                        `${p.credits} commandes reçues`,
+                        'Crédits sans date d’expiration',
+                        'Paiement Wave ou Orange Money',
+                      ].map((t) => (
+                        <li key={t} className="flex items-center gap-2">
+                          <Check
+                            className={`w-4 h-4 shrink-0 ${p.popular ? 'text-[#34D399]' : 'text-[#10B981]'}`}
+                          />{' '}
+                          {t}
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      href="/signup"
+                      className={`mt-6 py-3 rounded-2xl text-sm font-black text-center transition-colors ${
+                        p.popular
+                          ? 'bg-[#1E60F8] hover:bg-[#164ED0] text-white'
+                          : 'bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A]'
+                      }`}
+                    >
+                      Choisir ce pack
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-6 text-center text-xs text-[#64748B]">
+              Prix en francs CFA (FCFA). Les paiements en ligne de vos clients sont reversés sur
+              votre portefeuille, retirables 72 h après chaque paiement.
+            </p>
+          </div>
+        </section>
+
+        {/* ───────────────────── FAQ ───────────────────── */}
+        <section id="faq" className="scroll-mt-24 max-w-3xl mx-auto px-4 py-20">
+          <div className="text-center space-y-3">
+            <Eyebrow>Questions fréquentes</Eyebrow>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+              Vous avez des questions ?
+            </h2>
+          </div>
+          <div className="mt-10 space-y-3">
+            {FAQ.map((item) => (
+              <details
+                key={item.q}
+                className="group p-5 rounded-2xl bg-white border border-[#E5E9F0] open:border-[#1E60F8]/40 open:shadow-xs"
+              >
+                <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-[#0F172A] [&::-webkit-details-marker]:hidden">
+                  {item.q}
+                  <ChevronDown className="w-5 h-5 text-[#64748B] shrink-0 transition-transform group-open:rotate-180" />
+                </summary>
+                <p className="mt-3 text-sm text-[#475569] leading-relaxed">{item.a}</p>
+              </details>
+            ))}
+          </div>
+          <p className="mt-8 text-center text-sm text-[#475569]">
+            Une autre question ?{' '}
+            <a
+              href="https://wa.me/221774128930"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-bold text-[#1E60F8] hover:underline"
+            >
+              <MessageCircle className="w-4 h-4" /> Écrivez-nous sur WhatsApp
+            </a>
+          </p>
+        </section>
+
+        {/* ───────────────────── FINAL CTA ───────────────────── */}
+        <section className="px-4 pb-20">
+          <div className="max-w-6xl mx-auto relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0F2B6B] via-[#143E9C] to-[#1E60F8] px-6 py-14 sm:px-14 text-center text-white">
+            <div
+              className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-white/10 blur-2xl"
+              aria-hidden="true"
+            />
+            <h2 className="relative text-3xl sm:text-4xl font-black tracking-tight">
+              Votre prochaine vente commence par un lien.
+            </h2>
+            <p className="relative mt-3 text-white/80 max-w-xl mx-auto">
+              Créez votre boutique avec Google en quelques secondes et publiez votre première page
+              produit aujourd&apos;hui.
+            </p>
+            <Link
+              href="/signup"
+              className="relative mt-8 inline-flex items-center gap-2 px-7 py-4 rounded-2xl bg-white text-[#1E60F8] text-sm font-black hover:bg-[#EFF4FF] transition-colors"
+            >
+              Créer ma boutique gratuitement <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </section>
+      </main>
+
+      <SiteFooter />
     </div>
   );
 }

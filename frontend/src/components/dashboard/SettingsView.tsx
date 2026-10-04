@@ -8,17 +8,12 @@ import {
   MessageCircle,
   Save,
   CheckCircle2,
-  Smartphone,
-  Sliders,
-  ShieldCheck,
-  Zap,
   KeyRound,
   Lock,
   Mail,
-  AlertCircle,
-  RefreshCw,
 } from 'lucide-react';
 import { FunnelPageConfig } from '@/types/juula';
+import { TrackingPixelsCard } from './TrackingPixelsCard';
 
 interface SettingsViewProps {
   funnelConfig: FunnelPageConfig;
@@ -52,20 +47,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const [storeName, setStoreName] = useState(funnelConfig.storeName || 'Ma Boutique');
   const [storeCode, setStoreCode] = useState(funnelConfig.storeCode || 'CMD');
-  const [whatsappNumber, setWhatsappNumber] = useState(
-    funnelConfig.whatsappSupportNumber || ''
-  );
+  const [whatsappNumber, setWhatsappNumber] = useState(funnelConfig.whatsappSupportNumber || '');
   const [deliveryFree, setDeliveryFree] = useState(funnelConfig.deliveryFree ?? false);
   const [deliveryFee, setDeliveryFee] = useState(funnelConfig.deliveryFee ?? 0);
-  const [deliveryNotice, setDeliveryNotice] = useState(
-    funnelConfig.deliveryNotice || ''
-  );
+  const [deliveryNotice, setDeliveryNotice] = useState(funnelConfig.deliveryNotice || '');
   const [waveMerchantNumber, setWaveMerchantNumber] = useState('');
   const [orangeMerchantNumber, setOrangeMerchantNumber] = useState('');
-  const [codEnabled, setCodEnabled] = useState(funnelConfig.codEnabled ?? true);
-  const [mobileMoneyEnabled, setMobileMoneyEnabled] = useState(
-    funnelConfig.mobileMoneyEnabled ?? true
-  );
+  const [codEnabled] = useState(funnelConfig.codEnabled ?? true);
+  const [mobileMoneyEnabled] = useState(funnelConfig.mobileMoneyEnabled ?? true);
   const [isSaved, setIsSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
@@ -94,15 +83,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-0.5 rounded-md">
               Configuration
             </span>
-            <span className="text-xs text-[#64748B] font-semibold">
-              Boutique & Logistique
-            </span>
+            <span className="text-xs text-[#64748B] font-semibold">Boutique & Logistique</span>
           </div>
           <h2 className="text-2xl font-black text-[#0F172A] tracking-tight mt-1">
             Paramètres du SaaS Juula
           </h2>
           <p className="text-xs text-[#64748B] mt-0.5">
-            Configurez les frais de livraison par défaut, le préfixe de vos numéros de commande et vos comptes Wave / Orange Money.
+            Configurez les frais de livraison par défaut, le préfixe de vos numéros de commande et
+            vos comptes Wave / Orange Money.
           </p>
         </div>
 
@@ -124,6 +112,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </button>
       </div>
 
+      <TrackingPixelsCard />
+
       <form onSubmit={handleSave} className="space-y-6">
         {/* 1. STORE IDENTITY & ORDER PREFIX */}
         <div className="p-6 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs space-y-4">
@@ -134,7 +124,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div>
               <h3 className="text-sm font-black text-[#0F172A]">Identité de la Boutique</h3>
               <p className="text-[11px] text-[#64748B]">
-                Ces informations personnalisent automatiquement vos tunnels et le préfixe de commande.
+                Ces informations personnalisent automatiquement vos tunnels et le préfixe de
+                commande.
               </p>
             </div>
           </div>
@@ -197,7 +188,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <Truck className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-[#0F172A]">Logistique & Tarification de Livraison</h3>
+              <h3 className="text-sm font-black text-[#0F172A]">
+                Logistique & Tarification de Livraison
+              </h3>
               <p className="text-[11px] text-[#64748B]">
                 Définissez si la livraison est offerte ou payante pour vos clients à Dakar.
               </p>
@@ -217,7 +210,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-black text-[#0F172A]">Livraison Gratuite (Offerte)</span>
+                  <span className="text-xs font-black text-[#0F172A]">
+                    Livraison Gratuite (Offerte)
+                  </span>
                   {deliveryFree && <CheckCircle2 className="w-4 h-4 text-[#10B981]" />}
                 </div>
                 <p className="text-[11px] text-[#64748B]">
@@ -235,7 +230,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-black text-[#0F172A]">Frais de Livraison Fixes</span>
+                  <span className="text-xs font-black text-[#0F172A]">
+                    Frais de Livraison Fixes
+                  </span>
                   {!deliveryFree && <CheckCircle2 className="w-4 h-4 text-[#1E60F8]" />}
                 </div>
                 <p className="text-[11px] text-[#64748B]">
@@ -287,9 +284,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <CreditCard className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-[#0F172A]">Moyens de Paiement & Encaissement</h3>
+              <h3 className="text-sm font-black text-[#0F172A]">
+                Moyens de Paiement & Encaissement
+              </h3>
               <p className="text-[11px] text-[#64748B]">
-                Configurez vos comptes récepteurs pour les retraits automatiques et paiements directs.
+                Configurez vos comptes récepteurs pour les retraits automatiques et paiements
+                directs.
               </p>
             </div>
           </div>
@@ -359,14 +359,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   Sécurité des Virements : Code PIN à 6 Chiffres
                 </h3>
                 <p className="text-[11px] text-[#64748B]">
-                  Code secret requis pour autoriser tout virement Mobile Money vers Wave ou Orange Money.
+                  Code secret requis pour autoriser tout virement Mobile Money vers Wave ou Orange
+                  Money.
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <span className="text-xs font-mono font-bold text-[#059669] bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#A7F3D0]">
-                {payoutSecurity.isPinSet ? `Code Actif : ${payoutSecurity.maskedPin}` : 'Non défini'}
+                {payoutSecurity.isPinSet
+                  ? `Code Actif : ${payoutSecurity.maskedPin}`
+                  : 'Non défini'}
               </span>
             </div>
           </div>
@@ -374,7 +377,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
             <div className="md:col-span-7 space-y-4">
               <p className="text-xs text-[#64748B] leading-relaxed">
-                Ce code de validation unique protège l'ensemble de vos fonds encaissés. Dès sa création, vos chiffres sont masqués ({payoutSecurity.maskedPin}) pour éviter toute indiscrétion.
+                Ce code de validation unique protège l'ensemble de vos fonds encaissés. Dès sa
+                création, vos chiffres sont masqués ({payoutSecurity.maskedPin}) pour éviter toute
+                indiscrétion.
               </p>
 
               {!isEditingPin ? (
@@ -509,7 +514,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <span>Adresse email de récupération</span>
               </span>
               <p className="text-[11px] text-[#64748B]">
-                En cas d'oubli de votre code PIN, un email de réinitialisation sécurisé sera envoyé à cette adresse :
+                En cas d'oubli de votre code PIN, un email de réinitialisation sécurisé sera envoyé
+                à cette adresse :
               </p>
               <div className="p-2.5 rounded-xl bg-white border border-[#CBD5E1] font-mono font-bold text-[#0F172A]">
                 {payoutSecurity.recoveryEmail}

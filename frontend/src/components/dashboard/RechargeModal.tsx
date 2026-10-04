@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X, Check, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { formatNumber } from '@/lib/orderUtils';
+import { LEAD_PACKS } from '@/lib/store/plans';
 
 interface RechargeModalProps {
   isOpen: boolean;
@@ -11,11 +12,7 @@ interface RechargeModalProps {
   onRecharged: (creditsAdded: number) => void;
 }
 
-export const RechargeModal: React.FC<RechargeModalProps> = ({
-  isOpen,
-  onClose,
-  onRecharged,
-}) => {
+export const RechargeModal: React.FC<RechargeModalProps> = ({ isOpen, onClose, onRecharged }) => {
   const [selectedPack, setSelectedPack] = useState<number>(150);
   const [paymentProvider, setPaymentProvider] = useState<'wave' | 'orange'>('wave');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -24,31 +21,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
 
   if (!isOpen) return null;
 
-  const packs = [
-    {
-      credits: 50,
-      price: 5000,
-      label: 'Pack Découverte',
-      popular: false,
-      costPerLead: '100 FCFA/lead',
-    },
-    {
-      credits: 150,
-      price: 12500,
-      label: 'Pack Croissance',
-      popular: true,
-      costPerLead: '83 FCFA/lead',
-      discount: '-17%',
-    },
-    {
-      credits: 500,
-      price: 35000,
-      label: 'Pack Scaler Pro',
-      popular: false,
-      costPerLead: '70 FCFA/lead',
-      discount: '-30%',
-    },
-  ];
+  const packs = LEAD_PACKS;
 
   const handlePay = () => {
     setIsProcessing(true);
@@ -78,20 +51,17 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
             <div className="w-16 h-16 bg-[#ECFDF5] text-[#10B981] rounded-full flex items-center justify-center mx-auto shadow-inner">
               <Check className="w-8 h-8 stroke-[3]" />
             </div>
-            <h3 className="text-xl font-black text-[#0F172A]">
-              Recharge confirmée !
-            </h3>
+            <h3 className="text-xl font-black text-[#0F172A]">Recharge confirmée !</h3>
             <p className="text-sm text-[#64748B] max-w-xs mx-auto">
-              +{selectedPack} crédits leads ont été ajoutés à votre compte Juula Store via {paymentProvider === 'wave' ? 'Wave' : 'Orange Money'}.
+              +{selectedPack} crédits leads ont été ajoutés à votre compte Juula Store via{' '}
+              {paymentProvider === 'wave' ? 'Wave' : 'Orange Money'}.
             </p>
           </div>
         ) : (
           <div>
             <div className="flex items-center gap-2 mb-1 text-[#1E60F8]">
               <Zap className="w-5 h-5" />
-              <span className="text-xs font-bold uppercase tracking-wider">
-                Recharge Immédiate
-              </span>
+              <span className="text-xs font-bold uppercase tracking-wider">Recharge Immédiate</span>
             </div>
             <h2 className="text-2xl font-black text-[#0F172A] tracking-tight">
               Recharger mes crédits Leads
@@ -123,23 +93,15 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
                         Populaire
                       </span>
                     )}
-                    <span className="text-xs font-semibold text-[#64748B] block">
-                      {pack.label}
-                    </span>
+                    <span className="text-xs font-semibold text-[#64748B] block">{pack.label}</span>
                     <div className="mt-1 flex items-baseline gap-1">
-                      <span className="text-lg font-black text-[#0F172A]">
-                        {pack.credits}
-                      </span>
-                      <span className="text-[10px] font-bold text-[#1E60F8]">
-                        leads
-                      </span>
+                      <span className="text-lg font-black text-[#0F172A]">{pack.credits}</span>
+                      <span className="text-[10px] font-bold text-[#1E60F8]">leads</span>
                     </div>
                     <p className="text-xs font-bold text-[#0F172A] mt-1">
                       {formatNumber(pack.price)} F
                     </p>
-                    <p className="text-[10px] text-[#64748B]">
-                      {pack.costPerLead}
-                    </p>
+                    <p className="text-[10px] text-[#64748B]">{pack.costPerLead}</p>
                   </button>
                 );
               })}
