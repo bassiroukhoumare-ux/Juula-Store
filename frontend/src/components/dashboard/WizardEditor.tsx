@@ -46,7 +46,7 @@ import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
 import { formatFCFA } from '@/lib/orderUtils';
-import { uploadImage } from '@/lib/upload';
+import { uploadImage, uploadMedia } from '@/lib/upload';
 import { useToast } from '@/contexts/ToastContext';
 
 interface WizardEditorProps {
@@ -142,41 +142,78 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
     onSaveConfig(updated);
   };
 
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  // Uploads go straight from the browser to Cloudinary (no size limit from
+  // our server); `photoUploads` counts photos in flight, `photoProgress`
+  // is the average progress shown on the "+ Ajouter photo" tile.
+  const [photoUploads, setPhotoUploads] = useState(0);
+  const [photoProgress, setPhotoProgress] = useState(0);
+  const isUploadingPhoto = photoUploads > 0;
+  const progressById = useRef(new Map<string, number>());
 
-  // Handle local device photo file upload & Cloudinary sync
+  const refreshPhotoProgress = () => {
+    const values = [...progressById.current.values()];
+    setPhotoProgress(
+      values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0,
+    );
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const files = Array.from(e.target.files ?? []);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith('image/')) return;
-      const localMediaId = `med-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const room = Math.max(0, 5 - config.mediaItems.length);
+    if (files.length > room) {
+      toast(
+        room === 0
+          ? 'Maximum 5 photos par produit.'
+          : `Seulement ${room} photo(s) de plus possible(s).`,
+        'error',
+      );
+    }
+
+    files.slice(0, room).forEach((file, i) => {
+      if (!file.type.startsWith('image/') && !/\.(heic|heif)$/i.test(file.name)) {
+        toast(`« ${file.name} » n’est pas une image.`, 'error');
+        return;
+      }
+      const localMediaId = `med-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`;
 
       // 1. Aperçu instantané (URL locale, jamais enregistrée en base)
       const previewUrl = URL.createObjectURL(file);
-      const previewMedia: MediaItem = {
-        id: localMediaId,
-        type: 'image',
-        url: previewUrl,
-        isPrimary: config.mediaItems.length === 0,
-      };
-      setConfig((prev) => {
-        if (prev.mediaItems.length >= 5) return prev;
-        return { ...prev, mediaItems: [...prev.mediaItems, previewMedia] };
-      });
+      setConfig((prev) => ({
+        ...prev,
+        mediaItems: [
+          ...prev.mediaItems,
+          {
+            id: localMediaId,
+            type: 'image',
+            url: previewUrl,
+            isPrimary: prev.mediaItems.length === 0,
+          },
+        ],
+      }));
 
-      // 2. Téléversement sécurisé vers Cloudinary (CDN), puis sauvegarde
-      setIsUploadingPhoto(true);
-      uploadImage(file)
+      // 2. Envoi direct vers Cloudinary, puis sauvegarde de la page
+      progressById.current.set(localMediaId, 0);
+      setPhotoUploads((n) => n + 1);
+      uploadImage(file, {
+        onProgress: (pct) => {
+          progressById.current.set(localMediaId, pct);
+          refreshPhotoProgress();
+        },
+      })
         .then((url) => {
+          let saved: FunnelPageConfig | null = null;
           setConfig((prev) => {
-            const updated = {
+            saved = {
               ...prev,
               mediaItems: prev.mediaItems.map((m) => (m.id === localMediaId ? { ...m, url } : m)),
             };
-            onSaveConfig(updated);
-            return updated;
+            return saved;
+          });
+          queueMicrotask(() => {
+            if (saved) onSaveConfig(saved);
           });
         })
         .catch((err: unknown) => {
@@ -184,18 +221,41 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
             ...prev,
             mediaItems: prev.mediaItems.filter((m) => m.id !== localMediaId),
           }));
-          toast(err instanceof Error ? err.message : "L'envoi de l'image a échoué.", 'error');
+          toast(err instanceof Error ? err.message : 'L’envoi de la photo a échoué.', 'error');
         })
         .finally(() => {
           URL.revokeObjectURL(previewUrl);
-          setIsUploadingPhoto(false);
+          progressById.current.delete(localMediaId);
+          refreshPhotoProgress();
+          setPhotoUploads((n) => Math.max(0, n - 1));
         });
     });
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
+
+  // Product video (vertical, TikTok/Reels style) → Cloudinary
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const [videoProgress, setVideoProgress] = useState<number | null>(null);
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (videoInputRef.current) videoInputRef.current.value = '';
+    if (!file) return;
+    setVideoProgress(0);
+    uploadMedia(file, 'video', { onProgress: setVideoProgress })
+      .then((url) => {
+        const updated = { ...config, videoUrl: url, hasVideo: true };
+        setConfig(updated);
+        onSaveConfig(updated);
+        toast('Vidéo ajoutée à votre page.', 'success');
+      })
+      .catch((err: unknown) =>
+        toast(err instanceof Error ? err.message : 'L’envoi de la vidéo a échoué.', 'error'),
+      )
+      .finally(() => setVideoProgress(null));
+  };
+
+  // Customer proof file (photo / video / voice note) → Cloudinary
+  const [proofProgress, setProofProgress] = useState<number | null>(null);
 
   // AI Title Generator state
   const [isAiBoxOpen, setIsAiBoxOpen] = useState(false);
@@ -275,20 +335,17 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
       type: 'image',
       url: newImageUrl.trim(),
     };
-    setConfig({
-      ...config,
-      mediaItems: [...config.mediaItems, newMedia],
-    });
+    const updated = { ...config, mediaItems: [...config.mediaItems, newMedia] };
+    setConfig(updated);
+    onSaveConfig(updated);
     setNewImageUrl('');
   };
 
   // Remove image
   const handleRemoveImage = (id: string) => {
-    if (config.mediaItems.length <= 1) return;
-    setConfig({
-      ...config,
-      mediaItems: config.mediaItems.filter((m) => m.id !== id),
-    });
+    const updated = { ...config, mediaItems: config.mediaItems.filter((m) => m.id !== id) };
+    setConfig(updated);
+    onSaveConfig(updated);
   };
 
   // Dynamic Benefit management
@@ -333,10 +390,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
     const currentProofs =
       config.proofItems && config.proofItems.length > 0 ? config.proofItems : [];
-    setConfig({
-      ...config,
-      proofItems: [newProof, ...currentProofs],
-    });
+    const updated = { ...config, proofItems: [newProof, ...currentProofs] };
+    setConfig(updated);
+    onSaveConfig(updated);
 
     // Reset inputs, preserving default 'Client satisfait'
     setNewProofTitle('Client satisfait');
@@ -349,10 +405,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
   const handleRemoveProofItem = (id: string) => {
     const currentProofs = config.proofItems || [];
-    setConfig({
-      ...config,
-      proofItems: currentProofs.filter((p) => p.id !== id),
-    });
+    const updated = { ...config, proofItems: currentProofs.filter((p) => p.id !== id) };
+    setConfig(updated);
+    onSaveConfig(updated);
   };
 
   const handleSave = () => {
@@ -773,10 +828,10 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     >
                       <ImageIcon className="w-6 h-6 text-[#94A3B8] group-hover:text-[#1E60F8] transition-colors" />
                       <span className="text-[11px] font-bold text-[#0F172A] group-hover:text-[#1E60F8] transition-colors">
-                        {isUploadingPhoto ? 'Envoi...' : '+ Ajouter photo'}
+                        {isUploadingPhoto ? `Envoi… ${photoProgress}%` : '+ Ajouter photo'}
                       </span>
                       <span className="text-[9px] text-[#64748B] font-medium">
-                        {isUploadingPhoto ? 'Cloudinary CDN' : 'Fichier local'}
+                        {isUploadingPhoto ? 'Ne fermez pas la page' : 'JPG, PNG, HEIC · 10 Mo'}
                       </span>
                     </button>
                   )}
@@ -823,13 +878,54 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                 />
 
                 {config.hasVideo && (
-                  <Input
-                    label="URL de la vidéo verticale (MP4)"
-                    value={config.videoUrl || ''}
-                    onChange={(e) => setConfig({ ...config, videoUrl: e.target.value })}
-                    placeholder="https://.../video.mp4"
-                    icon={<Video className="w-4 h-4 text-[#1E60F8]" />}
-                  />
+                  <div className="space-y-3">
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/*"
+                      onChange={handleVideoSelect}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => videoInputRef.current?.click()}
+                      disabled={videoProgress !== null}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-[#CBD5E1] bg-[#F8FAFC] hover:border-[#1E60F8] hover:bg-[#EFF4FF]/40 text-xs font-bold text-[#0F172A] transition-all cursor-pointer disabled:cursor-wait"
+                    >
+                      <Video className="w-4 h-4 text-[#1E60F8]" />
+                      {videoProgress !== null
+                        ? `Envoi de la vidéo… ${videoProgress}%`
+                        : config.videoUrl
+                          ? 'Remplacer la vidéo'
+                          : 'Téléverser une vidéo depuis mon appareil'}
+                    </button>
+                    {videoProgress !== null && (
+                      <div className="h-1.5 rounded-full bg-[#E2E8F0] overflow-hidden">
+                        <div
+                          className="h-full bg-[#1E60F8] transition-all"
+                          style={{ width: `${videoProgress}%` }}
+                        />
+                      </div>
+                    )}
+                    <p className="text-[10px] text-[#64748B]">
+                      MP4, MOV ou WebM · 100 Mo maximum · format vertical conseillé
+                    </p>
+                    {config.videoUrl && videoProgress === null && (
+                      <video
+                        src={config.videoUrl}
+                        controls
+                        playsInline
+                        className="w-40 max-h-72 rounded-2xl bg-black border border-[#E2E8F0]"
+                      />
+                    )}
+                    <Input
+                      label="Ou coller l’URL d’une vidéo (MP4)"
+                      value={config.videoUrl || ''}
+                      onChange={(e) => setConfig({ ...config, videoUrl: e.target.value })}
+                      placeholder="https://.../video.mp4"
+                      icon={<Video className="w-4 h-4 text-[#1E60F8]" />}
+                    />
+                  </div>
                 )}
               </div>
 
@@ -1650,12 +1746,27 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                                 : 'image/*'
                           }
                           onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const objectUrl = URL.createObjectURL(file);
-                              setNewProofUrl(objectUrl);
-                              setUploadedFileName(file.name);
-                            }
+                            const input = e.currentTarget;
+                            const file = input.files?.[0];
+                            input.value = '';
+                            if (!file) return;
+                            setNewProofUrl('');
+                            setUploadedFileName(null);
+                            setProofProgress(0);
+                            uploadMedia(file, newProofType, { onProgress: setProofProgress })
+                              .then((url) => {
+                                setNewProofUrl(url);
+                                setUploadedFileName(file.name);
+                              })
+                              .catch((err: unknown) =>
+                                toast(
+                                  err instanceof Error
+                                    ? err.message
+                                    : 'L’envoi du fichier a échoué.',
+                                  'error',
+                                ),
+                              )
+                              .finally(() => setProofProgress(null));
                           }}
                           className="hidden"
                         />
@@ -1684,6 +1795,21 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                         />
                       </div>
                     </div>
+
+                    {/* Progression de l'envoi vers Cloudinary */}
+                    {proofProgress !== null && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-[#1E60F8]">
+                          Envoi en cours… {proofProgress}%
+                        </p>
+                        <div className="h-1.5 rounded-full bg-[#E2E8F0] overflow-hidden">
+                          <div
+                            className="h-full bg-[#1E60F8] transition-all"
+                            style={{ width: `${proofProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {/* Fichier chargé feedback */}
                     {uploadedFileName && (
@@ -1744,7 +1870,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     variant="primary"
                     size="sm"
                     onClick={handleAddProofItem}
-                    disabled={!newProofUrl.trim()}
+                    disabled={!newProofUrl.trim() || proofProgress !== null}
                     icon={<Plus className="w-3.5 h-3.5" />}
                   >
                     Ajouter au Carrousel de Preuves

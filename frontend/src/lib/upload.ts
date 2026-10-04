@@ -1,59 +1,121 @@
 'use client';
 
-// Multipart upload to the authenticated, magic-byte-checked POST /api/upload
-// (Cloudinary). The `api()` wrapper only sends JSON, so this mirrors its
-// CSRF lookup and its one-shot refresh on 401.
+// Direct browser → Cloudinary uploads (photos, videos, audio).
+//
+// 1. Ask our server for a short-lived signature (POST /api/upload/sign —
+//    authenticated, CSRF-protected, via the `api()` wrapper).
+// 2. Send the file straight to Cloudinary with XHR (progress events), so
+//    large phone photos and videos never hit Vercel's 4.5 MB body limit.
+// 3. Return a delivery URL every browser can play: HEIC → JPG/WebP,
+//    MOV → MP4, voice notes → MP3, with automatic quality/format.
 import { api, ApiError } from './api';
-import { API_URL, COOKIE_PREFIX } from './constants';
+import { MEDIA_RULES, type MediaKind } from './upload-rules';
 
-const CSRF_KEY = `${COOKIE_PREFIX}-csrf`;
+export type { MediaKind } from './upload-rules';
 
-function csrfToken(): string | null {
-  const fromStorage = localStorage.getItem(CSRF_KEY);
-  if (fromStorage) return fromStorage;
-  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${CSRF_KEY}=([^;]*)`));
-  return match?.[1] ? decodeURIComponent(match[1]) : null;
+interface SignResponse {
+  uploadUrl: string;
+  apiKey: string;
+  signature: string;
+  timestamp: number;
+  folder: string;
+  allowed_formats: string;
 }
 
-const ERROR_MESSAGES: Record<string, string> = {
-  FILE_TOO_LARGE: 'Image trop lourde (10 Mo maximum).',
-  INVALID_MIME: 'Format non supporté — utilisez JPG, PNG ou WebP.',
-  MAGIC_BYTE_MISMATCH: "Ce fichier n'est pas une image valide.",
-  STORAGE_NOT_CONFIGURED: "Le stockage d'images n'est pas configuré sur le serveur.",
-};
+export interface UploadOptions {
+  /** 0 → 100 while the file is being sent. */
+  onProgress?: (percent: number) => void;
+}
 
-async function send(file: File): Promise<Response> {
-  const form = new FormData();
-  form.append('file', file);
-  const token = csrfToken();
-  return fetch(`${API_URL}/api/upload`, {
-    method: 'POST',
-    body: form,
-    credentials: 'include',
-    headers: token ? { 'x-csrf-token': token } : {},
+function readableSize(bytes: number): string {
+  return `${Math.round(bytes / (1024 * 1024))} Mo`;
+}
+
+/** Cloudinary secure_url → URL optimised for display in every browser. */
+export function deliveryUrl(secureUrl: string, kind: MediaKind): string {
+  const [base, rest] = secureUrl.split('/upload/');
+  if (!base || !rest) return secureUrl;
+  const withoutExt = rest.replace(/\.[a-z0-9]+$/i, '');
+  if (kind === 'image') return `${base}/upload/f_auto,q_auto/${rest}`;
+  if (kind === 'video') return `${base}/upload/q_auto/${withoutExt}.mp4`;
+  return `${base}/upload/${withoutExt}.mp3`;
+}
+
+function sendToCloudinary(
+  file: File,
+  sign: SignResponse,
+  onProgress?: (p: number) => void,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('api_key', sign.apiKey);
+    form.append('timestamp', String(sign.timestamp));
+    form.append('signature', sign.signature);
+    form.append('folder', sign.folder);
+    form.append('allowed_formats', sign.allowed_formats);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', sign.uploadUrl);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      let body: { secure_url?: string; error?: { message?: string } } | null = null;
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        // fallthrough
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && body?.secure_url) {
+        resolve(body.secure_url);
+        return;
+      }
+      const msg = body?.error?.message ?? '';
+      reject(
+        new Error(
+          /format/i.test(msg)
+            ? 'Format de fichier non accepté.'
+            : /size|large/i.test(msg)
+              ? 'Fichier trop lourd.'
+              : 'L’envoi du fichier a échoué. Réessayez.',
+        ),
+      );
+    };
+    xhr.onerror = () => reject(new Error('Connexion perdue pendant l’envoi. Réessayez.'));
+    xhr.send(form);
   });
 }
 
-/** Upload an image and return its public CDN URL. Throws with a French message. */
-export async function uploadImage(file: File): Promise<string> {
-  let res = await send(file);
-  if (res.status === 401) {
-    // Access token expired: `api()` refreshes it, then retry once.
-    await api('/api/auth/me').catch(() => undefined);
-    res = await send(file);
-  }
-  const body = (await res.json().catch(() => null)) as {
-    url?: string;
-    code?: string;
-    error?: string;
-  } | null;
-  if (!res.ok || !body?.url) {
-    const code = body?.code ?? body?.error ?? '';
-    throw new ApiError(
-      res.status,
-      ERROR_MESSAGES[code] ?? "L'envoi de l'image a échoué. Réessayez.",
-      body ?? {},
+/** Upload a photo, video or audio file and return its public URL. Throws with a French message. */
+export async function uploadMedia(
+  file: File,
+  kind: MediaKind,
+  options: UploadOptions = {},
+): Promise<string> {
+  const rule = MEDIA_RULES[kind];
+  if (file.size > rule.maxBytes) {
+    throw new Error(
+      `Fichier trop lourd (${readableSize(file.size)}). Maximum : ${readableSize(rule.maxBytes)}.`,
     );
   }
-  return body.url;
+  let sign: SignResponse;
+  try {
+    sign = await api<SignResponse>('/api/upload/sign', { method: 'POST', body: { kind } });
+  } catch (err) {
+    const message =
+      err instanceof ApiError && typeof err.body.message === 'string'
+        ? err.body.message
+        : 'Impossible de préparer l’envoi. Vérifiez votre connexion.';
+    throw new Error(message);
+  }
+  options.onProgress?.(0);
+  const secureUrl = await sendToCloudinary(file, sign, options.onProgress);
+  options.onProgress?.(100);
+  return deliveryUrl(secureUrl, kind);
+}
+
+/** Product photos. */
+export function uploadImage(file: File, options: UploadOptions = {}): Promise<string> {
+  return uploadMedia(file, 'image', options);
 }
