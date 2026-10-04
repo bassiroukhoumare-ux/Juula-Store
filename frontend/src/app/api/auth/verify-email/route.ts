@@ -15,6 +15,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { zEmail } from '@/lib/server/zod-helpers';
 import { prisma } from '@/lib/server/prisma';
+import { safeAfter, sendWelcomeEmailOnce } from '@/lib/server/store/notify';
 import { redis } from '@/lib/server/redis';
 import { createEmailLimiter } from '@/lib/server/middleware/rate-limit-by-email';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
@@ -167,6 +168,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     const refresh = await createRefreshToken(user.id, user.tokenVersion);
     await setAuthCookies(access, refresh);
     await setCsrfCookie();
+
+    safeAfter(() => sendWelcomeEmailOnce(user.id));
 
     log.info('verify-email success', { userId: user.id });
     const res = NextResponse.json({

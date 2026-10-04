@@ -90,4 +90,35 @@ describe('order & withdrawal emails', async () => {
     expect(failed.html).toContain('Réessayer le retrait');
     expect(failureReasonText(null)).toBe('L’opérateur a refusé le virement.');
   });
+
+  it('renders payment confirmed and verification templates', async () => {
+    const { paymentConfirmedEmail, verificationEmailTemplate, passwordResetEmailTemplate } =
+      await import('./notify');
+    const order = {
+      reference: 'CMD-JLA-000002',
+      productName: 'Sac cuir',
+      quantity: 1,
+      totalAmount: 25000,
+      customerName: 'Fatou',
+      phone: '+221 770000000',
+      whatsappNumber: '221770000000',
+      deliveryAddress: 'Plateau',
+      paymentType: 'online_wave',
+      paidAt: now,
+      netAmount: 25000,
+    } as never;
+    const paidMail = paymentConfirmedEmail(order);
+    expect(paidMail.subject).toContain('Paiement reçu');
+    expect(paidMail.html).toContain('Payée en ligne');
+    expect(paidMail.html).toContain('25\u00A0000\u00A0FCFA');
+
+    const verifyMail = verificationEmailTemplate('123456');
+    expect(verifyMail.subject).toContain('123456');
+    expect(verifyMail.html).toContain('123456');
+    expect(verifyMail.html).toContain('Validez votre adresse e-mail');
+
+    const resetMail = passwordResetEmailTemplate('654321');
+    expect(resetMail.subject).toContain('654321');
+    expect(resetMail.html).toContain('654321');
+  });
 });

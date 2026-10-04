@@ -34,6 +34,7 @@ import {
 import { prisma } from '@/lib/server/prisma';
 import { createNotification } from '@/lib/server/notifications';
 import { welcomeNotification } from '@/lib/server/notifications/templates';
+import { safeAfter, sendWelcomeEmailOnce } from '@/lib/server/store/notify';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { log } from '@/lib/server/observability/log';
 
@@ -192,6 +193,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // NOTIF-05 invariant — go through createNotification (never prisma.notification.create directly).
     if (isNewUser) {
       await createNotification(prisma, welcomeNotification(u.id, u.email));
+      safeAfter(() => sendWelcomeEmailOnce(u.id));
     }
 
     // Consume next cookie (defense-in-depth re-validation against same-origin).

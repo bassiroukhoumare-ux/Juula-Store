@@ -21,6 +21,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { zEmail } from '@/lib/server/zod-helpers';
 import { prisma } from '@/lib/server/prisma';
+import { safeAfter, sendPasswordResetEmail } from '@/lib/server/store/notify';
 import { redis } from '@/lib/server/redis';
 import { createEmailLimiter } from '@/lib/server/middleware/rate-limit-by-email';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           },
         });
       });
+      safeAfter(() => sendPasswordResetEmail(email, code, expiresAt));
       log.info('forgot-password code issued', { userId: user.id });
     } else {
       log.info('forgot-password no-user (enumeration-resist)');

@@ -43,7 +43,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const store = await prisma.store.findUnique({ where: { userId: auth.user.sub } });
     // Welcome email not delivered yet (e.g. email was misconfigured at
     // onboarding time): retry on each dashboard load until it goes out.
-    if (store?.subdomain && !store.welcomeEmailSentAt) {
+    if (!store?.welcomeEmailSentAt) {
       const userId = auth.user.sub;
       after(() => sendWelcomeEmailOnce(userId));
     }

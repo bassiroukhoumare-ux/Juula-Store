@@ -10,12 +10,22 @@
 // Every value coming from a customer or merchant (names, addresses, product
 // titles) is HTML-escaped before being placed in a template.
 import 'server-only';
+import { after } from 'next/server';
 import type { StoreOrder, Withdrawal } from '@prisma/client';
 import { createMailer, type Mailer } from '@/lib/server/email';
 import { log } from '@/lib/server/observability/log';
 import { prisma } from '@/lib/server/prisma';
 import { LEGAL } from '@/lib/legal';
 import { formatNumber } from '@/lib/orderUtils';
+
+/** Safely schedule background work via Next.js after() or microtask in tests. */
+export function safeAfter(fn: () => unknown | Promise<unknown>): void {
+  try {
+    after(fn);
+  } catch {
+    void Promise.resolve().then(fn).catch(() => {});
+  }
+}
 
 // Assets and links always point at the production site: emails are read
 // outside the app, possibly long after they were sent.
@@ -49,12 +59,12 @@ const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica
 
 let mailer: Mailer | null | undefined;
 
-function getMailer(): Mailer | null {
+export function getMailer(): Mailer | null {
   if (mailer !== undefined) return mailer;
   // trim(): values pasted into a hosting dashboard often carry a stray
   // newline/space, which Resend rejects.
   const apiKey = (process.env.RESEND_API_KEY ?? '').trim();
-  const from = (process.env.EMAIL_FROM ?? '').trim();
+  const from = (process.env.EMAIL_FROM ?? 'Juula <notification@juula.store>').trim();
   mailer = apiKey && from ? createMailer({ RESEND_API_KEY: apiKey, EMAIL_FROM: from }) : null;
   if (!mailer) log.error('notify: emails disabled (RESEND_API_KEY / EMAIL_FROM missing)');
   return mailer;
@@ -126,6 +136,8 @@ export interface EmailLayout {
   intro: string; // already-escaped HTML
   /** Big highlighted amount under the intro. */
   amount?: { value: number; caption: string; tone?: Tone };
+  /** Highlighted code box (e.g. auth verification code). */
+  codeBlock?: { code: string; caption?: string };
   steps?: { title: string; text: string }[];
   sections?: EmailSection[];
   /** Price breakdown with a bold total line. */
@@ -181,6 +193,17 @@ export function renderEmail(e: EmailLayout): string {
       </table>
     </td></tr>`;
   }
+
+  const codeBlock = e.codeBlock
+    ? `<tr><td align="center" style="padding-top:20px;padding-bottom:6px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;background:${C.blueSoft};border:2px dashed ${C.blue};border-radius:18px;">
+          <tr><td style="padding:16px 36px;text-align:center;">
+            <div style="font-size:32px;font-weight:900;letter-spacing:6px;color:${C.blue};font-family:${FONT};">${escapeHtml(e.codeBlock.code)}</div>
+            ${e.codeBlock.caption ? `<div style="font-size:12px;font-weight:600;color:${C.muted};padding-top:6px;">${escapeHtml(e.codeBlock.caption)}</div>` : ''}
+          </td></tr>
+        </table>
+      </td></tr>`
+    : '';
 
   const steps = e.steps
     ? `<tr><td style="padding-top:18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${e.steps
@@ -258,6 +281,7 @@ export function renderEmail(e: EmailLayout): string {
           <tr><td class="j-title" style="font-size:25px;line-height:1.25;font-weight:900;color:${C.ink};letter-spacing:-.4px;">${escapeHtml(e.title)}</td></tr>
           <tr><td style="padding-top:10px;font-size:15px;line-height:1.65;color:${C.text};">${e.intro}</td></tr>
           ${amount}
+          ${codeBlock}
           ${steps}
           ${(e.sections ?? []).map(sectionHtml).join('')}
           ${summary}
@@ -524,19 +548,120 @@ export function withdrawalFailedEmail(w: Withdrawal): RenderedEmail {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Templates: Auth & Online Payment
+// ─────────────────────────────────────────────────────────────────────────
+
+export function paymentConfirmedEmail(order: StoreOrder): RenderedEmail {
+  const sections: EmailSection[] = [
+    {
+      title: 'Paiement',
+      rows: [
+        { label: 'Référence', value: escapeHtml(order.reference) },
+        {
+          label: 'Mode de paiement',
+          value: escapeHtml(PAYMENT_LABEL[order.paymentType] ?? order.paymentType),
+        },
+        ...(order.providerPaymentId
+          ? [{ label: 'Transaction Moneriz', value: escapeHtml(order.providerPaymentId) }]
+          : []),
+        { label: 'Date', value: escapeHtml(dateFmt.format(order.paidAt ?? new Date())) },
+      ],
+    },
+    {
+      title: 'Commande',
+      rows: [
+        { label: 'Produit', value: escapeHtml(order.productName) },
+        { label: 'Quantité', value: String(order.quantity) },
+        ...(order.selectedColor
+          ? [{ label: 'Couleur', value: escapeHtml(order.selectedColor) }]
+          : []),
+        { label: 'Montant encaissé', value: fcfa(order.totalAmount) },
+        ...(order.netAmount !== null && order.netAmount !== undefined
+          ? [{ label: 'Crédité au portefeuille', value: fcfa(order.netAmount) }]
+          : []),
+      ],
+    },
+    {
+      title: 'Client',
+      rows: [
+        { label: 'Nom', value: escapeHtml(order.customerName) },
+        {
+          label: 'WhatsApp',
+          value: `<a href="https://wa.me/${escapeHtml(order.whatsappNumber)}" style="color:${C.blue};text-decoration:none;">${escapeHtml(order.phone)}</a>`,
+        },
+        ...(order.neighborhood
+          ? [{ label: 'Quartier', value: escapeHtml(order.neighborhood) }]
+          : []),
+        { label: 'Adresse', value: escapeHtml(order.deliveryAddress || '—') },
+      ],
+    },
+  ];
+
+  return {
+    subject: `Paiement reçu (${fcfa(order.totalAmount)}) — Commande ${order.reference}`,
+    html: renderEmail({
+      preheader: `Paiement de ${fcfa(order.totalAmount)} validé pour la commande ${order.reference}.`,
+      label: 'Paiement validé',
+      badge: { text: 'Payée en ligne', tone: 'green' },
+      title: `Paiement reçu : ${fcfa(order.totalAmount)}`,
+      intro: `Le paiement de <strong style="color:${C.ink};">${escapeHtml(order.customerName)}</strong> a été validé avec succès. Les fonds sont sécurisés et crédités sur votre portefeuille Juula.`,
+      amount: { value: order.totalAmount, caption: 'Montant encaissé', tone: 'green' },
+      sections,
+      cta: { label: 'Voir la commande', url: orderUrl(order.reference) },
+    }),
+    text: `Paiement reçu pour la commande ${order.reference}\nMontant : ${fcfa(order.totalAmount)}\nClient : ${order.customerName} (${order.phone})\nVoir la commande : ${orderUrl(order.reference)}`,
+  };
+}
+
+export function verificationEmailTemplate(code: string, expiresAt?: Date | string): RenderedEmail {
+  const ttlMin = expiresAt
+    ? Math.max(1, Math.round((new Date(expiresAt).getTime() - Date.now()) / 60000))
+    : 15;
+  return {
+    subject: `Votre code de validation Juula : ${code}`,
+    html: renderEmail({
+      preheader: `Votre code de validation pour votre compte Juula est ${code}. Valable ${ttlMin} minutes.`,
+      label: 'Sécurité & Accès',
+      badge: { text: 'Validation requise', tone: 'blue' },
+      title: 'Validez votre adresse e-mail',
+      intro: `Bienvenue sur Juula ! Pour finaliser la création de votre compte commerçant et sécuriser votre boutique, voici votre code de confirmation :`,
+      codeBlock: { code, caption: `Ce code expire dans ${ttlMin} minutes.` },
+      note: `Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.`,
+    }),
+    text: `Bienvenue sur Juula !\nVotre code de confirmation est : ${code}\nCe code expire dans ${ttlMin} minutes.\nSi vous n'avez pas demandé ce code, ignorez cet e-mail.`,
+  };
+}
+
+export function passwordResetEmailTemplate(code: string, expiresAt?: Date | string): RenderedEmail {
+  const ttlMin = expiresAt
+    ? Math.max(1, Math.round((new Date(expiresAt).getTime() - Date.now()) / 60000))
+    : 15;
+  return {
+    subject: `Réinitialisation de votre mot de passe Juula : ${code}`,
+    html: renderEmail({
+      preheader: `Votre code de réinitialisation de mot de passe est ${code}. Valable ${ttlMin} minutes.`,
+      label: 'Sécurité du compte',
+      badge: { text: 'Mot de passe oublié', tone: 'amber' },
+      title: 'Réinitialisez votre mot de passe',
+      intro: `Nous avons reçu une demande de réinitialisation du mot de passe associé à votre compte Juula. Voici votre code temporaire :`,
+      codeBlock: { code, caption: `Ce code expire dans ${ttlMin} minutes.` },
+      note: `Si vous n'avez pas demandé cette réinitialisation, ignorez ce message. Votre mot de passe reste inchangé.`,
+    }),
+    text: `Réinitialisation de votre mot de passe Juula\nVotre code temporaire est : ${code}\nCe code expire dans ${ttlMin} minutes.\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Senders
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
  * Welcome email, sent exactly once per merchant: the Store row's
  * `welcomeEmailSentAt` is claimed with a conditional update, so concurrent
- * dashboard loads can't send it twice.
+ * dashboard loads or signups can't send it twice.
  */
 export async function sendWelcomeEmailOnce(userId: string): Promise<void> {
   if (!getMailer()) return;
-  // Only once the store is set up (onboarding finished).
-  const store = await prisma.store.findUnique({ where: { userId }, select: { subdomain: true } });
-  if (!store?.subdomain) return;
   await prisma.store.upsert({ where: { userId }, create: { userId }, update: {} });
   const claim = await prisma.store.updateMany({
     where: { userId, welcomeEmailSentAt: null },
@@ -566,6 +691,49 @@ export async function sendNewOrderEmail(orderId: string): Promise<void> {
   if (!order) return;
   const mail = newOrderEmail(order);
   await send(order.merchant.email, mail.subject, mail.html, mail.text, 'new_order');
+}
+
+export async function sendPaymentConfirmedEmail(orderId: string): Promise<void> {
+  if (!getMailer()) return;
+  const order = await prisma.storeOrder.findUnique({
+    where: { id: orderId },
+    include: { merchant: { select: { email: true } } },
+  });
+  if (!order) return;
+  const mail = paymentConfirmedEmail(order);
+  await send(order.merchant.email, mail.subject, mail.html, mail.text, 'payment_confirmed');
+}
+
+export async function sendVerificationEmail(
+  to: string,
+  code: string,
+  expiresAt?: Date | string,
+): Promise<boolean> {
+  if (!getMailer()) return false;
+  const mail = verificationEmailTemplate(code, expiresAt);
+  return send(to, mail.subject, mail.html, mail.text, 'verification_code');
+}
+
+export async function sendPasswordResetEmail(
+  to: string,
+  code: string,
+  expiresAt?: Date | string,
+): Promise<boolean> {
+  if (!getMailer()) return false;
+  const mail = passwordResetEmailTemplate(code, expiresAt);
+  return send(to, mail.subject, mail.html, mail.text, 'password_reset');
+}
+
+export async function sendDirectEmail(input: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  kind?: string;
+}): Promise<boolean> {
+  const m = getMailer();
+  if (!m) return false;
+  return send(input.to, input.subject, input.html, input.text ?? '', input.kind ?? 'direct');
 }
 
 export async function sendWithdrawalSentEmail(withdrawalId: string): Promise<void> {

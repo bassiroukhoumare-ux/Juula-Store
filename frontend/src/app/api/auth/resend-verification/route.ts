@@ -26,6 +26,7 @@ import { makeRequestContext, withRequestContext } from '@/lib/server/observabili
 import { log } from '@/lib/server/observability/log';
 import { generateVerificationCode } from '@/lib/server/auth';
 import { enqueueOutbox } from '@/lib/server/outbox';
+import { safeAfter, sendVerificationEmail } from '@/lib/server/store/notify';
 
 const VERIFICATION_TTL_MS = Number(process.env.AUTH_VERIFICATION_TTL_MIN ?? 15) * 60 * 1000;
 
@@ -48,22 +49,6 @@ function formatIssues(err: z.ZodError) {
 export async function POST(req: NextRequest): Promise<Response> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
-    // Fail-closed when Redis is absent: resend is too cheap-to-abuse without
-    // a shared limiter. The signup / verify-email routes can fall back to
-    // the memory store because their rate is naturally bounded by Resend's
-    // dedup; resend has no such cap.
-    if (!redis) {
-      log.warn('resend-verification: Redis missing — refusing request');
-      const res = NextResponse.json(
-        {
-          error: 'RATE_LIMIT_UNAVAILABLE',
-          message: 'Resend service is unavailable. Try again shortly.',
-        },
-        { status: 503, headers: { 'Retry-After': '30' } },
-      );
-      res.headers.set('x-request-id', ctx.requestId);
-      return res;
-    }
 
     const json = await req.json().catch(() => null);
     const parsed = Body.safeParse(json);
@@ -107,6 +92,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           },
         });
       });
+      safeAfter(() => sendVerificationEmail(user.email, code, expiresAt));
       log.info('resend-verification: code re-issued', { userId: user.id });
     } else {
       // No user, OR already verified — log without leaking which case it is.

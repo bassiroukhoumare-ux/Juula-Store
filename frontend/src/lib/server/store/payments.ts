@@ -20,6 +20,7 @@ import {
 } from '@/lib/server/payments/moneriz';
 import type { TxClient } from '@/lib/server/withdrawals/lock';
 import { log } from '@/lib/server/observability/log';
+import { sendPaymentConfirmedEmail } from '@/lib/server/store/notify';
 
 function intEnv(name: string, fallback: number, max: number): number {
   const n = Number(process.env[name]);
@@ -103,6 +104,9 @@ export async function verifyOrderPayment(orderId: string): Promise<PaymentCheckR
       merchantId: order.merchantId,
       amount: order.totalAmount,
     });
+    sendPaymentConfirmedEmail(order.id).catch((err) =>
+      log.error('store.payment.email_failed', { orderId, error: String(err) }),
+    );
   }
   const fresh = await prisma.storeOrder.findUniqueOrThrow({ where: { id: order.id } });
   return { status: 'paid', order: fresh };
