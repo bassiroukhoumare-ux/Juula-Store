@@ -1,5 +1,6 @@
 'use client';
 
+import { displayFont } from '@/app/fonts';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Check,
@@ -43,7 +44,8 @@ import {
   QuantityDiscountTier,
 } from '@/types/juula';
 import { Button } from '@/components/ui/Button';
-import { formatOrderId, formatNumber, formatFCFA } from '@/lib/orderUtils';
+import { formatOrderId, formatFCFA } from '@/lib/orderUtils';
+import { formatMoney, getDisplayCurrency } from '@/lib/money';
 import { MonerizCheckoutModal } from '@/components/payments/MonerizCheckoutModal';
 
 // SVG Officiel WhatsApp
@@ -553,23 +555,23 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
     return (
       <div
-        className={`w-full bg-[#F8FAFC] text-[#0F172A] flex items-center justify-center p-6 text-center select-none ${
+        className={`w-full bg-[#F6F7F9] text-[#201D1D] flex items-center justify-center p-6 text-center select-none ${
           isInsideMockup ? 'h-full' : 'min-h-screen'
         }`}
       >
-        <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-xl space-y-5 animate-in fade-in">
-          <div className="w-16 h-16 rounded-3xl bg-[#FFF1F2] text-rose-500 mx-auto flex items-center justify-center shadow-xs">
+        <div className="max-w-md w-full bg-white rounded-[28px] p-8 border border-[#E3E7EE] shadow-xl space-y-5 animate-in fade-in">
+          <div className="w-16 h-16 rounded-[28px] bg-[#FFF1F2] text-rose-500 mx-auto flex items-center justify-center shadow-xs">
             <Lock className="w-8 h-8" />
           </div>
           <div className="space-y-2">
             <span className="text-xs font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
               Page Hors Ligne
             </span>
-            <h2 className="text-xl font-black text-[#0F172A] tracking-tight">
+            <h2 className="text-xl font-black text-[#201D1D] tracking-tight">
               Cette offre est actuellement désactivée
             </h2>
-            <p className="text-xs text-[#64748B] leading-relaxed">
-              La boutique <span className="font-bold text-[#0F172A]">{config.storeName}</span> a
+            <p className="text-xs text-[#7A808C] leading-relaxed">
+              La boutique <span className="font-bold text-[#201D1D]">{config.storeName}</span> a
               temporairement suspendu l'accès à ce tunnel de vente. Pour toute question, vous pouvez
               contacter directement le support client sur WhatsApp.
             </p>
@@ -579,7 +581,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#0F172A] hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-2xl bg-[#201D1D] hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
           >
             <WhatsAppIcon className="w-4 h-4 text-emerald-400" />
             <span>Contacter le support boutique sur WhatsApp</span>
@@ -596,19 +598,19 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   if (isCheckoutPageOpen) {
     return (
       <div
-        className={`relative w-full bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans select-none ${
+        className={`relative w-full bg-[#F6F7F9] text-[#201D1D] flex flex-col ${displayFont.className} select-none ${
           isInsideMockup ? 'h-full overflow-y-auto' : 'min-h-screen'
         }`}
       >
         {/* Top Header Navigation */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E3E7EE] px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
           <button
             type="button"
             onClick={() => {
               setIsCheckoutPageOpen(false);
               setOrderSuccess(null);
             }}
-            className="inline-flex items-center gap-2 text-xs font-bold text-[#1E60F8] hover:text-[#164ED0] transition-colors cursor-pointer bg-[#EFF4FF] hover:bg-[#DBEAFE] px-3 py-1.5 rounded-xl"
+            className="inline-flex items-center gap-2 text-xs font-bold text-[#235BF7] hover:text-[#1A4AD6] transition-colors cursor-pointer bg-[#EEF3FF] hover:bg-[#DBEAFE] px-3 py-1.5 rounded-xl"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Retourner à la vitrine</span>
@@ -616,12 +618,12 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-black text-[#0F172A] uppercase tracking-wide">
+            <span className="text-xs font-black text-[#201D1D] uppercase tracking-wide">
               Finalisation de Commande
             </span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#64748B]">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#7A808C]">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
             <span className="font-semibold">Livraison & Paiement Sécurisés à Dakar</span>
           </div>
@@ -630,7 +632,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
         {orderSuccess ? (
           /* Confirmation Screen Full Page */
           <main className="flex-1 max-w-2xl w-full mx-auto p-4 sm:p-8 flex flex-col items-center justify-center animate-in fade-in duration-200">
-            <div className="w-full bg-white rounded-3xl p-6 sm:p-8 border border-[#E2E8F0] shadow-xl text-center space-y-5">
+            <div className="w-full bg-white rounded-[28px] p-6 sm:p-8 border border-[#E3E7EE] shadow-xl text-center space-y-5">
               <div className="w-20 h-20 bg-[#ECFDF5] text-[#10B981] rounded-full flex items-center justify-center mx-auto shadow-inner">
                 <Check className="w-10 h-10 stroke-[3]" />
               </div>
@@ -639,43 +641,43 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <span className="text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3.5 py-1 rounded-full">
                   Commande Confirmée avec Succès
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] mt-2">
+                <h2 className="text-2xl sm:text-3xl font-black text-[#201D1D] mt-2">
                   Merci {orderSuccess.customerName} !
                 </h2>
-                <p className="text-xs sm:text-sm text-[#64748B] max-w-md mx-auto">
+                <p className="text-xs sm:text-sm text-[#7A808C] max-w-md mx-auto">
                   Votre commande{' '}
-                  <span className="font-bold text-[#0F172A]">#{orderSuccess.id}</span> pour{' '}
+                  <span className="font-bold text-[#201D1D]">#{orderSuccess.id}</span> pour{' '}
                   {orderSuccess.productName} a bien été enregistrée et transmise à notre équipe
                   logistique à Dakar.
                 </p>
               </div>
 
-              <div className="p-4 sm:p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-left text-xs space-y-2.5">
-                <div className="flex justify-between items-center pb-2 border-b border-[#E2E8F0]">
-                  <span className="text-[#64748B]">Numéro de commande :</span>
-                  <span className="font-mono font-bold text-[#1E60F8] bg-[#EFF4FF] px-2 py-0.5 rounded">
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#F6F7F9] border border-[#E3E7EE] text-left text-xs space-y-2.5">
+                <div className="flex justify-between items-center pb-2 border-b border-[#E3E7EE]">
+                  <span className="text-[#7A808C]">Numéro de commande :</span>
+                  <span className="font-mono font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded">
                     #{orderSuccess.id}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-start">
-                  <span className="text-[#64748B] shrink-0">Adresse de livraison :</span>
-                  <span className="font-bold text-[#0F172A] text-right ml-4">
+                  <span className="text-[#7A808C] shrink-0">Adresse de livraison :</span>
+                  <span className="font-bold text-[#201D1D] text-right ml-4">
                     {orderSuccess.deliveryAddress || orderSuccess.neighborhood}
                   </span>
                 </div>
 
                 {orderSuccess.selectedColor && (
                   <div className="flex justify-between items-center">
-                    <span className="text-[#64748B]">Couleur choisie :</span>
-                    <span className="font-bold text-[#0F172A] bg-white border border-[#E2E8F0] px-2 py-0.5 rounded-md">
+                    <span className="text-[#7A808C]">Couleur choisie :</span>
+                    <span className="font-bold text-[#201D1D] bg-white border border-[#E3E7EE] px-2 py-0.5 rounded-md">
                       {orderSuccess.selectedColor}
                     </span>
                   </div>
                 )}
 
                 {orderSuccess.hasVoiceNote && (
-                  <div className="flex justify-between items-center bg-[#EFF6FF] border border-[#BFDBFE] p-2.5 rounded-xl text-[#1E60F8] font-bold">
+                  <div className="flex justify-between items-center bg-[#EEF3FF] border border-[#BFDBFE] p-2.5 rounded-xl text-[#235BF7] font-bold">
                     <span className="flex items-center gap-1.5">
                       <Mic className="w-4 h-4" /> Note vocale d'adresse
                     </span>
@@ -685,15 +687,15 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   </div>
                 )}
 
-                <div className="flex justify-between items-center pt-2 border-t border-[#E2E8F0]">
-                  <span className="text-sm font-bold text-[#0F172A]">Montant total à régler :</span>
-                  <span className="text-base font-black text-[#1E60F8]">
+                <div className="flex justify-between items-center pt-2 border-t border-[#E3E7EE]">
+                  <span className="text-sm font-bold text-[#201D1D]">Montant total à régler :</span>
+                  <span className="text-base font-black text-[#235BF7]">
                     {formatFCFA(orderSuccess.totalAmount || orderSuccess.amount)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#64748B]">Mode de règlement :</span>
+                  <span className="text-[#7A808C]">Mode de règlement :</span>
                   <span className="font-bold text-emerald-700">
                     {orderSuccess.paymentType === 'cod'
                       ? 'Paiement en espèces à la livraison (COD)'
@@ -725,7 +727,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     setIsCheckoutPageOpen(false);
                     setOrderSuccess(null);
                   }}
-                  className="w-full py-3 text-xs font-semibold text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-xl transition-colors cursor-pointer"
+                  className="w-full py-3 text-xs font-semibold text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] rounded-xl transition-colors cursor-pointer"
                 >
                   ← Retourner à la boutique
                 </button>
@@ -747,15 +749,15 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               {/* LEFT COLUMN: PRODUCT RECAP, QUANTITY DISCOUNTS & SUMMARY */}
               <div className={isInsideMockup ? 'w-full space-y-4' : 'lg:col-span-7 space-y-5'}>
                 {/* Product Card */}
-                <div className="p-4 sm:p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
+                <div className="p-4 sm:p-5 rounded-[28px] bg-white border border-[#E3E7EE] shadow-xs flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
                   <img
                     src={images[currentMediaIndex]?.url || images[0]?.url || undefined}
                     alt={config.productTitle}
-                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover bg-black shrink-0 border border-[#E2E8F0]"
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover bg-black shrink-0 border border-[#E3E7EE]"
                   />
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                      <span className="text-[11px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                         {config.storeName || 'Boutique Officielle'}
                       </span>
                       {config.stockQuantity !== undefined && config.showStockBadge !== false ? (
@@ -770,15 +772,15 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         </span>
                       )}
                     </div>
-                    <h3 className="text-base sm:text-lg font-black text-[#0F172A] leading-tight">
+                    <h3 className="text-base sm:text-lg font-black text-[#201D1D] leading-tight">
                       {config.productTitle}
                     </h3>
                     <div className="flex items-baseline gap-2 pt-0.5">
-                      <span className="text-lg font-black text-[#1E60F8]">
+                      <span className="text-lg font-black text-[#235BF7]">
                         {formatFCFA(config.price)}
                       </span>
                       {config.originalPrice > config.price && (
-                        <span className="text-xs text-[#94A3B8] line-through font-semibold">
+                        <span className="text-xs text-[#9AA0AB] line-through font-semibold">
                           {formatFCFA(config.originalPrice)}
                         </span>
                       )}
@@ -788,13 +790,13 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
                 {/* Sélecteur de Couleur (si disponible) */}
                 {config.availableColors && config.availableColors.length > 0 && (
-                  <div className="p-4 sm:p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs space-y-3">
+                  <div className="p-4 sm:p-5 rounded-[28px] bg-white border border-[#E3E7EE] shadow-xs space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Palette className="w-4 h-4 text-[#1E60F8]" />
-                        <h4 className="text-sm font-black text-[#0F172A]">Couleur / Modèle</h4>
+                        <Palette className="w-4 h-4 text-[#235BF7]" />
+                        <h4 className="text-sm font-black text-[#201D1D]">Couleur / Modèle</h4>
                       </div>
-                      <span className="text-xs font-black text-[#1E60F8]">
+                      <span className="text-xs font-black text-[#235BF7]">
                         {selectedColor || config.availableColors[0]?.name}
                       </span>
                     </div>
@@ -810,8 +812,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                             onClick={() => setSelectedColor(color.name)}
                             className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                               isSelected
-                                ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
-                                : 'bg-[#F8FAFC] text-[#0F172A] border-[#E2E8F0] hover:border-[#CBD5E1]'
+                                ? 'bg-[#201D1D] text-white border-[#201D1D] shadow-xs'
+                                : 'bg-[#F6F7F9] text-[#201D1D] border-[#E3E7EE] hover:border-[#D5DAE2]'
                             }`}
                           >
                             <span
@@ -830,32 +832,32 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 )}
 
                 {/* Sélecteur de Quantité & Paliers Dégressifs */}
-                <div className="p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs space-y-3.5">
+                <div className="p-5 rounded-[28px] bg-white border border-[#E3E7EE] shadow-xs space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-sm font-black text-[#0F172A]">Quantité commandée</h4>
-                      <p className="text-xs text-[#64748B]">
+                      <h4 className="text-sm font-black text-[#201D1D]">Quantité commandée</h4>
+                      <p className="text-xs text-[#7A808C]">
                         Choisissez votre pack ou ajustez manuellement
                       </p>
                     </div>
 
                     {/* Stepper - / + */}
-                    <div className="flex items-center gap-2 bg-[#F1F5F9] p-1 rounded-2xl border border-[#E2E8F0]">
+                    <div className="flex items-center gap-2 bg-[#F1F3F6] p-1 rounded-2xl border border-[#E3E7EE]">
                       <button
                         type="button"
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
                         disabled={quantity <= 1}
-                        className="w-8 h-8 rounded-xl bg-white text-[#0F172A] hover:bg-[#E2E8F0] disabled:opacity-40 flex items-center justify-center font-bold text-sm shadow-xs transition-colors cursor-pointer"
+                        className="w-8 h-8 rounded-xl bg-white text-[#201D1D] hover:bg-[#E3E7EE] disabled:opacity-40 flex items-center justify-center font-bold text-sm shadow-xs transition-colors cursor-pointer"
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </button>
-                      <span className="w-8 text-center text-sm font-black text-[#0F172A]">
+                      <span className="w-8 text-center text-sm font-black text-[#201D1D]">
                         {quantity}
                       </span>
                       <button
                         type="button"
                         onClick={() => setQuantity(quantity + 1)}
-                        className="w-8 h-8 rounded-xl bg-white text-[#0F172A] hover:bg-[#E2E8F0] flex items-center justify-center font-bold text-sm shadow-xs transition-colors cursor-pointer"
+                        className="w-8 h-8 rounded-xl bg-white text-[#201D1D] hover:bg-[#E3E7EE] flex items-center justify-center font-bold text-sm shadow-xs transition-colors cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
@@ -873,20 +875,20 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           onClick={() => setQuantity(1)}
                           className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                             quantity === 1
-                              ? 'border-[#1E60F8] bg-[#EFF4FF] ring-2 ring-[#1E60F8]/20 shadow-xs'
-                              : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
+                              ? 'border-[#235BF7] bg-[#EEF3FF] ring-2 ring-[#235BF7]/20 shadow-xs'
+                              : 'border-[#E3E7EE] bg-[#F6F7F9] hover:bg-white'
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-[#0F172A]">1 Article</span>
+                            <span className="text-xs font-bold text-[#201D1D]">1 Article</span>
                             {quantity === 1 && (
-                              <Check className="w-3.5 h-3.5 text-[#1E60F8] stroke-[3]" />
+                              <Check className="w-3.5 h-3.5 text-[#235BF7] stroke-[3]" />
                             )}
                           </div>
-                          <span className="text-[11px] text-[#64748B] block mt-0.5">
+                          <span className="text-[11px] text-[#7A808C] block mt-0.5">
                             Prix standard
                           </span>
-                          <span className="text-xs font-black text-[#0F172A] block mt-1">
+                          <span className="text-xs font-black text-[#201D1D] block mt-1">
                             {formatFCFA(config.price)}
                           </span>
                         </button>
@@ -908,8 +910,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                               onClick={() => setQuantity(tier.minQty)}
                               className={`p-3 rounded-2xl border text-left transition-all relative cursor-pointer ${
                                 isSelected
-                                  ? 'border-[#1E60F8] bg-[#EFF4FF] ring-2 ring-[#1E60F8]/20 shadow-xs'
-                                  : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
+                                  ? 'border-[#235BF7] bg-[#EEF3FF] ring-2 ring-[#235BF7]/20 shadow-xs'
+                                  : 'border-[#E3E7EE] bg-[#F6F7F9] hover:bg-white'
                               }`}
                             >
                               <span className="absolute -top-2 right-2 text-[9px] font-black uppercase tracking-wider text-white bg-emerald-600 px-1.5 py-0.5 rounded-full shadow-xs">
@@ -918,17 +920,17 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                                   : `-${formatFCFA(tier.discountValue)}`}
                               </span>
                               <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-[#0F172A] truncate">
+                                <span className="text-xs font-bold text-[#201D1D] truncate">
                                   {tier.label}
                                 </span>
                                 {isSelected && (
-                                  <Check className="w-3.5 h-3.5 text-[#1E60F8] stroke-[3]" />
+                                  <Check className="w-3.5 h-3.5 text-[#235BF7] stroke-[3]" />
                                 )}
                               </div>
                               <span className="text-[11px] text-emerald-700 font-semibold block mt-0.5">
                                 Économie {formatFCFA(tierDisc)}
                               </span>
-                              <span className="text-xs font-black text-[#0F172A] block mt-1">
+                              <span className="text-xs font-black text-[#201D1D] block mt-1">
                                 {formatFCFA(tierTotal)}
                               </span>
                             </button>
@@ -939,16 +941,16 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 </div>
 
                 {/* Récapitulatif des Prix */}
-                <div className="p-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5 text-xs">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-[#64748B]">
+                <div className="p-5 rounded-[28px] bg-white border border-[#E3E7EE] shadow-xs space-y-2.5 text-xs">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-[#7A808C]">
                     Détail du règlement
                   </h4>
 
-                  <div className="flex items-center justify-between text-[#475569]">
+                  <div className="flex items-center justify-between text-[#3F4654]">
                     <span>
                       Sous-total ({quantity} {quantity > 1 ? 'articles' : 'article'}) :
                     </span>
-                    <span className="font-semibold text-[#0F172A]">{formatFCFA(baseSubtotal)}</span>
+                    <span className="font-semibold text-[#201D1D]">{formatFCFA(baseSubtotal)}</span>
                   </div>
 
                   {discountAmount > 0 && (
@@ -961,9 +963,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between text-[#475569]">
+                  <div className="flex items-center justify-between text-[#3F4654]">
                     <span>Frais de livraison à Dakar :</span>
-                    <span className="font-semibold text-[#0F172A]">
+                    <span className="font-semibold text-[#201D1D]">
                       {deliveryFee === 0 ? (
                         <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">
                           Gratuit
@@ -974,43 +976,43 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     </span>
                   </div>
 
-                  <div className="pt-2 border-t border-[#F1F5F9] flex items-center justify-between">
-                    <span className="text-sm font-black text-[#0F172A]">Total net à régler :</span>
-                    <span className="text-xl font-black text-[#1E60F8]">
+                  <div className="pt-2 border-t border-[#F1F3F6] flex items-center justify-between">
+                    <span className="text-sm font-black text-[#201D1D]">Total net à régler :</span>
+                    <span className="text-xl font-black text-[#235BF7]">
                       {formatFCFA(totalAmount)}
                     </span>
                   </div>
                 </div>
 
                 {/* Garanties et réassurance */}
-                <div className="grid grid-cols-3 gap-3 p-4 rounded-3xl bg-[#F1F5F9]/60 border border-[#E2E8F0] text-center text-[11px] text-[#475569]">
+                <div className="grid grid-cols-3 gap-3 p-4 rounded-[28px] bg-[#F1F3F6]/60 border border-[#E3E7EE] text-center text-[11px] text-[#3F4654]">
                   <div className="space-y-1">
-                    <ShieldCheck className="w-4 h-4 text-[#1E60F8] mx-auto" />
-                    <span className="font-bold block text-[#0F172A]">Inspection libre</span>
-                    <span className="text-[10px] text-[#64748B]">Vérifiez avant de payer</span>
+                    <ShieldCheck className="w-4 h-4 text-[#235BF7] mx-auto" />
+                    <span className="font-bold block text-[#201D1D]">Inspection libre</span>
+                    <span className="text-[10px] text-[#7A808C]">Vérifiez avant de payer</span>
                   </div>
-                  <div className="space-y-1 border-x border-[#CBD5E1]/60 px-1">
-                    <Truck className="w-4 h-4 text-[#1E60F8] mx-auto" />
-                    <span className="font-bold block text-[#0F172A]">Livraison rapide</span>
-                    <span className="text-[10px] text-[#64748B]">Sous 2 à 4h à Dakar</span>
+                  <div className="space-y-1 border-x border-[#D5DAE2]/60 px-1">
+                    <Truck className="w-4 h-4 text-[#235BF7] mx-auto" />
+                    <span className="font-bold block text-[#201D1D]">Livraison rapide</span>
+                    <span className="text-[10px] text-[#7A808C]">Sous 2 à 4h à Dakar</span>
                   </div>
                   <div className="space-y-1">
-                    <RotateCcw className="w-4 h-4 text-[#1E60F8] mx-auto" />
-                    <span className="font-bold block text-[#0F172A]">Échange 48h</span>
-                    <span className="text-[10px] text-[#64748B]">Garantie satisfaction</span>
+                    <RotateCcw className="w-4 h-4 text-[#235BF7] mx-auto" />
+                    <span className="font-bold block text-[#201D1D]">Échange 48h</span>
+                    <span className="text-[10px] text-[#7A808C]">Garantie satisfaction</span>
                   </div>
                 </div>
               </div>
 
               {/* RIGHT COLUMN: DELIVERY & PAYMENT FORM */}
               <div
-                className={`${isInsideMockup ? 'w-full' : 'lg:col-span-5'} bg-white rounded-3xl p-5 sm:p-6 border border-[#E2E8F0] shadow-sm space-y-5`}
+                className={`${isInsideMockup ? 'w-full' : 'lg:col-span-5'} bg-white rounded-[28px] p-5 sm:p-6 border border-[#E3E7EE] shadow-sm space-y-5`}
               >
                 <div>
-                  <h3 className="text-base sm:text-lg font-black text-[#0F172A]">
+                  <h3 className="text-base sm:text-lg font-black text-[#201D1D]">
                     Adresse de livraison & Paiement
                   </h3>
-                  <p className="text-xs text-[#64748B]">
+                  <p className="text-xs text-[#7A808C]">
                     Renseignez vos coordonnées pour la remise en main propre
                   </p>
                 </div>
@@ -1018,7 +1020,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <form onSubmit={handleSubmitOrder} className="space-y-4">
                   {/* Mode de règlement */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#0F172A] block">
+                    <label className="text-xs font-bold text-[#201D1D] block">
                       Mode de règlement souhaité
                     </label>
                     <div
@@ -1034,8 +1036,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           onClick={() => setPaymentChoice('cod')}
                           className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
                             paymentChoice === 'cod'
-                              ? 'border-[#0F172A] bg-[#0F172A] text-white shadow-xs'
-                              : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#475569] hover:bg-white'
+                              ? 'border-[#201D1D] bg-[#201D1D] text-white shadow-xs'
+                              : 'border-[#E3E7EE] bg-[#F6F7F9] text-[#3F4654] hover:bg-white'
                           }`}
                         >
                           <Banknote className="w-4 h-4 mx-auto mb-1" />
@@ -1051,8 +1053,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         onClick={() => setPaymentChoice('wave')}
                         className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
                           paymentChoice === 'wave'
-                            ? 'border-[#1E60F8] bg-[#1E60F8] text-white shadow-xs'
-                            : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#475569] hover:bg-white'
+                            ? 'border-[#235BF7] bg-[#235BF7] text-white shadow-xs'
+                            : 'border-[#E3E7EE] bg-[#F6F7F9] text-[#3F4654] hover:bg-white'
                         }`}
                       >
                         <CreditCard className="w-4 h-4 mx-auto mb-1" />
@@ -1066,7 +1068,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
                           paymentChoice === 'orange'
                             ? 'border-[#EA580C] bg-[#EA580C] text-white shadow-xs'
-                            : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#475569] hover:bg-white'
+                            : 'border-[#E3E7EE] bg-[#F6F7F9] text-[#3F4654] hover:bg-white'
                         }`}
                       >
                         <Phone className="w-4 h-4 mx-auto mb-1" />
@@ -1078,8 +1080,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
                   {/* Nom complet */}
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-[#0F172A] flex items-center gap-1">
-                      <User className="w-3.5 h-3.5 text-[#1E60F8]" />
+                    <label className="text-xs font-bold text-[#201D1D] flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-[#235BF7]" />
                       Nom et prénom *
                     </label>
                     <input
@@ -1088,18 +1090,18 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="Ex : Fatou Diop"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] text-xs font-semibold text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-semibold text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white transition-all"
                     />
                   </div>
 
                   {/* Téléphone WhatsApp */}
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-[#0F172A] flex items-center gap-1">
+                    <label className="text-xs font-bold text-[#201D1D] flex items-center gap-1">
                       <WhatsAppIcon className="w-3.5 h-3.5 text-[#25D366]" />
                       Numéro WhatsApp joignable *
                     </label>
                     <div className="flex">
-                      <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-[#CBD5E1] bg-[#F1F5F9] text-xs font-bold text-[#475569]">
+                      <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-[#D5DAE2] bg-[#F1F3F6] text-xs font-bold text-[#3F4654]">
                         +221
                       </span>
                       <input
@@ -1108,18 +1110,18 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
                         placeholder="77 000 00 00"
-                        className="flex-1 px-3.5 py-2.5 rounded-r-xl border border-[#CBD5E1] bg-[#F8FAFC] text-xs font-semibold text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white transition-all"
+                        className="flex-1 px-3.5 py-2.5 rounded-r-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-semibold text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white transition-all"
                       />
                     </div>
-                    <span className="text-[10px] text-[#64748B]">
+                    <span className="text-[10px] text-[#7A808C]">
                       Le coursier vous contactera sur ce numéro.
                     </span>
                   </div>
 
                   {/* Quartier Dakar */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#0F172A] flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-[#1E60F8]" />
+                    <label className="text-xs font-bold text-[#201D1D] flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-[#235BF7]" />
                       Quartier de livraison *
                     </label>
                     <div className="flex flex-wrap gap-1.5 pb-1">
@@ -1131,8 +1133,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                             onClick={() => setNeighborhood(q)}
                             className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
                               neighborhood.includes(q)
-                                ? 'bg-[#1E60F8] text-white border-[#1E60F8]'
-                                : 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0] hover:bg-white'
+                                ? 'bg-[#235BF7] text-white border-[#235BF7]'
+                                : 'bg-[#F6F7F9] text-[#3F4654] border-[#E3E7EE] hover:bg-white'
                             }`}
                           >
                             {q}
@@ -1143,19 +1145,19 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   </div>
 
                   {/* Choix Mode Adresse : Texte vs Note Vocale */}
-                  <div className="space-y-2 pt-1 border-t border-[#F1F5F9]">
+                  <div className="space-y-2 pt-1 border-t border-[#F1F3F6]">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-[#0F172A]">
+                      <label className="text-xs font-bold text-[#201D1D]">
                         Indications d'adresse
                       </label>
-                      <div className="flex items-center gap-1 bg-[#F1F5F9] p-0.5 rounded-xl border border-[#E2E8F0]">
+                      <div className="flex items-center gap-1 bg-[#F1F3F6] p-0.5 rounded-xl border border-[#E3E7EE]">
                         <button
                           type="button"
                           onClick={() => setAddressInputMode('text')}
                           className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                             addressInputMode === 'text'
-                              ? 'bg-white text-[#1E60F8] shadow-xs'
-                              : 'text-[#64748B]'
+                              ? 'bg-white text-[#235BF7] shadow-xs'
+                              : 'text-[#7A808C]'
                           }`}
                         >
                           Écrire
@@ -1165,8 +1167,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           onClick={() => setAddressInputMode('voice')}
                           className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                             addressInputMode === 'voice'
-                              ? 'bg-[#1E60F8] text-white shadow-xs'
-                              : 'text-[#64748B]'
+                              ? 'bg-[#235BF7] text-white shadow-xs'
+                              : 'text-[#7A808C]'
                           }`}
                         >
                           <Mic className="w-3 h-3" />
@@ -1181,17 +1183,17 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         value={deliveryAddress}
                         onChange={(e) => setDeliveryAddress(e.target.value)}
                         placeholder="Ex : En face de la pharmacie, Immeuble bleu, 2ème étage..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] text-xs font-medium text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-medium text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white transition-all"
                       />
                     ) : (
                       /* Enregistreur Vocal Interactif Max 2 min */
-                      <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] space-y-2.5">
+                      <div className="p-3.5 rounded-2xl bg-[#EEF3FF] border border-[#BFDBFE] space-y-2.5">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-[#1E60F8] flex items-center gap-1.5">
+                          <span className="font-bold text-[#235BF7] flex items-center gap-1.5">
                             <Mic className="w-4 h-4" />
                             Note vocale pour le livreur (max 2 min)
                           </span>
-                          <span className="font-mono font-bold text-[#1E60F8]">
+                          <span className="font-mono font-bold text-[#235BF7]">
                             {formatTimer(recordingSeconds)} / 02:00
                           </span>
                         </div>
@@ -1200,7 +1202,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           <button
                             type="button"
                             onClick={startVoiceRecording}
-                            className="w-full py-2.5 px-3 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                            className="w-full py-2.5 px-3 rounded-xl bg-[#235BF7] hover:bg-[#1A4AD6] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
                           >
                             <Mic className="w-4 h-4" />
                             <span>Démarrer l'enregistrement vocal</span>
@@ -1218,7 +1220,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                                     : 'Enregistrement en cours...'}
                                 </span>
                               </div>
-                              <span className="font-mono font-bold text-xs text-[#0F172A]">
+                              <span className="font-mono font-bold text-xs text-[#201D1D]">
                                 {formatTimer(recordingSeconds)}
                               </span>
                             </div>
@@ -1228,7 +1230,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                                 <button
                                   type="button"
                                   onClick={resumeVoiceRecording}
-                                  className="py-2 px-3 rounded-xl bg-[#1E60F8] text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                                  className="py-2 px-3 rounded-xl bg-[#235BF7] text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                                 >
                                   <Play className="w-3.5 h-3.5 fill-current" />
                                   <span>Reprendre</span>
@@ -1302,6 +1304,14 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         ? `Valider la commande (${formatFCFA(totalAmount)})`
                         : `Payer avec ${paymentChoice === 'wave' ? 'Wave' : 'Orange'} (${formatFCFA(totalAmount)})`}
                     </Button>
+                    {getDisplayCurrency() !== 'XOF' && (
+                      <p className="text-center text-xs text-[#7A808C]">
+                        Montant débité :{' '}
+                        <strong className="text-[#201D1D]">
+                          {formatMoney(totalAmount, 'XOF')}
+                        </strong>
+                      </p>
+                    )}
                   </div>
                 </form>
               </div>
@@ -1314,7 +1324,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
   return (
     <div
-      className={`relative w-full bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans select-none ${
+      className={`relative w-full bg-[#F6F7F9] text-[#201D1D] flex flex-col ${displayFont.className} select-none ${
         isInsideMockup ? 'h-full overflow-y-auto' : 'min-h-screen'
       }`}
     >
@@ -1329,16 +1339,16 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
       {/* DESKTOP TOP BRAND BAR (Visible on wide screens)          */}
       {/* ======================================================== */}
       {!isInsideMockup && (
-        <header className="hidden lg:flex items-center justify-between px-8 py-3.5 bg-white border-b border-[#E2E8F0] sticky top-0 z-30 shadow-xs">
+        <header className="hidden lg:flex items-center justify-between px-8 py-3.5 bg-white border-b border-[#E3E7EE] sticky top-0 z-30 shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#1E60F8] text-white flex items-center justify-center font-black text-sm shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-[#235BF7] text-white flex items-center justify-center font-black text-sm shadow-xs">
               {(config.storeCode || 'JS').slice(0, 2)}
             </div>
             <div>
-              <span className="font-extrabold text-sm text-[#0F172A] tracking-tight block">
+              <span className="font-extrabold text-sm text-[#201D1D] tracking-tight block">
                 {config.storeName || 'Ma Boutique'}
               </span>
-              <span className="text-[10px] text-[#64748B] flex items-center gap-1">
+              <span className="text-[10px] text-[#7A808C] flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Vendeur vérifié à Dakar &bull; Expédition express
               </span>
@@ -1389,7 +1399,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
           >
             {/* PRODUCT HERO IMAGE / VIDEO (SANS LES BADGES COMME DEMANDÉ AUDIO 2) */}
             <div
-              className={`relative w-full ${isInsideMockup ? 'h-[360px] rounded-none sm:rounded-b-2xl' : 'h-[62vh] min-h-[400px] max-h-[580px] lg:h-[520px] lg:max-h-none lg:rounded-3xl'} bg-black overflow-hidden flex-shrink-0 shadow-sm`}
+              className={`relative w-full ${isInsideMockup ? 'h-[360px] rounded-none sm:rounded-b-2xl' : 'h-[62vh] min-h-[400px] max-h-[580px] lg:h-[520px] lg:max-h-none lg:rounded-[28px]'} bg-black overflow-hidden flex-shrink-0 shadow-sm`}
             >
               {config.hasVideo && config.videoUrl && currentMediaIndex === 0 ? (
                 <div className="relative w-full h-full">
@@ -1458,7 +1468,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               )}
 
               {/* Mobile gradient bottom fade */}
-              <div className="lg:hidden absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#F8FAFC] via-[#F8FAFC]/30 to-transparent pointer-events-none" />
+              <div className="lg:hidden absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#F6F7F9] via-[#F6F7F9]/30 to-transparent pointer-events-none" />
             </div>
 
             {/* Desktop Thumbnails Grid */}
@@ -1469,8 +1479,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     onClick={() => setCurrentMediaIndex(0)}
                     className={`h-20 rounded-2xl overflow-hidden border-2 relative cursor-pointer transition-all ${
                       currentMediaIndex === 0
-                        ? 'border-[#1E60F8] ring-2 ring-[#1E60F8]/20 scale-102'
-                        : 'border-[#E2E8F0] opacity-70 hover:opacity-100'
+                        ? 'border-[#235BF7] ring-2 ring-[#235BF7]/20 scale-102'
+                        : 'border-[#E3E7EE] opacity-70 hover:opacity-100'
                     }`}
                   >
                     <video src={config.videoUrl} className="w-full h-full object-cover" />
@@ -1488,8 +1498,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       onClick={() => setCurrentMediaIndex(slideIdx)}
                       className={`h-20 rounded-2xl overflow-hidden border-2 cursor-pointer transition-all ${
                         currentMediaIndex === slideIdx
-                          ? 'border-[#1E60F8] ring-2 ring-[#1E60F8]/20 scale-102'
-                          : 'border-[#E2E8F0] opacity-70 hover:opacity-100'
+                          ? 'border-[#235BF7] ring-2 ring-[#235BF7]/20 scale-102'
+                          : 'border-[#E3E7EE] opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img
@@ -1517,40 +1527,40 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <span>{config.guaranteeBadge || 'Stock Garanti à Dakar'}</span>
               </span>
 
-              <span className="text-[11px] font-bold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-1 rounded-full">
+              <span className="text-[11px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-1 rounded-full">
                 {config.storeName || 'Ma Boutique'}
               </span>
             </div>
 
             {/* 2. Product Title & Pricing (Single Line Pricing) */}
             <div className="space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A] leading-tight tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-[#201D1D] leading-tight tracking-tight">
                 {config.productTitle}
               </h1>
 
               <div className="flex flex-wrap items-baseline gap-2.5 sm:gap-3.5 pt-1">
-                <span className="text-2xl sm:text-3xl font-black text-[#1E60F8] tracking-tight whitespace-nowrap">
-                  {formatNumber(config.price)} {config.currency}
+                <span className="text-2xl sm:text-3xl font-black text-[#235BF7] tracking-tight whitespace-nowrap">
+                  {formatFCFA(config.price)}
                 </span>
-                <span className="text-sm font-semibold text-[#94A3B8] line-through whitespace-nowrap">
-                  {formatNumber(config.originalPrice)} {config.currency}
+                <span className="text-sm font-semibold text-[#9AA0AB] line-through whitespace-nowrap">
+                  {formatFCFA(config.originalPrice)}
                 </span>
-                <span className="text-xs font-extrabold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-0.5 rounded-lg border border-[#BFDBFE] whitespace-nowrap">
+                <span className="text-xs font-extrabold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-lg border border-[#BFDBFE] whitespace-nowrap">
                   {config.discountPercent || `-${discountPercent}% RÉDUCTION`}
                 </span>
               </div>
             </div>
 
             {/* 3. Carte "Zéro risque d'achat" */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#1E60F8] text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E3E7EE] shadow-xs flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#235BF7] text-white flex items-center justify-center flex-shrink-0 shadow-xs">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="text-xs leading-snug">
-                <span className="font-extrabold text-[#0F172A] block text-sm">
+                <span className="font-extrabold text-[#201D1D] block text-sm">
                   Zéro risque d'achat
                 </span>
-                <span className="text-[#64748B]">
+                <span className="text-[#7A808C]">
                   Essayez votre article devant le coursier avant de régler en espèces ou Wave.
                 </span>
               </div>
@@ -1573,12 +1583,12 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
             {/* Sélecteur de Variante / Couleur (si configuré) */}
             {config.availableColors && config.availableColors.length > 0 && (
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2.5">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E3E7EE] shadow-xs space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#64748B] flex items-center gap-1.5">
-                    <Palette className="w-3.5 h-3.5 text-[#1E60F8]" />
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#7A808C] flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-[#235BF7]" />
                     Couleur :{' '}
-                    <strong className="text-[#0F172A]">
+                    <strong className="text-[#201D1D]">
                       {selectedColor || config.availableColors[0]?.name}
                     </strong>
                   </span>
@@ -1594,8 +1604,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         onClick={() => setSelectedColor(color.name)}
                         className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                           isSelected
-                            ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
-                            : 'bg-white text-[#0F172A] border-[#E2E8F0] hover:border-[#CBD5E1]'
+                            ? 'bg-[#201D1D] text-white border-[#201D1D] shadow-xs'
+                            : 'bg-white text-[#201D1D] border-[#E3E7EE] hover:border-[#D5DAE2]'
                         }`}
                       >
                         <span
@@ -1616,7 +1626,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {/* ======================================================== */}
             {/* 4. LES 2 BOUTONS : ÉPURÉS SANS TEXTE DU BAS (AUDIO 5)     */}
             {/* ======================================================== */}
-            <div className="p-3 rounded-2xl bg-[#F1F5F9]/80 border border-[#E2E8F0] space-y-2.5">
+            <div className="p-3 rounded-2xl bg-[#F1F3F6]/80 border border-[#E3E7EE] space-y-2.5">
               <div
                 className={
                   config.codEnabled === false
@@ -1629,7 +1639,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   <button
                     type="button"
                     onClick={() => handleOpenCheckout('cod')}
-                    className="w-full py-4 px-4 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
+                    className="w-full py-4 px-4 rounded-2xl bg-[#201D1D] hover:bg-black active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
                   >
                     <Banknote className="w-4 h-4 text-[#10B981]" />
                     <span>Payer à la livraison</span>
@@ -1640,7 +1650,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <button
                   type="button"
                   onClick={() => handleOpenCheckout('wave')}
-                  className="w-full py-4 px-4 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
+                  className="w-full py-4 px-4 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
                 >
                   <CreditCard className="w-4 h-4 text-white" />
                   <span>
@@ -1651,14 +1661,14 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 </button>
               </div>
 
-              <div className="flex items-center justify-between px-2 text-[11px] text-[#64748B]">
+              <div className="flex items-center justify-between px-2 text-[11px] text-[#7A808C]">
                 <span className="flex items-center gap-1">
                   <Lock className="w-3 h-3 text-emerald-600" />
                   Commande 100% sécurisée
                 </span>
                 <span>
                   Livraison :{' '}
-                  <strong className={deliveryFee === 0 ? 'text-emerald-700' : 'text-[#0F172A]'}>
+                  <strong className={deliveryFee === 0 ? 'text-emerald-700' : 'text-[#201D1D]'}>
                     {deliveryFee === 0 ? 'Offerte (Gratuit)' : `+${formatFCFA(deliveryFee)}`}
                   </strong>
                 </span>
@@ -1668,12 +1678,12 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {/* ======================================================== */}
             {/* 5. EXPÉDITION LOCALE (APRÈS LES BOUTONS)                  */}
             {/* ======================================================== */}
-            <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-1.5">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#0F172A]">
-                <Truck className="w-4 h-4 text-[#1E60F8]" />
+            <div className="p-4 rounded-2xl bg-white border border-[#E3E7EE] shadow-xs space-y-1.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#201D1D]">
+                <Truck className="w-4 h-4 text-[#235BF7]" />
                 <span>{config.deliveryNotice || 'Expédition locale sous 2h à 4h à Dakar'}</span>
               </div>
-              <p className="text-xs text-[#64748B] leading-relaxed">
+              <p className="text-xs text-[#7A808C] leading-relaxed">
                 Notre service logistique vous contacte immédiatement sur WhatsApp pour coordonner
                 l'heure exacte et l'adresse de livraison.
               </p>
@@ -1684,7 +1694,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {/* ======================================================== */}
             {config.benefits.length > 0 && (
               <div className="space-y-2.5 pt-1">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#7A808C]">
                   Avantages & Caractéristiques :
                 </h3>
 
@@ -1692,12 +1702,12 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   {config.benefits.map((benefit, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-[#E5E9F0] shadow-xs hover:border-[#CBD5E1] transition-colors"
+                      className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-[#ECEFF4] shadow-xs hover:border-[#D5DAE2] transition-colors"
                     >
-                      <div className="w-5 h-5 rounded-full bg-[#1E60F8] text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
+                      <div className="w-5 h-5 rounded-full bg-[#235BF7] text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
                         <Check className="w-3 h-3 stroke-[3]" />
                       </div>
-                      <p className="text-xs font-medium text-[#0F172A] leading-relaxed">
+                      <p className="text-xs font-medium text-[#201D1D] leading-relaxed">
                         {benefit}
                       </p>
                     </div>
@@ -1713,8 +1723,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             <div className="pt-2 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#0F172A] flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-[#1E60F8]/10 text-[#1E60F8] flex items-center justify-center">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#201D1D] flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-[#235BF7]/10 text-[#235BF7] flex items-center justify-center">
                       <ShieldCheck className="w-3.5 h-3.5" />
                     </div>
                     <span>Preuves Clients & Témoignages Authentiques</span>
@@ -1725,14 +1735,14 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   <button
                     type="button"
                     onClick={() => scrollSlider('left')}
-                    className="w-7 h-7 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer transition-colors"
+                    className="w-7 h-7 rounded-full bg-white border border-[#E3E7EE] flex items-center justify-center text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => scrollSlider('right')}
-                    className="w-7 h-7 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer transition-colors"
+                    className="w-7 h-7 rounded-full bg-white border border-[#E3E7EE] flex items-center justify-center text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -1746,8 +1756,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   onClick={() => setActiveProofFilter('all')}
                   className={`px-3 py-1 rounded-xl transition-all cursor-pointer ${
                     activeProofFilter === 'all'
-                      ? 'bg-[#1E60F8] text-white shadow-xs'
-                      : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F1F5F9]'
+                      ? 'bg-[#235BF7] text-white shadow-xs'
+                      : 'bg-white border border-[#E3E7EE] text-[#7A808C] hover:bg-[#F1F3F6]'
                   }`}
                 >
                   Tous ({allProofItems.length})
@@ -1757,8 +1767,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   onClick={() => setActiveProofFilter('audio')}
                   className={`px-3 py-1 rounded-xl flex items-center gap-1 transition-all cursor-pointer ${
                     activeProofFilter === 'audio'
-                      ? 'bg-[#1E60F8] text-white shadow-xs'
-                      : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F1F5F9]'
+                      ? 'bg-[#235BF7] text-white shadow-xs'
+                      : 'bg-white border border-[#E3E7EE] text-[#7A808C] hover:bg-[#F1F3F6]'
                   }`}
                 >
                   <Headphones className="w-3 h-3" />
@@ -1769,8 +1779,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   onClick={() => setActiveProofFilter('video')}
                   className={`px-3 py-1 rounded-xl flex items-center gap-1 transition-all cursor-pointer ${
                     activeProofFilter === 'video'
-                      ? 'bg-[#1E60F8] text-white shadow-xs'
-                      : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F1F5F9]'
+                      ? 'bg-[#235BF7] text-white shadow-xs'
+                      : 'bg-white border border-[#E3E7EE] text-[#7A808C] hover:bg-[#F1F3F6]'
                   }`}
                 >
                   <Film className="w-3 h-3" />
@@ -1781,8 +1791,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   onClick={() => setActiveProofFilter('image')}
                   className={`px-3 py-1 rounded-xl flex items-center gap-1 transition-all cursor-pointer ${
                     activeProofFilter === 'image'
-                      ? 'bg-[#1E60F8] text-white shadow-xs'
-                      : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F1F5F9]'
+                      ? 'bg-[#235BF7] text-white shadow-xs'
+                      : 'bg-white border border-[#E3E7EE] text-[#7A808C] hover:bg-[#F1F3F6]'
                   }`}
                 >
                   <Camera className="w-3 h-3" />
@@ -1800,7 +1810,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   <div key={item.id} className="snap-start flex-shrink-0">
                     {/* TYPE 1: NOTE VOCALE WHATSAPP */}
                     {item.type === 'audio' && (
-                      <div className="w-64 h-64 rounded-2xl bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-4 text-white flex flex-col justify-between border border-neutral-800 shadow-sm relative overflow-hidden group">
+                      <div className="w-64 h-64 rounded-2xl bg-gradient-to-br from-[#201D1D] to-[#2A2626] p-4 text-white flex flex-col justify-between border border-neutral-800 shadow-sm relative overflow-hidden group">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-xs">
@@ -1873,7 +1883,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     {item.type === 'video' && (
                       <div
                         onClick={() => setSelectedProofModalItem(item)}
-                        className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all"
+                        className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E3E7EE] shadow-xs hover:shadow-md transition-all"
                       >
                         <img
                           src={item.thumbnailUrl || images[0]?.url || undefined}
@@ -1881,7 +1891,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <div className="w-12 h-12 rounded-full bg-white/90 text-[#1E60F8] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                          <div className="w-12 h-12 rounded-full bg-white/90 text-[#235BF7] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                             <Play className="w-5 h-5 fill-current ml-0.5" />
                           </div>
                         </div>
@@ -1898,7 +1908,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     {item.type === 'image' && (
                       <div
                         onClick={() => setSelectedProofModalItem(item)}
-                        className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E2E8F0] shadow-xs hover:shadow-md transition-all"
+                        className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E3E7EE] shadow-xs hover:shadow-md transition-all"
                       >
                         <img
                           src={item.url || undefined}
@@ -1927,10 +1937,10 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {/* ======================================================== */}
             {/* 8. SECTION AVIS CLIENTS & BOUTON "LAISSER UN AVIS"        */}
             {/* ======================================================== */}
-            <div className="pt-2 space-y-3.5 border-t border-[#E2E8F0]">
+            <div className="pt-2 space-y-3.5 border-t border-[#E3E7EE]">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-[#0F172A]">
+                  <h3 className="text-sm font-black text-[#201D1D]">
                     Avis Clients ({reviewsList.length})
                   </h3>
                   <div className="flex items-center gap-1.5 text-amber-500 mt-0.5">
@@ -1939,8 +1949,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         <Star key={i} className="w-3 h-3 fill-current" />
                       ))}
                     </div>
-                    <span className="text-xs font-bold text-[#0F172A]">5.0/5</span>
-                    <span className="text-[11px] text-[#64748B]">100% de recommandations</span>
+                    <span className="text-xs font-bold text-[#201D1D]">5.0/5</span>
+                    <span className="text-[11px] text-[#7A808C]">100% de recommandations</span>
                   </div>
                 </div>
 
@@ -1948,7 +1958,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsReviewModalOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1A4AD6] text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                 >
                   <Send className="w-3 h-3" />
                   <span>Laisser un avis</span>
@@ -1960,18 +1970,18 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 {reviewsList.map((rev) => (
                   <div
                     key={rev.id}
-                    className="p-3.5 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-1.5"
+                    className="p-3.5 rounded-2xl bg-white border border-[#E3E7EE] shadow-xs space-y-1.5"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-[#1E60F8]/10 text-[#1E60F8] font-bold text-xs flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-full bg-[#235BF7]/10 text-[#235BF7] font-bold text-xs flex items-center justify-center">
                           {rev.authorName.charAt(0)}
                         </div>
                         <div>
-                          <span className="text-xs font-bold text-[#0F172A] block leading-tight">
+                          <span className="text-xs font-bold text-[#201D1D] block leading-tight">
                             {rev.authorName}
                           </span>
-                          <span className="text-[10px] text-[#64748B]">
+                          <span className="text-[10px] text-[#7A808C]">
                             {rev.city || 'Dakar'} &bull; {rev.date}
                           </span>
                         </div>
@@ -1991,7 +2001,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       </div>
                     </div>
 
-                    <p className="text-xs text-[#334155] leading-relaxed">"{rev.comment}"</p>
+                    <p className="text-xs text-[#3F4654] leading-relaxed">"{rev.comment}"</p>
                   </div>
                 ))}
               </div>
@@ -2006,10 +2016,10 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   <WhatsAppIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-[#0F172A] block">
+                  <span className="text-xs font-bold text-[#201D1D] block">
                     Besoin d'un conseil avant de commander ?
                   </span>
-                  <span className="text-[11px] text-[#475569] font-medium">
+                  <span className="text-[11px] text-[#3F4654] font-medium">
                     Notre équipe vous répond sur WhatsApp
                   </span>
                 </div>
@@ -2033,7 +2043,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
       {/* MOBILE STICKY BOTTOM BAR                                 */}
       {/* ======================================================== */}
       {isInsideMockup ? (
-        <div className="sticky bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md p-3 border-t border-[#E2E8F0] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex items-center justify-center">
+        <div className="sticky bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md p-3 border-t border-[#E3E7EE] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex items-center justify-center">
           <div
             className={`w-full max-w-sm mx-auto grid gap-2 ${
               config.codEnabled === false ? 'grid-cols-1' : 'grid-cols-2'
@@ -2042,7 +2052,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {config.codEnabled !== false && (
               <button
                 onClick={() => handleOpenCheckout('cod')}
-                className="py-3 px-2 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
+                className="py-3 px-2 rounded-2xl bg-[#201D1D] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
               >
                 <Banknote className="w-4 h-4 text-[#10B981]" />
                 <span className="truncate">Payer à la livraison</span>
@@ -2051,7 +2061,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
             <button
               onClick={() => handleOpenCheckout('wave')}
-              className="py-3 px-2 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
+              className="py-3 px-2 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
             >
               <CreditCard className="w-4 h-4 text-white" />
               <span className="truncate">
@@ -2061,7 +2071,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
           </div>
         </div>
       ) : (
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md p-3.5 border-t border-[#E2E8F0] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex items-center justify-center">
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md p-3.5 border-t border-[#E3E7EE] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex items-center justify-center">
           <div
             className={`w-full max-w-md mx-auto grid gap-2.5 ${
               config.codEnabled === false ? 'grid-cols-1' : 'grid-cols-2'
@@ -2070,7 +2080,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {config.codEnabled !== false && (
               <button
                 onClick={() => handleOpenCheckout('cod')}
-                className="py-3.5 px-3 rounded-2xl bg-[#0F172A] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer border border-neutral-800"
+                className="py-3.5 px-3 rounded-2xl bg-[#201D1D] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer border border-neutral-800"
               >
                 <Banknote className="w-4 h-4 text-[#10B981]" />
                 <span>Payer à la livraison</span>
@@ -2079,7 +2089,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
             <button
               onClick={() => handleOpenCheckout('wave')}
-              className="py-3.5 px-3 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
+              className="py-3.5 px-3 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
             >
               <CreditCard className="w-4 h-4 text-white" />
               <span>
@@ -2097,19 +2107,19 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0" onClick={() => setIsReviewModalOpen(false)} />
 
-          <div className="relative w-full max-w-md bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-2xl z-10 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+          <div className="relative w-full max-w-md bg-white rounded-[28px] p-6 border border-[#E3E7EE] shadow-2xl z-10 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#F1F3F6]">
               <div>
-                <h3 className="text-base font-black text-[#0F172A]">
+                <h3 className="text-base font-black text-[#201D1D]">
                   Laisser un avis sur ce produit
                 </h3>
-                <p className="text-xs text-[#64748B]">
+                <p className="text-xs text-[#7A808C]">
                   Votre retour d'expérience aide les futurs acheteurs à Dakar
                 </p>
               </div>
               <button
                 onClick={() => setIsReviewModalOpen(false)}
-                className="p-1.5 rounded-full text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer"
+                className="p-1.5 rounded-full text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2120,8 +2130,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
                   <Check className="w-6 h-6 stroke-[3]" />
                 </div>
-                <h4 className="text-base font-black text-[#0F172A]">Merci pour votre avis !</h4>
-                <p className="text-xs text-[#64748B]">
+                <h4 className="text-base font-black text-[#201D1D]">Merci pour votre avis !</h4>
+                <p className="text-xs text-[#7A808C]">
                   Votre commentaire a été validé et publié avec le badge "Achat vérifié".
                 </p>
               </div>
@@ -2129,7 +2139,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               <form onSubmit={handleAddReview} className="space-y-3.5">
                 {/* Rating selection */}
                 <div>
-                  <label className="block text-xs font-bold text-[#0F172A] mb-1">
+                  <label className="block text-xs font-bold text-[#201D1D] mb-1">
                     Votre note globale *
                   </label>
                   <div className="flex items-center gap-2">
@@ -2144,12 +2154,12 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           className={`w-6 h-6 ${
                             star <= newReviewRating
                               ? 'fill-current text-amber-500'
-                              : 'text-[#CBD5E1]'
+                              : 'text-[#D5DAE2]'
                           }`}
                         />
                       </button>
                     ))}
-                    <span className="text-xs font-bold text-[#0F172A] ml-2">
+                    <span className="text-xs font-bold text-[#201D1D] ml-2">
                       {newReviewRating}/5 étoiles
                     </span>
                   </div>
@@ -2157,7 +2167,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
                 {/* Nom & Prénom */}
                 <div>
-                  <label className="block text-xs font-bold text-[#0F172A] mb-1">
+                  <label className="block text-xs font-bold text-[#201D1D] mb-1">
                     Nom et Prénom *
                   </label>
                   <input
@@ -2166,13 +2176,13 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     value={newReviewAuthor}
                     onChange={(e) => setNewReviewAuthor(e.target.value)}
                     placeholder="Ex: Cheikh Sow"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E3E7EE] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7]"
                   />
                 </div>
 
                 {/* Ville / Quartier */}
                 <div>
-                  <label className="block text-xs font-bold text-[#0F172A] mb-1">
+                  <label className="block text-xs font-bold text-[#201D1D] mb-1">
                     Quartier / Ville
                   </label>
                   <input
@@ -2180,13 +2190,13 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     value={newReviewCity}
                     onChange={(e) => setNewReviewCity(e.target.value)}
                     placeholder="Ex: Mermoz, Dakar"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E3E7EE] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7]"
                   />
                 </div>
 
                 {/* Message / Avis */}
                 <div>
-                  <label className="block text-xs font-bold text-[#0F172A] mb-1">
+                  <label className="block text-xs font-bold text-[#201D1D] mb-1">
                     Votre avis sur le produit et la livraison *
                   </label>
                   <textarea
@@ -2195,7 +2205,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     value={newReviewComment}
                     onChange={(e) => setNewReviewComment(e.target.value)}
                     placeholder="Partagez votre expérience : délai de livraison, état du colis, satisfaction..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8] resize-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E3E7EE] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7] resize-none"
                   />
                 </div>
 
@@ -2222,7 +2232,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
       {selectedProofModalItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0" onClick={() => setSelectedProofModalItem(null)} />
-          <div className="relative max-w-xl w-full bg-black rounded-3xl overflow-hidden shadow-2xl z-10 border border-white/20">
+          <div className="relative max-w-xl w-full bg-black rounded-[28px] overflow-hidden shadow-2xl z-10 border border-white/20">
             <button
               onClick={() => setSelectedProofModalItem(null)}
               className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/40 cursor-pointer"

@@ -1,21 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Search,
   Bell,
-  Sun,
-  Moon,
-  Calendar,
-  SlidersHorizontal,
-  Plus,
+  CalendarDays,
+  Check,
   ChevronDown,
-  Layers,
-  Smartphone,
+  CircleDollarSign,
+  PackageCheck,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Wallet,
   X,
+  XCircle,
 } from 'lucide-react';
-import { DashboardTab } from '@/types/juula';
+import type { DashboardTab, OrderLead, PayoutRecord } from '@/types/juula';
 import { JuulaLogo } from '@/components/brand/JuulaLogo';
+import { formatFCFA } from '@/lib/orderUtils';
+import { PERIODS, type PeriodId } from '@/lib/store/period';
 
 export interface HeaderWidgetsState {
   kpiCards: boolean;
@@ -36,27 +39,68 @@ interface HeaderProps {
   onOpenRecharge: () => void;
   onOpenPayoutModal: () => void;
   onOpenStorefrontPreview: () => void;
-  currentViewMode: 'dashboard' | 'vitrine';
-  onToggleViewMode: (mode: 'dashboard' | 'vitrine') => void;
   onCreatePageClick: () => void;
-  selectedPeriod?: string;
-  onSelectPeriod?: (period: string) => void;
-  selectedDateRange?: string;
-  onSelectDateRange?: (range: string) => void;
+  periodId: PeriodId;
+  onSelectPeriod: (id: PeriodId) => void;
+  dateRangeLabel: string;
+  /** Source of the notifications (new / paid orders) and of nothing else. */
+  orders: OrderLead[];
+  payouts: PayoutRecord[];
+  avatarUrl?: string | null | undefined;
+  storeName?: string | null | undefined;
+  onOpenOrder: (reference: string) => void;
+  onSearch: (query: string) => void;
   activeWidgets?: HeaderWidgetsState;
   onToggleWidget?: (widgetKey: keyof HeaderWidgetsState) => void;
 }
 
+const TITLES: Record<DashboardTab, string> = {
+  cockpit: 'Tableau de bord',
+  kanban: 'Commandes',
+  wallet: 'Portefeuille',
+  wizard: 'Pages de vente',
+  customers: 'Clients',
+  analytics: 'Performances des ventes',
+  settings: 'Paramètres',
+};
+
+const SEEN_KEY = 'juula-notifications-seen-at';
+
+type Notif = {
+  id: string;
+  at: number;
+  title: string;
+  desc: string;
+  icon: React.ReactNode;
+  tone: string;
+  orderRef?: string;
+  when: string;
+};
+
+function readSeen(): number {
+  try {
+    return Number(localStorage.getItem(SEEN_KEY) ?? 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+const PILL =
+  'flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E3E7EE] text-[14px] font-semibold text-[#201D1D] hover:bg-[#F6F7F9] transition-colors cursor-pointer whitespace-nowrap';
+
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
-  currentViewMode,
-  onToggleViewMode,
   onCreatePageClick,
-  selectedPeriod = '30 derniers jours',
+  periodId,
   onSelectPeriod,
-  selectedDateRange = '1 Jan, 2026 - 4 Oct, 2026',
-  onSelectDateRange,
+  dateRangeLabel,
+  orders,
+  payouts,
+  avatarUrl,
+  storeName,
+  onOpenOrder,
+  onSearch,
   activeWidgets = {
     kpiCards: true,
     profitChart: true,
@@ -68,367 +112,341 @@ export const Header: React.FC<HeaderProps> = ({
   },
   onToggleWidget,
 }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [isPeriodOpen, setIsPeriodOpen] = useState(false);
-  const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
+  const [open, setOpen] = useState<null | 'notifications' | 'period' | 'widgets'>(null);
+  const [seenAt, setSeenAt] = useState(0);
+  const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLElement>(null);
 
-  interface NotificationItem {
-    id: number;
-    title: string;
-    desc: string;
-    time: string;
-    type: string;
-    unread: boolean;
-  }
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  useEffect(() => setSeenAt(readSeen()), []);
 
-  const getPageTitle = () => {
-    switch (activeTab) {
-      case 'cockpit':
-        return 'Dashboard';
-      case 'kanban':
-        return 'Commandes & Pipeline';
-      case 'wallet':
-        return 'Juula Pay — Portefeuille';
-      case 'wizard':
-        return 'Pages de vente';
-      case 'customers':
-        return 'Clients';
-      case 'analytics':
-        return 'Performances des Ventes';
-      case 'settings':
-        return 'Paramètres & Intégrations';
-      default:
-        return 'Dashboard';
+  // ⌘K / Ctrl+K focuses the search; Escape and outside clicks close popovers.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (e.key === 'Escape') setOpen(null);
+    };
+    const onClick = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(null);
+    };
+    window.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onClick);
+    };
+  }, []);
+
+  // Notifications = latest orders (new / paid online) + withdrawals.
+  const notifications = useMemo<Notif[]>(() => {
+    const list: Notif[] = [];
+    for (const o of orders) {
+      if (!o.createdAtIso) continue;
+      const at = Date.parse(o.createdAtIso);
+      const total = formatFCFA(o.totalAmount ?? o.amount);
+      list.push(
+        o.paymentStatus === 'paid'
+          ? {
+              id: `paid-${o.id}`,
+              at,
+              title: 'Paiement en ligne reçu',
+              desc: `${o.customerName} · ${o.productName} · ${total}`,
+              icon: <CircleDollarSign className="w-4 h-4" />,
+              tone: 'bg-[#ECFDF3] text-[#16A34A]',
+              orderRef: o.id,
+              when: o.createdAt,
+            }
+          : {
+              id: `order-${o.id}`,
+              at,
+              title: `Nouvelle commande ${o.id}`,
+              desc: `${o.customerName} · ${o.productName} · ${total}`,
+              icon: <PackageCheck className="w-4 h-4" />,
+              tone: 'bg-[#EEF3FF] text-[#235BF7]',
+              orderRef: o.id,
+              when: o.createdAt,
+            },
+      );
+    }
+    payouts.forEach((p, i) => {
+      list.push({
+        id: `payout-${p.id}`,
+        at: Date.now() - (i + 1) * 1000 * 60 * 60 * 24 * 365, // history has no timestamp: keep after orders
+        title:
+          p.status === 'completed'
+            ? 'Retrait confirmé'
+            : p.status === 'failed'
+              ? 'Retrait non effectué'
+              : 'Retrait en cours',
+        desc: `${formatFCFA(p.amount)} vers ${p.provider === 'wave' ? 'Wave' : 'Orange Money'}`,
+        icon:
+          p.status === 'failed' ? <XCircle className="w-4 h-4" /> : <Wallet className="w-4 h-4" />,
+        tone: p.status === 'failed' ? 'bg-[#FEF2F2] text-[#DC2626]' : 'bg-[#F6F7F9] text-[#3F4654]',
+        when: p.date,
+      });
+    });
+    return list.sort((a, b) => b.at - a.at).slice(0, 20);
+  }, [orders, payouts]);
+
+  const unread = notifications.filter((n) => n.at > seenAt).length;
+
+  const markAllRead = () => {
+    const now = Date.now();
+    setSeenAt(now);
+    try {
+      localStorage.setItem(SEEN_KEY, String(now));
+    } catch {
+      // ignore (private mode)
     }
   };
 
+  const toggle = (which: NonNullable<typeof open>) =>
+    setOpen((cur) => (cur === which ? null : which));
+  const periodLabel = PERIODS.find((p) => p.id === periodId)?.label ?? '';
+  const initials = (storeName || 'J')
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
-    <header className="bg-white/85 backdrop-blur-xl border-b border-[#ECEFF4] lg:border lg:border-[#ECEFF4] lg:m-3 lg:mb-0 lg:rounded-[22px] lg:shadow-[0_10px_30px_-22px_rgba(32,29,29,0.3)] px-4 sm:px-6 py-3.5 flex flex-col gap-3 sticky top-0 lg:top-3 z-30 select-none">
-      {/* Top Search Bar, Mobile Brand & User Actions */}
+    <header
+      ref={rootRef}
+      className="bg-white/85 backdrop-blur-xl border-b border-[#ECEFF4] lg:border lg:border-[#ECEFF4] lg:m-3 lg:mb-0 lg:rounded-[22px] lg:shadow-[0_10px_30px_-22px_rgba(32,29,29,0.3)] px-4 sm:px-6 py-4 flex flex-col gap-4 sticky top-0 lg:top-3 z-30 select-none"
+    >
+      {/* Row 1: brand (mobile), search, notifications, avatar */}
       <div className="flex items-center justify-between gap-4">
-        {/* Mobile Brand (Visible only when sidebar is hidden on mobile) */}
         <div className="flex items-center lg:hidden shrink-0">
-          <JuulaLogo height={28} />
+          <JuulaLogo height={30} />
         </div>
 
-        {/* Search input with shortcut ⌘K (Desktop) */}
-        <div className="relative w-full max-w-md hidden sm:block">
-          <Search className="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <form
+          className="relative w-full max-w-md hidden sm:block"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSearch(query.trim());
+          }}
+        >
+          <Search className="w-[18px] h-[18px] text-[#9AA0AB] absolute left-4 top-1/2 -translate-y-1/2" />
           <input
-            type="text"
-            placeholder="Rechercher une commande, un client, un quartier..."
-            className="w-full pl-10 pr-12 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#201D1D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#235BF7] focus:bg-white transition-all"
+            ref={searchRef}
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher une commande, un client, un quartier…"
+            className="w-full pl-11 pr-14 py-2.5 rounded-2xl bg-[#F6F7F9] border border-[#E3E7EE] text-[14px] text-[#201D1D] placeholder:text-[#9AA0AB] focus:outline-none focus:border-[#235BF7] focus:bg-white focus:ring-4 focus:ring-[#235BF7]/10 transition-all"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#94A3B8] bg-white border border-[#E2E8F0] px-1.5 py-0.5 rounded">
+          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] font-semibold text-[#9AA0AB] bg-white border border-[#E3E7EE] px-1.5 py-0.5 rounded-md">
             ⌘K
-          </span>
-        </div>
+          </kbd>
+        </form>
 
-        {/* Right Switchers and Profile */}
-        <div className="flex items-center gap-2 sm:gap-3 ml-auto">
-          {/* View mode toggle : Dashboard vs Vitrine */}
-          <div className="flex items-center p-1 rounded-xl bg-[#F1F5F9] border border-[#E2E8F0]">
-            <button
-              onClick={() => onToggleViewMode('dashboard')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                currentViewMode === 'dashboard'
-                  ? 'bg-white text-[#235BF7] shadow-xs'
-                  : 'text-[#7A808C] hover:text-[#201D1D]'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </button>
-
-            <button
-              onClick={() => onToggleViewMode('vitrine')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                currentViewMode === 'vitrine'
-                  ? 'bg-white text-[#235BF7] shadow-xs'
-                  : 'text-[#7A808C] hover:text-[#201D1D]'
-              }`}
-            >
-              <Smartphone className="w-3.5 h-3.5 text-[#235BF7]" />
-              <span className="hidden sm:inline">Vitrine Mobile</span>
-            </button>
-          </div>
-
-          {/* Nocturne / Dark Mode Button with active indicator */}
-          <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className={`p-2 rounded-xl border transition-colors cursor-pointer ${
-              isDarkMode
-                ? 'bg-[#201D1D] text-amber-300 border-[#201D1D]'
-                : 'text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F8FAFC] border-[#E2E8F0]'
-            }`}
-            title={isDarkMode ? 'Désactiver le mode nocturne' : 'Activer le mode nocturne'}
-          >
-            {isDarkMode ? <Moon className="w-4 h-4 fill-amber-300" /> : <Sun className="w-4 h-4" />}
-          </button>
-
-          {/* Notification bell with dropdown */}
+        <div className="flex items-center gap-2.5 ml-auto">
+          {/* Notifications */}
           <div className="relative">
             <button
-              onClick={() => {
-                setIsNotificationsOpen(!isNotificationsOpen);
-                setIsCalendarOpen(false);
-                setIsPeriodOpen(false);
-                setIsWidgetModalOpen(false);
-              }}
-              className="p-2 rounded-xl text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F8FAFC] border border-[#E2E8F0] transition-colors cursor-pointer relative"
+              type="button"
+              onClick={() => toggle('notifications')}
+              aria-label={`Notifications${unread ? ` (${unread} non lues)` : ''}`}
+              className="relative w-11 h-11 rounded-2xl text-[#3F4654] hover:text-[#201D1D] bg-white hover:bg-[#F6F7F9] border border-[#E3E7EE] flex items-center justify-center transition-colors cursor-pointer"
             >
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#10B981] ring-2 ring-white" />
+              <Bell className="w-5 h-5" />
+              {unread > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#235BF7] text-white text-[13px] font-bold flex items-center justify-center ring-2 ring-white">
+                  {unread > 9 ? '9+' : unread}
+                </span>
               )}
             </button>
 
-            {/* Notifications Popover */}
-            {isNotificationsOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-[28px] p-4 border border-[#ECEFF4] shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+            {open === 'notifications' && (
+              <div className="absolute right-0 top-full mt-2 w-[min(92vw,400px)] bg-white rounded-[24px] border border-[#ECEFF4] shadow-[0_30px_60px_-24px_rgba(32,29,29,0.35)] z-50 overflow-hidden motion-safe:animate-[rise_220ms_ease]">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F3F7]">
                   <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-xs text-[#201D1D]">Notifications</span>
-                    {unreadCount > 0 ? (
-                      <span className="text-[10px] font-black bg-[#EEF3FF] text-[#235BF7] px-2 py-0.5 rounded-full">
-                        {unreadCount} non lue{unreadCount > 1 ? 's' : ''}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-[#94A3B8] bg-[#F1F5F9] px-2 py-0.5 rounded-full">
-                        0 nouvelle
+                    <span className="font-bold text-[15px] text-[#201D1D]">Notifications</span>
+                    {unread > 0 && (
+                      <span className="text-[12px] font-semibold bg-[#EEF3FF] text-[#235BF7] px-2 py-0.5 rounded-full">
+                        {unread} nouvelle{unread > 1 ? 's' : ''}
                       </span>
                     )}
                   </div>
                   <button
-                    onClick={() => setIsNotificationsOpen(false)}
-                    className="p-1 text-[#94A3B8] hover:text-[#201D1D]"
+                    type="button"
+                    onClick={() => setOpen(null)}
+                    aria-label="Fermer"
+                    className="p-1.5 rounded-lg text-[#9AA0AB] hover:text-[#201D1D] hover:bg-[#F6F7F9]"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="divide-y divide-[#F1F5F9] max-h-72 overflow-y-auto">
+                <div className="max-h-[360px] overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-[#94A3B8] space-y-1">
-                      <p className="font-semibold text-[#7A808C]">Aucune notification</p>
-                      <p className="text-[11px]">
-                        Les alertes de commandes et retraits s'afficheront ici en direct.
+                    <div className="py-12 px-6 text-center">
+                      <span className="mx-auto w-12 h-12 rounded-2xl bg-[#F6F7F9] text-[#9AA0AB] flex items-center justify-center">
+                        <Bell className="w-5 h-5" />
+                      </span>
+                      <p className="mt-3 font-semibold text-[#201D1D]">Aucune notification</p>
+                      <p className="mt-1 text-sm text-[#7A808C]">
+                        Vos nouvelles commandes, paiements et retraits apparaîtront ici.
                       </p>
                     </div>
                   ) : (
-                    notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={`py-3 px-1 space-y-1 transition-colors ${
-                          notif.unread ? 'bg-[#FAFCFF]' : ''
-                        }`}
+                    notifications.map((n) => (
+                      <button
+                        key={n.id}
+                        type="button"
+                        disabled={!n.orderRef}
+                        onClick={() => {
+                          if (n.orderRef) onOpenOrder(n.orderRef);
+                          setOpen(null);
+                        }}
+                        className={`w-full text-left flex items-start gap-3 px-5 py-3.5 border-b border-[#F6F7F9] last:border-0 transition-colors ${
+                          n.orderRef ? 'hover:bg-[#F6F7F9] cursor-pointer' : 'cursor-default'
+                        } ${n.at > seenAt ? 'bg-[#FAFBFF]' : ''}`}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs text-[#201D1D]">{notif.title}</span>
-                          <span className="text-[10px] text-[#94A3B8]">{notif.time}</span>
-                        </div>
-                        <p className="text-[11px] text-[#7A808C] leading-tight">{notif.desc}</p>
-                      </div>
+                        <span
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${n.tone}`}
+                        >
+                          {n.icon}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-[14px] text-[#201D1D] truncate">
+                              {n.title}
+                            </span>
+                            <span className="text-[12px] text-[#9AA0AB] shrink-0">{n.when}</span>
+                          </span>
+                          <span className="block text-sm text-[#7A808C] truncate">{n.desc}</span>
+                        </span>
+                        {n.at > seenAt && (
+                          <span className="mt-2 w-2 h-2 rounded-full bg-[#235BF7] shrink-0" />
+                        )}
+                      </button>
                     ))
                   )}
                 </div>
 
-                {notifications.length > 0 && (
-                  <div className="pt-2 border-t border-[#F1F5F9]">
-                    <button
-                      onClick={() => {
-                        setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
-                        setIsNotificationsOpen(false);
-                      }}
-                      className="w-full py-1.5 text-center text-xs font-bold text-[#235BF7] hover:underline cursor-pointer"
-                    >
-                      Marquer tout comme lu
-                    </button>
-                  </div>
+                {unread > 0 && (
+                  <button
+                    type="button"
+                    onClick={markAllRead}
+                    className="w-full flex items-center justify-center gap-2 py-3 text-[14px] font-semibold text-[#235BF7] hover:bg-[#F6F7F9] border-t border-[#F1F3F7] cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" /> Tout marquer comme lu
+                  </button>
                 )}
               </div>
             )}
           </div>
 
-          {/* User Profile */}
-          <div
+          {/* Avatar: store logo (or initials) → settings */}
+          <button
+            type="button"
             onClick={() => onTabChange('settings')}
-            className="flex items-center gap-2.5 pl-1 cursor-pointer"
-            title="Paramètres boutique"
+            title="Paramètres de la boutique"
+            className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white shadow-[0_6px_16px_-8px_rgba(32,29,29,0.5)] bg-gradient-to-br from-[#4D7DFF] to-[#1F4FE0] text-white font-bold text-[15px] flex items-center justify-center cursor-pointer shrink-0"
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#235BF7] to-[#60A5FA] text-white font-extrabold text-xs flex items-center justify-center ring-2 ring-[#E2E8F0]">
-              DE
-            </div>
-          </div>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={storeName ?? 'Ma boutique'}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              initials
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Sub-Header Row matching Shopeers Title and Filter Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        <h1 className="text-xl sm:text-2xl font-black text-[#201D1D] tracking-tight">
-          {getPageTitle()}
+      {/* Row 2: title + filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-2xl sm:text-[28px] font-extrabold text-[#201D1D] tracking-[-0.02em]">
+          {TITLES[activeTab]}
         </h1>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 relative overflow-x-auto pb-1 sm:pb-0 scrollbar-none max-w-full">
-          {/* Date Picker Pill with Popover */}
+        <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 -mx-1 px-1">
+          {/* Period (one control: shows the real dates) */}
           <div className="relative shrink-0">
-            <button
-              onClick={() => {
-                setIsCalendarOpen(!isCalendarOpen);
-                setIsPeriodOpen(false);
-                setIsWidgetModalOpen(false);
-                setIsNotificationsOpen(false);
-              }}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#201D1D] hover:bg-[#F8FAFC] transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <Calendar className="w-3.5 h-3.5 text-[#94A3B8] shrink-0" />
-              <span className="hidden sm:inline">{selectedDateRange}</span>
-              <span className="sm:hidden text-[11px] truncate max-w-[120px]">
-                {selectedDateRange.includes('-')
-                  ? selectedDateRange.split('-')[0]?.trim() || selectedDateRange
-                  : selectedDateRange}
-              </span>
+            <button type="button" onClick={() => toggle('period')} className={PILL}>
+              <CalendarDays className="w-4 h-4 text-[#235BF7]" />
+              <span className="hidden md:inline text-[#7A808C] font-medium">{dateRangeLabel}</span>
+              <span className="hidden md:inline text-[#D5DAE3]">·</span>
+              <span>{periodLabel}</span>
+              <ChevronDown className="w-4 h-4 text-[#9AA0AB]" />
             </button>
-
-            {isCalendarOpen && (
-              <div className="absolute left-0 sm:right-0 top-full mt-2 w-64 bg-white rounded-2xl p-2 border border-[#ECEFF4] shadow-xl z-50 animate-in fade-in slide-in-from-top-1">
-                {[
-                  'Aujourd’hui',
-                  '7 derniers jours',
-                  '30 derniers jours',
-                  'Ce mois (Octobre 2026)',
-                  '1 Jan, 2026 - 4 Oct, 2026',
-                ].map((range) => (
+            {open === 'period' && (
+              <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-60 bg-white rounded-2xl p-2 border border-[#ECEFF4] shadow-[0_24px_48px_-24px_rgba(32,29,29,0.35)] z-50 motion-safe:animate-[rise_200ms_ease]">
+                {PERIODS.map((p) => (
                   <button
-                    key={range}
+                    key={p.id}
+                    type="button"
                     onClick={() => {
-                      onSelectDateRange?.(range);
-                      setIsCalendarOpen(false);
+                      onSelectPeriod(p.id);
+                      setOpen(null);
                     }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                      selectedDateRange === range
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[14px] font-semibold transition-colors cursor-pointer ${
+                      periodId === p.id
                         ? 'bg-[#EEF3FF] text-[#235BF7]'
-                        : 'text-[#7A808C] hover:bg-[#F8FAFC] hover:text-[#201D1D]'
+                        : 'text-[#3F4654] hover:bg-[#F6F7F9]'
                     }`}
                   >
-                    {range}
+                    {p.label}
+                    {periodId === p.id && <Check className="w-4 h-4" />}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Period selector with Dropdown */}
-          <div className="relative shrink-0">
-            <button
-              onClick={() => {
-                setIsPeriodOpen(!isPeriodOpen);
-                setIsCalendarOpen(false);
-                setIsWidgetModalOpen(false);
-                setIsNotificationsOpen(false);
-              }}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#201D1D] hover:bg-[#F8FAFC] transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <span>{selectedPeriod}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#94A3B8]" />
-            </button>
-
-            {isPeriodOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl p-2 border border-[#ECEFF4] shadow-xl z-50 animate-in fade-in slide-in-from-top-1">
-                {[
-                  'Aujourd’hui',
-                  '7 derniers jours',
-                  '14 derniers jours',
-                  '30 derniers jours',
-                  'Ce mois',
-                ].map((period) => (
-                  <button
-                    key={period}
-                    onClick={() => {
-                      onSelectPeriod?.(period);
-                      setIsPeriodOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                      selectedPeriod === period
-                        ? 'bg-[#EEF3FF] text-[#235BF7]'
-                        : 'text-[#7A808C] hover:bg-[#F8FAFC] hover:text-[#201D1D]'
-                    }`}
-                  >
-                    {period}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Add Widget Popover Modal */}
-          <div className="relative shrink-0">
-            <button
-              onClick={() => {
-                setIsWidgetModalOpen(!isWidgetModalOpen);
-                setIsCalendarOpen(false);
-                setIsPeriodOpen(false);
-                setIsNotificationsOpen(false);
-              }}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F8FAFC] transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#94A3B8]" />
-              <span className="hidden sm:inline">Ajouter widget</span>
-              <span className="sm:hidden">Widgets</span>
-            </button>
-
-            {isWidgetModalOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-[28px] p-4 border border-[#ECEFF4] shadow-xl z-50 animate-in fade-in slide-in-from-top-1 space-y-2">
-                <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
-                  <span className="text-xs font-black text-[#201D1D]">Widgets Visibles</span>
-                  <button
-                    onClick={() => setIsWidgetModalOpen(false)}
-                    className="p-1 text-[#94A3B8] hover:text-[#201D1D]"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <div className="space-y-1.5 text-xs">
+          {/* Widgets */}
+          {activeTab === 'cockpit' && (
+            <div className="relative shrink-0">
+              <button type="button" onClick={() => toggle('widgets')} className={PILL}>
+                <SlidersHorizontal className="w-4 h-4 text-[#9AA0AB]" />
+                <span>Widgets</span>
+              </button>
+              {open === 'widgets' && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-[22px] p-3 border border-[#ECEFF4] shadow-[0_24px_48px_-24px_rgba(32,29,29,0.35)] z-50 motion-safe:animate-[rise_200ms_ease]">
+                  <p className="px-2 pb-2 text-sm font-semibold text-[#7A808C]">Blocs affichés</p>
                   {[
-                    { key: 'kpiCards' as const, label: 'Cartes Vues, Clics & Commandes' },
-                    { key: 'profitChart' as const, label: 'Graphique Bénéfice & CA Spline' },
-                    { key: 'segmentation' as const, label: 'Segmentation COD & Mobile Money' },
+                    { key: 'kpiCards' as const, label: 'Indicateurs clés' },
+                    { key: 'profitChart' as const, label: 'Chiffre d’affaires' },
+                    { key: 'segmentation' as const, label: 'Répartition des paiements' },
                     { key: 'activeDays' as const, label: 'Journées les plus actives' },
-                    { key: 'deliveryRate' as const, label: 'Jauge Taux de Livraison (68%)' },
-                    { key: 'aiAssistant' as const, label: 'Assistant IA Ventes Juula' },
-                    { key: 'bestProducts' as const, label: 'Tableau des Produits les Plus Vendus' },
+                    { key: 'deliveryRate' as const, label: 'Taux de livraison' },
+                    { key: 'aiAssistant' as const, label: 'Assistant Juula' },
+                    { key: 'bestProducts' as const, label: 'Produits les plus vendus' },
                   ].map((w) => (
                     <label
                       key={w.key}
-                      className="flex items-center justify-between p-2 rounded-xl hover:bg-[#F8FAFC] cursor-pointer"
+                      className="flex items-center justify-between px-2 py-2.5 rounded-xl hover:bg-[#F6F7F9] cursor-pointer"
                     >
-                      <span className="font-semibold text-[#334155]">{w.label}</span>
+                      <span className="text-[14px] font-medium text-[#3F4654]">{w.label}</span>
                       <input
                         type="checkbox"
                         checked={activeWidgets[w.key]}
                         onChange={() => onToggleWidget?.(w.key)}
-                        className="w-4 h-4 rounded text-[#235BF7] accent-[#235BF7] cursor-pointer"
+                        className="w-4 h-4 accent-[#235BF7] cursor-pointer"
                       />
                     </label>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
-          {/* Primary Action Button (Blue Shopeers style) */}
           <button
+            type="button"
             onClick={onCreatePageClick}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-bold transition-all shadow-[0_2px_8px_rgba(30,96,248,0.25)] cursor-pointer shrink-0 whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[14px] font-semibold shadow-[0_10px_20px_-10px_rgba(35,91,247,0.8)] transition-colors cursor-pointer shrink-0 whitespace-nowrap"
           >
-            <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            <span className="hidden sm:inline">Créer une page</span>
-            <span className="sm:hidden">+ Tunnel</span>
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Créer une page
           </button>
         </div>
       </div>

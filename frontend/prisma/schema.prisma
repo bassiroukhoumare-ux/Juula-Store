@@ -365,6 +365,7 @@ model Store {
   onlineOnly         Boolean      @default(false) // no physical shop
   address            String? // physical shop address (when not online-only)
   city               String?
+  displayCurrency    String       @default("XOF") // XOF | EUR | USD — display only, charges stay in XOF
   facebookPixelId    String?
   tiktokPixelId      String?
   orderCounter       Int          @default(0) // last allocated StoreOrder.number

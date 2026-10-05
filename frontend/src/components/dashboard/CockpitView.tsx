@@ -8,16 +8,19 @@ import {
   ShoppingBag,
   TrendingUp,
   MoreHorizontal,
-  Sparkles,
+  BrainCircuit,
+  Lightbulb,
+  Bot,
   Star,
-  Wand2,
   Maximize2,
   Truck,
   ArrowRight,
 } from 'lucide-react';
 import { KpiMetrics, OrderLead, FunnelPageConfig, WalletState } from '@/types/juula';
-import { formatNumber } from '@/lib/orderUtils';
+import { formatFCFA } from '@/lib/orderUtils';
 import { HeaderWidgetsState } from '@/components/dashboard/Header';
+import { RevenueChart } from '@/components/dashboard/RevenueChart';
+import type { PeriodRange } from '@/lib/store/period';
 
 interface CockpitViewProps {
   kpis: KpiMetrics;
@@ -31,15 +34,18 @@ interface CockpitViewProps {
   onOpenKanban: () => void;
   onOpenWallet: () => void;
   activeWidgets?: HeaderWidgetsState;
-  selectedPeriod?: string;
-  selectedDateRange?: string;
+  /** Orders of the previous period (for comparisons and the chart). */
+  previousOrders: OrderLead[];
+  periodRange: PeriodRange;
 }
 
 export const CockpitView: React.FC<CockpitViewProps> = ({
-  kpis,
-  wallet,
+  kpis: _kpis,
+  wallet: _wallet,
   funnelConfig,
   recentOrders,
+  previousOrders,
+  periodRange,
   onCreatePageClick,
   onOpenPayoutModal,
   onOpenKanban,
@@ -56,133 +62,64 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
   const [selectedDay, setSelectedDay] = useState('Mar');
   const [aiGeneratedTip, setAiGeneratedTip] = useState<string | null>(null);
 
-  // Dynamic metrics & spline chart points based on real orders
+  // Real metrics for the selected period, compared with the previous one.
   const periodData = React.useMemo(() => {
-    const totalOrdersCount = recentOrders.length;
-    const totalRev = recentOrders.reduce(
-      (sum, o) =>
-        o.status === 'delivered' || o.paymentStatus === 'paid'
-          ? sum + (o.totalAmount || o.amount + (o.deliveryFee || 0))
-          : sum,
-      0,
-    );
-    const effectiveRevenue = totalRev > 0 ? totalRev : wallet.availableBalance;
-
-    if (totalOrdersCount === 0 && effectiveRevenue === 0) {
-      return {
-        views: '0',
-        viewsChange: '0%',
-        viewsPositive: true,
-        viewsPrevious: 'En attente de trafic',
-        visitors: '0',
-        visitorsChange: '0%',
-        visitorsPositive: true,
-        visitorsPrevious: 'En attente de visiteurs',
-        clicks: '0',
-        clicksChange: '0%',
-        clicksPositive: false,
-        clicksPrevious: 'En attente de clics',
-        orders: '0',
-        ordersChange: '0%',
-        ordersPositive: true,
-        ordersPrevious: 'En attente de commandes',
-        totalRevenue: 0,
-        revenueChange: '0%',
-        points: [
-          { label: '08h', date: '08h', revenue: '0 FCFA', growth: '0%', cx: 40, cy: 150 },
-          { label: '11h', date: '11h', revenue: '0 FCFA', growth: '0%', cx: 150, cy: 150 },
-          { label: '14h', date: '14h', revenue: '0 FCFA', growth: '0%', cx: 250, cy: 150 },
-          { label: '17h', date: '17h', revenue: '0 FCFA', growth: '0%', cx: 470, cy: 150 },
-          { label: '20h', date: '20h', revenue: '0 FCFA', growth: '0%', cx: 590, cy: 150 },
-        ],
-      };
-    }
-
-    return {
-      views: String(Math.max(totalOrdersCount * 12, kpis.todayVisits.value || 0)),
-      viewsChange: '+0%',
-      viewsPositive: true,
-      viewsPrevious: 'Période en cours',
-      visitors: String(Math.max(totalOrdersCount * 5, 0)),
-      visitorsChange: '+0%',
-      visitorsPositive: true,
-      visitorsPrevious: 'Période en cours',
-      clicks: String(Math.max(totalOrdersCount * 2, 0)),
-      clicksChange: '+0%',
-      clicksPositive: true,
-      clicksPrevious: 'Période en cours',
-      orders: String(totalOrdersCount),
-      ordersChange: '+0%',
-      ordersPositive: true,
-      ordersPrevious: 'Période en cours',
-      totalRevenue: effectiveRevenue,
-      revenueChange: '+0%',
-      points: [
-        { label: '08h', date: '08h', revenue: '0 FCFA', growth: '0%', cx: 40, cy: 150 },
-        {
-          label: '11h',
-          date: '11h',
-          revenue: formatNumber(Math.round(effectiveRevenue * 0.2)) + ' FCFA',
-          growth: '+20%',
-          cx: 150,
-          cy: 130,
-        },
-        {
-          label: '14h',
-          date: '14h',
-          revenue: formatNumber(Math.round(effectiveRevenue * 0.5)) + ' FCFA',
-          growth: '+50%',
-          cx: 250,
-          cy: 100,
-        },
-        {
-          label: '17h',
-          date: '17h',
-          revenue: formatNumber(Math.round(effectiveRevenue * 0.8)) + ' FCFA',
-          growth: '+80%',
-          cx: 470,
-          cy: 75,
-        },
-        {
-          label: '20h',
-          date: '20h',
-          revenue: formatNumber(effectiveRevenue) + ' FCFA',
-          growth: '+100%',
-          cx: 590,
-          cy: 50,
-        },
-      ],
+    const live = (list: OrderLead[]) => list.filter((o) => o.status !== 'cancelled');
+    const revenueOf = (list: OrderLead[]) =>
+      live(list).reduce((s, o) => s + (o.totalAmount ?? o.amount), 0);
+    const delivered = (list: OrderLead[]) => list.filter((o) => o.status === 'delivered').length;
+    const change = (cur: number, prev: number) => {
+      if (prev === 0) return { text: cur > 0 ? 'Nouveau' : '0%', positive: true };
+      const pct = Math.round(((cur - prev) / prev) * 100);
+      return { text: `${pct > 0 ? '+' : ''}${pct}%`, positive: pct >= 0 };
     };
-  }, [recentOrders, wallet.availableBalance, kpis.todayVisits.value]);
 
-  const splinePoints = periodData.points;
+    const rev = revenueOf(recentOrders);
+    const prevRev = revenueOf(previousOrders);
+    const count = live(recentOrders).length;
+    const prevCount = live(previousOrders).length;
+    const basket = count ? Math.round(rev / count) : 0;
+    const prevBasket = prevCount ? Math.round(prevRev / prevCount) : 0;
+    const del = delivered(recentOrders);
+    const prevDel = delivered(previousOrders);
 
-  const [hoveredPoint, setHoveredPoint] = useState<{
-    label: string;
-    date: string;
-    revenue: string;
-    growth: string;
-    cx: number;
-    cy: number;
-  } | null>(periodData.points[4] || periodData.points[0] || null);
-
-  // Sync hovered point when period changes
-  React.useEffect(() => {
-    if (periodData.points[4]) {
-      setHoveredPoint(periodData.points[4]);
-    }
-  }, [periodData]);
+    const c1 = change(rev, prevRev);
+    const c2 = change(basket, prevBasket);
+    const c3 = change(del, prevDel);
+    const c4 = change(count, prevCount);
+    return {
+      views: formatFCFA(rev),
+      viewsChange: c1.text,
+      viewsPositive: c1.positive,
+      viewsPrevious: `Période préc. : ${formatFCFA(prevRev)}`,
+      visitors: formatFCFA(basket),
+      visitorsChange: c2.text,
+      visitorsPositive: c2.positive,
+      visitorsPrevious: `Période préc. : ${formatFCFA(prevBasket)}`,
+      clicks: String(del),
+      clicksChange: c3.text,
+      clicksPositive: c3.positive,
+      clicksPrevious: `Période préc. : ${prevDel}`,
+      orders: String(count),
+      ordersChange: c4.text,
+      ordersPositive: c4.positive,
+      ordersPrevious: `Période préc. : ${prevCount}`,
+      totalRevenue: rev,
+      revenueChange: c1.text,
+      revenuePositive: c1.positive,
+    };
+  }, [recentOrders, previousOrders]);
 
   const activeDaysList = React.useMemo(() => {
     if (recentOrders.length === 0) {
       return [
-        { day: 'Dim', height: 12, value: '0 F', full: 'Dimanche' },
-        { day: 'Lun', height: 12, value: '0 F', full: 'Lundi' },
-        { day: 'Mar', height: 12, value: '0 F', full: 'Mardi' },
-        { day: 'Mer', height: 12, value: '0 F', full: 'Mercredi' },
-        { day: 'Jeu', height: 12, value: '0 F', full: 'Jeudi' },
-        { day: 'Ven', height: 12, value: '0 F', full: 'Vendredi' },
-        { day: 'Sam', height: 12, value: '0 F', full: 'Samedi' },
+        { day: 'Dim', height: 12, value: formatFCFA(0), full: 'Dimanche' },
+        { day: 'Lun', height: 12, value: formatFCFA(0), full: 'Lundi' },
+        { day: 'Mar', height: 12, value: formatFCFA(0), full: 'Mardi' },
+        { day: 'Mer', height: 12, value: formatFCFA(0), full: 'Mercredi' },
+        { day: 'Jeu', height: 12, value: formatFCFA(0), full: 'Jeudi' },
+        { day: 'Ven', height: 12, value: formatFCFA(0), full: 'Vendredi' },
+        { day: 'Sam', height: 12, value: formatFCFA(0), full: 'Samedi' },
       ];
     }
     const daysMap: Record<string, number> = {
@@ -202,43 +139,43 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
       {
         day: 'Dim',
         height: Math.max(12, Math.min(100, (daysMap.Dim || 0) / 1000)),
-        value: formatNumber(daysMap.Dim || 0) + ' F',
+        value: formatFCFA(daysMap.Dim || 0),
         full: 'Dimanche',
       },
       {
         day: 'Lun',
         height: Math.max(12, Math.min(100, (daysMap.Lun || 0) / 1000)),
-        value: formatNumber(daysMap.Lun || 0) + ' F',
+        value: formatFCFA(daysMap.Lun || 0),
         full: 'Lundi',
       },
       {
         day: 'Mar',
         height: Math.max(12, Math.min(100, (daysMap.Mar || 0) / 1000)),
-        value: formatNumber(daysMap.Mar || 0) + ' F',
+        value: formatFCFA(daysMap.Mar || 0),
         full: 'Mardi',
       },
       {
         day: 'Mer',
         height: Math.max(12, Math.min(100, (daysMap.Mer || 0) / 1000)),
-        value: formatNumber(daysMap.Mer || 0) + ' F',
+        value: formatFCFA(daysMap.Mer || 0),
         full: 'Mercredi',
       },
       {
         day: 'Jeu',
         height: Math.max(12, Math.min(100, (daysMap.Jeu || 0) / 1000)),
-        value: formatNumber(daysMap.Jeu || 0) + ' F',
+        value: formatFCFA(daysMap.Jeu || 0),
         full: 'Jeudi',
       },
       {
         day: 'Ven',
         height: Math.max(12, Math.min(100, (daysMap.Ven || 0) / 1000)),
-        value: formatNumber(daysMap.Ven || 0) + ' F',
+        value: formatFCFA(daysMap.Ven || 0),
         full: 'Vendredi',
       },
       {
         day: 'Sam',
         height: Math.max(12, Math.min(100, (daysMap.Sam || 0) / 1000)),
-        value: formatNumber(daysMap.Sam || 0) + ' F',
+        value: formatFCFA(daysMap.Sam || 0),
         full: 'Samedi',
       },
     ];
@@ -272,7 +209,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
               funnelConfig.mediaItems[0]?.url ||
               'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=120&q=80',
             sold: '0 vendu',
-            revenue: '0 FCFA',
+            revenue: formatFCFA(0),
             rating: 'Nouveau',
           },
         ];
@@ -290,7 +227,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
           recentOrders[0]?.productImage ||
           'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=120&q=80',
         sold: `${count} vendu${count > 1 ? 's' : ''}`,
-        revenue: `${formatNumber(rev)} FCFA`,
+        revenue: `${formatFCFA(rev)}`,
         rating: '5.0',
       },
     ];
@@ -319,8 +256,8 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
           {/* Card 1: Page Views */}
           <div className="bg-white rounded-[28px] p-3.5 sm:p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-1.5 sm:space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] sm:text-xs font-semibold text-[#7A808C] truncate">
-                Vues de la Page
+              <span className="text-[13px] sm:text-[13px] font-semibold text-[#7A808C] truncate">
+                Chiffre d’affaires
               </span>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
                 <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -328,11 +265,11 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
             </div>
 
             <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
-              <span className="text-xl sm:text-2xl font-black text-[#201D1D] tracking-tight">
+              <span className="text-2xl sm:text-[28px] font-black text-[#201D1D] tracking-tight">
                 {periodData.views}
               </span>
               <span
-                className={`inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full ${
+                className={`inline-flex items-center gap-0.5 text-[11px] sm:text-xs font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full ${
                   periodData.viewsPositive
                     ? 'text-[#059669] bg-[#ECFDF5]'
                     : 'text-[#E11D48] bg-[#FFF1F2]'
@@ -342,7 +279,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
               </span>
             </div>
 
-            <p className="text-[10px] sm:text-[11px] text-[#94A3B8] truncate">
+            <p className="text-xs sm:text-[13px] text-[#94A3B8] truncate">
               {periodData.viewsPrevious}
             </p>
           </div>
@@ -350,8 +287,8 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
           {/* Card 2: Visitors */}
           <div className="bg-white rounded-[28px] p-3.5 sm:p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-1.5 sm:space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] sm:text-xs font-semibold text-[#7A808C] truncate">
-                Visiteurs Uniques
+              <span className="text-[13px] sm:text-[13px] font-semibold text-[#7A808C] truncate">
+                Panier moyen
               </span>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
                 <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -359,11 +296,11 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
             </div>
 
             <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
-              <span className="text-xl sm:text-2xl font-black text-[#201D1D] tracking-tight">
+              <span className="text-2xl sm:text-[28px] font-black text-[#201D1D] tracking-tight">
                 {periodData.visitors}
               </span>
               <span
-                className={`inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full ${
+                className={`inline-flex items-center gap-0.5 text-[11px] sm:text-xs font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full ${
                   periodData.visitorsPositive
                     ? 'text-[#059669] bg-[#ECFDF5]'
                     : 'text-[#E11D48] bg-[#FFF1F2]'
@@ -373,7 +310,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
               </span>
             </div>
 
-            <p className="text-[10px] sm:text-[11px] text-[#94A3B8] truncate">
+            <p className="text-xs sm:text-[13px] text-[#94A3B8] truncate">
               {periodData.visitorsPrevious}
             </p>
           </div>
@@ -381,8 +318,8 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
           {/* Card 3: Click */}
           <div className="bg-white rounded-[28px] p-3.5 sm:p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-1.5 sm:space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] sm:text-xs font-semibold text-[#7A808C] truncate">
-                Clics sur Offre
+              <span className="text-[13px] sm:text-[13px] font-semibold text-[#7A808C] truncate">
+                Commandes livrées
               </span>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
                 <MousePointer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -390,11 +327,11 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
             </div>
 
             <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
-              <span className="text-xl sm:text-2xl font-black text-[#201D1D] tracking-tight">
+              <span className="text-2xl sm:text-[28px] font-black text-[#201D1D] tracking-tight">
                 {periodData.clicks}
               </span>
               <span
-                className={`inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full ${
+                className={`inline-flex items-center gap-0.5 text-[11px] sm:text-xs font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full ${
                   periodData.clicksPositive
                     ? 'text-[#059669] bg-[#ECFDF5]'
                     : 'text-[#E11D48] bg-[#FFF1F2]'
@@ -404,7 +341,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
               </span>
             </div>
 
-            <p className="text-[10px] sm:text-[11px] text-[#94A3B8] truncate">
+            <p className="text-xs sm:text-[13px] text-[#94A3B8] truncate">
               {periodData.clicksPrevious}
             </p>
           </div>
@@ -412,8 +349,8 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
           {/* Card 4: Orders */}
           <div className="bg-white rounded-[28px] p-3.5 sm:p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-1.5 sm:space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] sm:text-xs font-semibold text-[#7A808C] truncate">
-                Commandes Reçues
+              <span className="text-[13px] sm:text-[13px] font-semibold text-[#7A808C] truncate">
+                Commandes reçues
               </span>
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
                 <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -421,11 +358,11 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
             </div>
 
             <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
-              <span className="text-xl sm:text-2xl font-black text-[#201D1D] tracking-tight">
+              <span className="text-2xl sm:text-[28px] font-black text-[#201D1D] tracking-tight">
                 {periodData.orders}
               </span>
               <span
-                className={`inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full ${
+                className={`inline-flex items-center gap-0.5 text-[11px] sm:text-xs font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full ${
                   periodData.ordersPositive
                     ? 'text-[#059669] bg-[#ECFDF5]'
                     : 'text-[#E11D48] bg-[#FFF1F2]'
@@ -435,7 +372,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
               </span>
             </div>
 
-            <p className="text-[10px] sm:text-[11px] text-[#94A3B8] truncate">
+            <p className="text-xs sm:text-[13px] text-[#94A3B8] truncate">
               {periodData.ordersPrevious}
             </p>
           </div>
@@ -467,15 +404,19 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                 <div className="bg-white rounded-[28px] p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <span className="text-xs font-bold text-[#7A808C] block truncate">
+                      <span className="text-base font-bold text-[#7A808C] block truncate">
                         Bénéfice & Chiffre d'Affaires Total
                       </span>
                       {/* Strictly on a single line / whitespace-nowrap */}
                       <div className="flex flex-wrap items-baseline gap-2.5 mt-1 whitespace-nowrap">
-                        <span className="text-2xl sm:text-3xl font-black text-[#201D1D] tracking-tight whitespace-nowrap">
-                          {formatNumber(periodData.totalRevenue)} {wallet.currency}
+                        <span className="text-3xl sm:text-4xl font-black text-[#201D1D] tracking-tight whitespace-nowrap">
+                          {formatFCFA(periodData.totalRevenue)}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-[#059669] whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center gap-1 text-sm font-bold whitespace-nowrap ${
+                            periodData.revenuePositive ? 'text-[#16A34A]' : 'text-[#DC2626]'
+                          }`}
+                        >
                           <span>{periodData.revenueChange}</span>
                           <span className="text-[#94A3B8] font-normal">vs période préc.</span>
                         </span>
@@ -485,7 +426,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={onOpenPayoutModal}
-                        className="px-3 py-1.5 rounded-xl bg-[#EEF3FF] hover:bg-[#DBEAFE] text-[#235BF7] text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                        className="px-3 py-1.5 rounded-xl bg-[#EEF3FF] hover:bg-[#DBEAFE] text-[#235BF7] text-[13px] font-bold transition-colors cursor-pointer whitespace-nowrap"
                       >
                         Retirer vers Wave / OM
                       </button>
@@ -495,154 +436,13 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Interactive SVG Area Chart with draw animation & point tooltips */}
-                  <div className="relative pt-4">
-                    {/* Interactive Tooltip pill floating above curve - GUARANTEED single line & responsive bounds */}
-                    {hoveredPoint && (
-                      <div
-                        className={`absolute z-20 pointer-events-none -top-3.5 transition-all duration-150 bg-[#201D1D] text-white px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xl flex items-center gap-1.5 sm:gap-2 border border-white/10 whitespace-nowrap flex-nowrap shrink-0 ${
-                          hoveredPoint.cx / 600 > 0.75
-                            ? '-translate-x-[85%]'
-                            : hoveredPoint.cx / 600 < 0.25
-                              ? '-translate-x-[15%]'
-                              : '-translate-x-1/2'
-                        }`}
-                        style={{ left: `${(hoveredPoint.cx / 600) * 100}%` }}
-                      >
-                        <span className="text-[10px] sm:text-[11px] text-white/70 whitespace-nowrap">
-                          {hoveredPoint.date} :
-                        </span>
-                        <span className="text-emerald-300 font-black text-[11px] sm:text-xs whitespace-nowrap">
-                          {hoveredPoint.revenue}
-                        </span>
-                        <span className="text-[9px] sm:text-[10px] text-emerald-400 font-extrabold bg-emerald-500/20 px-1.5 py-0.5 rounded whitespace-nowrap">
-                          {hoveredPoint.growth}
-                        </span>
-                      </div>
-                    )}
-
-                    <svg viewBox="0 0 600 180" className="w-full h-44 overflow-visible">
-                      <defs>
-                        <linearGradient id="blueAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#235BF7" stopOpacity="0.25" />
-                          <stop offset="100%" stopColor="#235BF7" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-
-                      {/* Horizontal dotted gridlines */}
-                      <line
-                        x1="0"
-                        y1="30"
-                        x2="600"
-                        y2="30"
-                        stroke="#F1F5F9"
-                        strokeWidth="1"
-                        strokeDasharray="4 4"
-                      />
-                      <line
-                        x1="0"
-                        y1="75"
-                        x2="600"
-                        y2="75"
-                        stroke="#F1F5F9"
-                        strokeWidth="1"
-                        strokeDasharray="4 4"
-                      />
-                      <line
-                        x1="0"
-                        y1="120"
-                        x2="600"
-                        y2="120"
-                        stroke="#F1F5F9"
-                        strokeWidth="1"
-                        strokeDasharray="4 4"
-                      />
-                      <line x1="0" y1="160" x2="600" y2="160" stroke="#E2E8F0" strokeWidth="1" />
-
-                      {/* Left Y-axis labels */}
-                      <text x="5" y="34" fill="#94A3B8" fontSize="10" fontWeight="600">
-                        15M
-                      </text>
-                      <text x="5" y="79" fill="#94A3B8" fontSize="10" fontWeight="600">
-                        10M
-                      </text>
-                      <text x="5" y="124" fill="#94A3B8" fontSize="10" fontWeight="600">
-                        5M
-                      </text>
-                      <text x="5" y="158" fill="#94A3B8" fontSize="10" fontWeight="600">
-                        0
-                      </text>
-
-                      {/* Spline Area */}
-                      <path
-                        d="M 40 135 C 90 140, 110 110, 150 115 C 190 120, 210 90, 250 85 C 290 80, 310 100, 350 70 C 390 40, 420 80, 470 65 C 520 50, 560 60, 590 45 L 590 160 L 40 160 Z"
-                        fill="url(#blueAreaGrad)"
-                      />
-
-                      {/* Spline Line with smooth entrance animation */}
-                      <path
-                        d="M 40 135 C 90 140, 110 110, 150 115 C 190 120, 210 90, 250 85 C 290 80, 310 100, 350 70 C 390 40, 420 80, 470 65 C 520 50, 560 60, 590 45"
-                        fill="none"
-                        stroke="#235BF7"
-                        strokeWidth="3.5"
-                        strokeLinecap="round"
-                        className="transition-all duration-700 ease-out"
-                      />
-
-                      {/* Interactive Points on curve */}
-                      {splinePoints.map((pt, idx) => {
-                        const isHovered = hoveredPoint?.label === pt.label;
-                        return (
-                          <g
-                            key={idx}
-                            className="cursor-pointer"
-                            onMouseEnter={() => setHoveredPoint(pt)}
-                          >
-                            {/* Invisible hover zone */}
-                            <circle cx={pt.cx} cy={pt.cy} r="18" fill="transparent" />
-                            {/* Visible point */}
-                            <circle
-                              cx={pt.cx}
-                              cy={pt.cy}
-                              r={isHovered ? '7' : '4.5'}
-                              fill="#FFFFFF"
-                              stroke="#235BF7"
-                              strokeWidth={isHovered ? '3.5' : '2.5'}
-                              className="transition-all duration-150"
-                            />
-                            {isHovered && (
-                              <circle
-                                cx={pt.cx}
-                                cy={pt.cy}
-                                r="12"
-                                fill="none"
-                                stroke="#235BF7"
-                                strokeOpacity="0.3"
-                                strokeWidth="2"
-                                className="animate-ping"
-                              />
-                            )}
-                          </g>
-                        );
-                      })}
-                    </svg>
-
-                    {/* X-axis date labels */}
-                    <div className="flex justify-between text-[11px] font-semibold text-[#94A3B8] px-10 pt-2">
-                      {splinePoints.map((p) => (
-                        <span
-                          key={p.label}
-                          onClick={() => setHoveredPoint(p)}
-                          className={`cursor-pointer transition-colors ${
-                            hoveredPoint?.label === p.label
-                              ? 'text-[#235BF7] font-black'
-                              : 'hover:text-[#201D1D]'
-                          }`}
-                        >
-                          {p.label}
-                        </span>
-                      ))}
-                    </div>
+                  {/* Real revenue curve for the selected period vs the previous one */}
+                  <div className="pt-2">
+                    <RevenueChart
+                      orders={recentOrders}
+                      previousOrders={previousOrders}
+                      range={periodRange}
+                    />
                   </div>
                 </div>
               )}
@@ -652,10 +452,10 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                 <div className="bg-white rounded-[28px] p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-[#7A808C] block">
+                      <span className="text-[13px] font-bold text-[#7A808C] block">
                         Segmentation des Commandes & Clients
                       </span>
-                      <span className="text-[11px] text-[#94A3B8]">
+                      <span className="text-[13px] text-[#94A3B8]">
                         {uniqueCustomersCount} client(s) unique(s) enregistré(s)
                       </span>
                     </div>
@@ -667,7 +467,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                   <div className="space-y-4 pt-1">
                     {/* Segment 1 : COD Espèces */}
                     <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[13px]">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2.5 h-2.5 rounded-md bg-[#235BF7] shadow-xs shrink-0" />
                           <span className="font-bold text-[#201D1D] truncate">
@@ -677,7 +477,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="font-mono font-black text-[#201D1D]">{codCount}</span>
-                          <span className="text-[10px] font-black bg-[#EEF3FF] text-[#235BF7] px-2 py-0.5 rounded-md">
+                          <span className="text-xs font-black bg-[#EEF3FF] text-[#235BF7] px-2 py-0.5 rounded-md">
                             {codPercent}%
                           </span>
                         </div>
@@ -692,7 +492,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
 
                     {/* Segment 2 : Wave Sénégal */}
                     <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[13px]">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2.5 h-2.5 rounded-md bg-[#10B981] shadow-xs shrink-0" />
                           <span className="font-bold text-[#201D1D] truncate">
@@ -702,7 +502,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="font-mono font-black text-[#201D1D]">{waveCount}</span>
-                          <span className="text-[10px] font-black bg-[#ECFDF5] text-[#059669] px-2 py-0.5 rounded-md">
+                          <span className="text-xs font-black bg-[#ECFDF5] text-[#059669] px-2 py-0.5 rounded-md">
                             {wavePercent}%
                           </span>
                         </div>
@@ -717,7 +517,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
 
                     {/* Segment 3 : Orange Money */}
                     <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[13px]">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2.5 h-2.5 rounded-md bg-[#FF7900] shadow-xs shrink-0" />
                           <span className="font-bold text-[#201D1D] truncate">
@@ -727,7 +527,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="font-mono font-black text-[#201D1D]">{orangeCount}</span>
-                          <span className="text-[10px] font-black bg-[#FFF5EB] text-[#FF7900] px-2 py-0.5 rounded-md">
+                          <span className="text-xs font-black bg-[#FFF5EB] text-[#FF7900] px-2 py-0.5 rounded-md">
                             {orangePercent}%
                           </span>
                         </div>
@@ -761,10 +561,10 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                 <div className="bg-white rounded-[28px] p-5 sm:p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-[#7A808C] block">
+                      <span className="text-[13px] font-bold text-[#7A808C] block">
                         Journées les Plus Actives
                       </span>
-                      <span className="text-[10px] text-[#94A3B8]">
+                      <span className="text-xs text-[#94A3B8]">
                         Volume d'encaissements par jour
                       </span>
                     </div>
@@ -785,7 +585,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                             onClick={() => setSelectedDay(item.day)}
                           >
                             {isSelected && (
-                              <span className="text-[9px] sm:text-[10px] font-black text-[#235BF7] bg-[#EEF3FF] px-1 sm:px-1.5 py-0.5 rounded-md -mb-1 animate-pulse whitespace-nowrap shadow-xs">
+                              <span className="text-[11px] sm:text-xs font-black text-[#235BF7] bg-[#EEF3FF] px-1 sm:px-1.5 py-0.5 rounded-md -mb-1 animate-pulse whitespace-nowrap shadow-xs">
                                 {item.value}
                               </span>
                             )}
@@ -799,7 +599,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                               title={`${item.full} : ${item.value}`}
                             />
                             <span
-                              className={`text-[10px] font-bold ${
+                              className={`text-xs font-bold ${
                                 isSelected ? 'text-[#235BF7]' : 'text-[#94A3B8]'
                               }`}
                             >
@@ -818,12 +618,10 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                 <div className="bg-white rounded-[28px] p-5 sm:p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-3.5 text-center">
                   <div className="flex items-center justify-between text-left">
                     <div>
-                      <span className="text-xs font-bold text-[#7A808C] block">
+                      <span className="text-[13px] font-bold text-[#7A808C] block">
                         Taux de Livraison Réussie
                       </span>
-                      <span className="text-[10px] text-[#94A3B8]">
-                        Performance des expéditions
-                      </span>
+                      <span className="text-xs text-[#94A3B8]">Performance des expéditions</span>
                     </div>
                     <button className="text-[#94A3B8] hover:text-[#201D1D] p-1">
                       <MoreHorizontal className="w-4 h-4" />
@@ -893,7 +691,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                       <span className="text-4xl sm:text-5xl font-black text-[#201D1D] tracking-tight leading-none drop-shadow-2xs">
                         {deliveryPercent}%
                       </span>
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#94A3B8] mt-1.5">
+                      <span className="text-xs font-extrabold uppercase tracking-widest text-[#94A3B8] mt-1.5">
                         Taux Actuel
                       </span>
                     </div>
@@ -901,7 +699,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
 
                   {/* Clean status pill & target comparison below arc */}
                   <div className="space-y-3">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] text-xs font-bold shadow-2xs">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] text-[13px] font-bold shadow-2xs">
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -919,17 +717,19 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                     {/* Quick Metrics Breakdown */}
                     <div className="grid grid-cols-2 gap-2 text-left pt-1 border-t border-[#F1F5F9]">
                       <div className="bg-[#F8FAFC] rounded-2xl p-2.5 border border-[#E2E8F0]/70">
-                        <span className="text-[10px] font-bold text-[#7A808C] block uppercase tracking-wider">
+                        <span className="text-xs font-bold text-[#7A808C] block uppercase tracking-wider">
                           Colis Livrés
                         </span>
-                        <span className="text-sm font-black text-[#201D1D]">{deliveredCount}</span>
+                        <span className="text-[15px] font-black text-[#201D1D]">
+                          {deliveredCount}
+                        </span>
                       </div>
                       <div className="bg-[#F8FAFC] rounded-2xl p-2.5 border border-[#E2E8F0]/70">
-                        <span className="text-[10px] font-bold text-[#7A808C] block uppercase tracking-wider">
+                        <span className="text-xs font-bold text-[#7A808C] block uppercase tracking-wider">
                           Objectif Cible
                         </span>
-                        <span className="text-sm font-black text-[#235BF7]">
-                          80% <span className="text-[10px] text-[#94A3B8] font-normal">cible</span>
+                        <span className="text-[15px] font-black text-[#235BF7]">
+                          80% <span className="text-xs text-[#94A3B8] font-normal">cible</span>
                         </span>
                       </div>
                     </div>
@@ -937,7 +737,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                     {/* Action Button */}
                     <button
                       onClick={onOpenKanban}
-                      className="w-full py-2.5 px-4 rounded-2xl bg-[#201D1D] hover:bg-[#1E293B] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 group cursor-pointer"
+                      className="w-full py-2.5 px-4 rounded-2xl bg-[#201D1D] hover:bg-[#1E293B] text-white text-[13px] font-bold transition-all shadow-xs flex items-center justify-center gap-2 group cursor-pointer"
                     >
                       <Truck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
                       <span>Voir les détails logistiques</span>
@@ -952,8 +752,12 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                 <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#235BF7]" />
-                      <span className="text-xs font-bold text-[#201D1D]">Assistant IA Juula</span>
+                      <span className="w-8 h-8 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center">
+                        <BrainCircuit className="w-4.5 h-4.5" />
+                      </span>
+                      <span className="text-[13px] font-bold text-[#201D1D]">
+                        Assistant IA Juula
+                      </span>
                     </div>
                     <button
                       onClick={handleGenerateAiTip}
@@ -966,28 +770,30 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
 
                   <div className="flex items-center gap-4 p-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]">
                     {/* 3D Blue Sphere matching Shopeers */}
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#0F2B6B] via-[#235BF7] to-[#93C5FD] shadow-[0_6px_16px_rgba(30,96,248,0.4)] flex-shrink-0 flex items-center justify-center ring-4 ring-white" />
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#0F2B6B] via-[#235BF7] to-[#93C5FD] shadow-[0_6px_16px_rgba(30,96,248,0.4)] flex-shrink-0 flex items-center justify-center ring-4 ring-white text-white">
+                      <Bot className="w-6 h-6" />
+                    </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[#201D1D] leading-tight">
+                      <p className="text-[13px] font-semibold text-[#201D1D] leading-tight">
                         Optimiseur de Ventes & Accroches
                       </p>
-                      <p className="text-[11px] text-[#7A808C] mt-0.5">
+                      <p className="text-[13px] text-[#7A808C] mt-0.5">
                         Générez vos textes pubs en 1 clic
                       </p>
                     </div>
                   </div>
 
                   {aiGeneratedTip ? (
-                    <p className="text-xs text-[#201D1D] bg-[#EEF3FF] p-3 rounded-xl border border-[#BFDBFE] leading-relaxed animate-in fade-in">
+                    <p className="text-[13px] text-[#201D1D] bg-[#EEF3FF] p-3 rounded-xl border border-[#BFDBFE] leading-relaxed animate-in fade-in">
                       {aiGeneratedTip}
                     </p>
                   ) : (
                     <button
                       onClick={handleGenerateAiTip}
-                      className="w-full py-2 px-3 rounded-xl bg-[#EEF3FF] hover:bg-[#DBEAFE] text-[#235BF7] text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                      className="w-full py-2 px-3 rounded-xl bg-[#EEF3FF] hover:bg-[#DBEAFE] text-[#235BF7] text-[13px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <Wand2 className="w-3.5 h-3.5" />
+                      <Lightbulb className="w-4 h-4" />
                       <span>Générer un conseil pour aujourd'hui</span>
                     </button>
                   )}
@@ -1005,10 +811,10 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
         <div className="bg-white rounded-[28px] p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
             <div>
-              <h3 className="text-sm font-extrabold text-[#201D1D]">
+              <h3 className="text-[15px] font-extrabold text-[#201D1D]">
                 Meilleurs Tunnels & Produits de Vente
               </h3>
-              <p className="text-xs text-[#7A808C]">
+              <p className="text-[13px] text-[#7A808C]">
                 Classement par volume de commandes encaissées
               </p>
             </div>
@@ -1016,7 +822,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={onCreatePageClick}
-                className="px-3 py-1.5 rounded-xl bg-[#235BF7] text-white text-xs font-bold hover:bg-[#1B4AD6] transition-colors"
+                className="px-3 py-1.5 rounded-xl bg-[#235BF7] text-white text-[13px] font-bold hover:bg-[#1B4AD6] transition-colors"
               >
                 + Nouveau Tunnel
               </button>
@@ -1027,9 +833,9 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-[13px]">
               <thead>
-                <tr className="border-b border-[#F1F5F9] text-[#94A3B8] font-bold uppercase text-[10px] tracking-wider">
+                <tr className="border-b border-[#F1F5F9] text-[#94A3B8] font-bold uppercase text-xs tracking-wider">
                   <th className="pb-3 px-3">ID</th>
                   <th className="pb-3 px-3">Nom du Produit</th>
                   <th className="pb-3 px-3">Unités Vendues</th>

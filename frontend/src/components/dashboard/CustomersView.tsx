@@ -83,10 +83,10 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-lg">
+            <span className="text-[13px] font-bold uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-lg">
               CRM Marchand
             </span>
-            <span className="text-xs text-[#7A808C]">
+            <span className="text-[13px] text-[#7A808C]">
               {customersList.length} client{customersList.length > 1 ? 's' : ''} enregistré
               {customersList.length > 1 ? 's' : ''}
             </span>
@@ -94,7 +94,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
           <h2 className="text-2xl font-black text-[#201D1D] tracking-tight mt-1">
             Clients & Leads Cash on Delivery
           </h2>
-          <p className="text-xs text-[#7A808C] mt-0.5">
+          <p className="text-[13px] text-[#7A808C] mt-0.5">
             Historique complet de vos acheteurs, adresses de livraison habituelles et contact direct
             WhatsApp & Appel.
           </p>
@@ -113,8 +113,8 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       {/* Customers Table / Cards */}
       <div className="bg-white rounded-[28px] border border-[#ECEFF4] shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#F8FAFC] border-b border-[#ECEFF4] text-[#7A808C] font-bold uppercase text-[10px] tracking-wider">
+          <table className="w-full text-left text-[13px]">
+            <thead className="bg-[#F8FAFC] border-b border-[#ECEFF4] text-[#7A808C] font-bold uppercase text-xs tracking-wider">
               <tr>
                 <th className="py-3.5 px-6">Client & Contact</th>
                 <th className="py-3.5 px-6">Quartier & Adresse Habituelle</th>
@@ -130,10 +130,10 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                   <td colSpan={6} className="py-12 text-center text-[#94A3B8]">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Users className="w-8 h-8 text-[#CBD5E1]" />
-                      <p className="text-sm font-bold text-[#7A808C]">
+                      <p className="text-[15px] font-bold text-[#7A808C]">
                         Aucun client enregistré pour le moment
                       </p>
-                      <p className="text-xs text-[#94A3B8]">
+                      <p className="text-[13px] text-[#94A3B8]">
                         Vos futurs clients s'afficheront ici automatiquement dès leurs premières
                         commandes.
                       </p>
@@ -161,14 +161,14 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                       {/* Customer Name & Initials */}
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#235BF7] to-[#60A5FA] text-white font-extrabold flex items-center justify-center flex-shrink-0 text-xs shadow-xs">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#235BF7] to-[#60A5FA] text-white font-extrabold flex items-center justify-center flex-shrink-0 text-[13px] shadow-xs">
                             {initials}
                           </div>
                           <div>
-                            <span className="font-extrabold text-[#201D1D] block text-xs">
+                            <span className="font-extrabold text-[#201D1D] block text-[13px]">
                               {customer.name}
                             </span>
-                            <span className="text-[11px] text-[#7A808C] flex items-center gap-1">
+                            <span className="text-[13px] text-[#7A808C] flex items-center gap-1">
                               <Phone className="w-3 h-3 text-[#94A3B8]" />
                               {customer.phone}
                             </span>
@@ -183,7 +183,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                           <span className="truncate">{customer.neighborhood}</span>
                         </div>
                         {customer.deliveryAddress && (
-                          <p className="text-[10px] text-[#7A808C] truncate mt-0.5">
+                          <p className="text-xs text-[#7A808C] truncate mt-0.5">
                             {customer.deliveryAddress}
                           </p>
                         )}
@@ -203,7 +203,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
 
                       {/* Preferred Payment */}
                       <td className="py-4 px-6">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#F1F5F9] text-[#334155]">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-[#F1F5F9] text-[#334155]">
                           {customer.preferredPayment}
                         </span>
                       </td>
@@ -216,7 +216,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                             href={`https://wa.me/${customer.whatsappNumber}?text=${waMessage}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-[13px] shadow-xs transition-colors cursor-pointer"
                             title={`Contacter ${customer.name} sur WhatsApp`}
                           >
                             <WhatsAppIcon className="w-3.5 h-3.5" />
@@ -226,7 +226,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                           {/* 2. Bouton Appel Téléphonique Direct - En BLEU avec texte et icône BLANCS */}
                           <a
                             href={`tel:${cleanPhone}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer border border-[#1B4AD6]/30"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white font-bold text-[13px] shadow-xs transition-colors cursor-pointer border border-[#1B4AD6]/30"
                             title={`Appeler directement ${customer.name}`}
                           >
                             <PhoneCall className="w-3.5 h-3.5 text-white" />

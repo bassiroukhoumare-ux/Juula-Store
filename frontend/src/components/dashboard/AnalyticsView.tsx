@@ -3,7 +3,7 @@
 import React from 'react';
 import { Target, MapPin, ExternalLink } from 'lucide-react';
 import { KpiMetrics, OrderLead } from '@/types/juula';
-import { formatNumber } from '@/lib/orderUtils';
+import { formatNumber, formatFCFA } from '@/lib/orderUtils';
 
 interface AnalyticsViewProps {
   kpis: KpiMetrics;
@@ -93,21 +93,21 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             name: 'Paiements Wave Sénégal (En ligne)',
             share: Math.round((waveOrders.length / totalOrdersCount) * 100),
             orders: waveOrders.length,
-            revenue: `${formatNumber(waveOrders.reduce((s, o) => s + (o.totalAmount || o.amount), 0))} FCFA`,
+            revenue: `${formatFCFA(waveOrders.reduce((s, o) => s + (o.totalAmount || o.amount), 0))}`,
             roi: 'Instantané',
           },
           {
             name: 'Orange Money Sénégal (En ligne)',
             share: Math.round((orangeOrders.length / totalOrdersCount) * 100),
             orders: orangeOrders.length,
-            revenue: `${formatNumber(orangeOrders.reduce((s, o) => s + (o.totalAmount || o.amount), 0))} FCFA`,
+            revenue: `${formatFCFA(orangeOrders.reduce((s, o) => s + (o.totalAmount || o.amount), 0))}`,
             roi: 'Instantané',
           },
           {
             name: 'Paiement Espèces à la Livraison (COD)',
             share: Math.round((codOrders.length / totalOrdersCount) * 100),
             orders: codOrders.length,
-            revenue: `${formatNumber(codOrders.reduce((s, o) => s + (o.totalAmount || o.amount), 0))} FCFA`,
+            revenue: `${formatFCFA(codOrders.reduce((s, o) => s + (o.totalAmount || o.amount), 0))}`,
             roi: 'À livraison',
           },
         ]
@@ -140,15 +140,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-md">
+            <span className="text-[13px] font-bold uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-md">
               Analyses & Performances
             </span>
-            <span className="text-xs text-[#7A808C] font-semibold">Données temps réel</span>
+            <span className="text-[13px] text-[#7A808C] font-semibold">Données temps réel</span>
           </div>
           <h2 className="text-2xl font-black text-[#201D1D] tracking-tight mt-1">
             Performances des Ventes & Entonnoir
           </h2>
-          <p className="text-xs text-[#7A808C] mt-0.5">
+          <p className="text-[13px] text-[#7A808C] mt-0.5">
             Analysez la rentabilité de vos campagnes publicitaires et identifiez les zones à fort
             taux d'encaissement.
           </p>
@@ -156,7 +156,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
         <button
           onClick={onOpenStorefrontPreview}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] hover:bg-white text-xs font-bold text-[#201D1D] transition-colors cursor-pointer self-start sm:self-auto"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] hover:bg-white text-[13px] font-bold text-[#201D1D] transition-colors cursor-pointer self-start sm:self-auto"
         >
           <ExternalLink className="w-4 h-4 text-[#235BF7]" />
           <span>Tester le Tunnel Client</span>
@@ -166,16 +166,18 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       {/* 4 Sales KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-xs space-y-2">
-          <span className="text-xs font-semibold text-[#7A808C]">Taux de Conversion Global</span>
+          <span className="text-[13px] font-semibold text-[#7A808C]">
+            Taux de Conversion Global
+          </span>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-black text-[#201D1D]">{globalConversionRate}%</span>
             {totalVisits > 0 && (
-              <span className="text-[10px] font-extrabold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full">
+              <span className="text-xs font-extrabold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full">
                 En direct
               </span>
             )}
           </div>
-          <p className="text-[11px] text-[#94A3B8]">
+          <p className="text-[13px] text-[#94A3B8]">
             {totalVisits > 0
               ? `${totalOrdersCount} commandes pour ${formatNumber(totalVisits)} visiteurs`
               : 'En attente de visiteurs'}
@@ -183,44 +185,44 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         </div>
 
         <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-xs space-y-2">
-          <span className="text-xs font-semibold text-[#7A808C]">Panier Moyen</span>
+          <span className="text-[13px] font-semibold text-[#7A808C]">Panier Moyen</span>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-black text-[#201D1D]">
               {formatNumber(averageBasket)} F
             </span>
             {averageBasket > 0 && (
-              <span className="text-[10px] font-extrabold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full">
+              <span className="text-xs font-extrabold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full">
                 Moyen
               </span>
             )}
           </div>
-          <p className="text-[11px] text-[#94A3B8]">Articles + frais de livraison</p>
+          <p className="text-[13px] text-[#94A3B8]">Articles + frais de livraison</p>
         </div>
 
         <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-xs space-y-2">
-          <span className="text-xs font-semibold text-[#7A808C]">Délai Moyen de Livraison</span>
+          <span className="text-[13px] font-semibold text-[#7A808C]">Délai Moyen de Livraison</span>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-black text-[#235BF7]">
               {deliveredCount > 0 ? '2h 45min' : '—'}
             </span>
-            <span className="text-[10px] font-extrabold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-full">
+            <span className="text-xs font-extrabold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-full">
               Dakar Urbain
             </span>
           </div>
-          <p className="text-[11px] text-[#94A3B8]">Du clic à l'encaissement</p>
+          <p className="text-[13px] text-[#94A3B8]">Du clic à l'encaissement</p>
         </div>
 
         <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-xs space-y-2">
-          <span className="text-xs font-semibold text-[#7A808C]">Taux d'Annulation COD</span>
+          <span className="text-[13px] font-semibold text-[#7A808C]">Taux d'Annulation COD</span>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-black text-[#201D1D]">{cancellationRate}%</span>
             {cancelledCount === 0 && totalOrdersCount > 0 && (
-              <span className="text-[10px] font-extrabold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full">
+              <span className="text-xs font-extrabold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full">
                 0 annulation
               </span>
             )}
           </div>
-          <p className="text-[11px] text-[#94A3B8]">
+          <p className="text-[13px] text-[#94A3B8]">
             {totalOrdersCount > 0
               ? `${cancelledCount} annulation(s) sur ${totalOrdersCount}`
               : 'Aucune commande enregistrée'}
@@ -238,12 +240,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 Courbe de Conversion de l'Entonnoir (Funnel Immersif)
               </h3>
             </div>
-            <p className="text-xs text-[#7A808C] mt-0.5">
+            <p className="text-[13px] text-[#7A808C] mt-0.5">
               Visualisation continue du flux d'acheteurs : de la vue vidéo jusqu'au paiement final
               en espèces ou Wave.
             </p>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-xl text-xs font-bold text-[#201D1D]">
+          <div className="flex items-center gap-2 self-start sm:self-auto bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-xl text-[13px] font-bold text-[#201D1D]">
             <Target className="w-3.5 h-3.5 text-[#235BF7]" />
             <span>
               Taux de conversion final :{' '}
@@ -588,28 +590,30 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         {/* Color-Coded Explanatory Legend (5 Stages Breakdown Cards) */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-[#7A808C]">
+            <h4 className="text-[13px] font-black uppercase tracking-wider text-[#7A808C]">
               Légende détaillée de la courbe par étape
             </h4>
-            <span className="text-[11px] text-[#94A3B8]">Données calculées en temps réel</span>
+            <span className="text-[13px] text-[#94A3B8]">Données calculées en temps réel</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {/* Stage 1 */}
             <div className="p-3.5 rounded-2xl bg-[#EEF3FF] border border-[#BFDBFE]/70 hover:shadow-xs transition-all">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="w-5 h-5 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-[10px] font-black">
+                <span className="w-5 h-5 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-xs font-black">
                   1
                 </span>
-                <span className="text-[10px] font-extrabold text-[#2563EB] bg-white px-2 py-0.5 rounded-md border border-[#BFDBFE]">
+                <span className="text-xs font-extrabold text-[#2563EB] bg-white px-2 py-0.5 rounded-md border border-[#BFDBFE]">
                   {step1.percent}% trafic
                 </span>
               </div>
-              <h5 className="text-xs font-black text-[#201D1D] leading-tight">Visiteurs Vitrine</h5>
-              <p className="text-sm font-black text-[#2563EB] mt-0.5">
+              <h5 className="text-[13px] font-black text-[#201D1D] leading-tight">
+                Visiteurs Vitrine
+              </h5>
+              <p className="text-[15px] font-black text-[#2563EB] mt-0.5">
                 {formatNumber(step1.count)}
               </p>
-              <p className="text-[10px] text-[#7A808C] mt-1 line-clamp-2">
+              <p className="text-xs text-[#7A808C] mt-1 line-clamp-2">
                 Spectateurs ayant visionné la vitrine produit.
               </p>
             </div>
@@ -617,18 +621,20 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             {/* Stage 2 */}
             <div className="p-3.5 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE]/70 hover:shadow-xs transition-all">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="w-5 h-5 rounded-full bg-[#7C3AED] text-white flex items-center justify-center text-[10px] font-black">
+                <span className="w-5 h-5 rounded-full bg-[#7C3AED] text-white flex items-center justify-center text-xs font-black">
                   2
                 </span>
-                <span className="text-[10px] font-extrabold text-[#7C3AED] bg-white px-1.5 py-0.5 rounded-md border border-purple-200">
+                <span className="text-xs font-extrabold text-[#7C3AED] bg-white px-1.5 py-0.5 rounded-md border border-purple-200">
                   {step2.percent}%
                 </span>
               </div>
-              <h5 className="text-xs font-black text-[#201D1D] leading-tight">Clics "Commander"</h5>
-              <p className="text-sm font-black text-[#7C3AED] mt-0.5">
+              <h5 className="text-[13px] font-black text-[#201D1D] leading-tight">
+                Clics "Commander"
+              </h5>
+              <p className="text-[15px] font-black text-[#7C3AED] mt-0.5">
                 {formatNumber(step2.count)} ({step2.percent}%)
               </p>
-              <p className="text-[10px] text-[#7A808C] mt-1 line-clamp-2">
+              <p className="text-xs text-[#7A808C] mt-1 line-clamp-2">
                 Intention d'achat marquée en ouvrant le module de commande.
               </p>
             </div>
@@ -636,20 +642,20 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             {/* Stage 3 */}
             <div className="p-3.5 rounded-2xl bg-[#ECFEFF] border border-[#A5F3FC]/70 hover:shadow-xs transition-all">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="w-5 h-5 rounded-full bg-[#0891B2] text-white flex items-center justify-center text-[10px] font-black">
+                <span className="w-5 h-5 rounded-full bg-[#0891B2] text-white flex items-center justify-center text-xs font-black">
                   3
                 </span>
-                <span className="text-[10px] font-extrabold text-[#0891B2] bg-white px-1.5 py-0.5 rounded-md border border-cyan-200">
+                <span className="text-xs font-extrabold text-[#0891B2] bg-white px-1.5 py-0.5 rounded-md border border-cyan-200">
                   {step3.percent}%
                 </span>
               </div>
-              <h5 className="text-xs font-black text-[#201D1D] leading-tight">
+              <h5 className="text-[13px] font-black text-[#201D1D] leading-tight">
                 Formulaires Saisis
               </h5>
-              <p className="text-sm font-black text-[#0891B2] mt-0.5">
+              <p className="text-[15px] font-black text-[#0891B2] mt-0.5">
                 {formatNumber(step3.count)} ({step3.percent}%)
               </p>
-              <p className="text-[10px] text-[#7A808C] mt-1 line-clamp-2">
+              <p className="text-xs text-[#7A808C] mt-1 line-clamp-2">
                 Nom, numéro de téléphone et quartier renseignés.
               </p>
             </div>
@@ -657,20 +663,20 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             {/* Stage 4 */}
             <div className="p-3.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A]/70 hover:shadow-xs transition-all">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="w-5 h-5 rounded-full bg-[#D97706] text-white flex items-center justify-center text-[10px] font-black">
+                <span className="w-5 h-5 rounded-full bg-[#D97706] text-white flex items-center justify-center text-xs font-black">
                   4
                 </span>
-                <span className="text-[10px] font-extrabold text-[#D97706] bg-white px-1.5 py-0.5 rounded-md border border-amber-200">
+                <span className="text-xs font-extrabold text-[#D97706] bg-white px-1.5 py-0.5 rounded-md border border-amber-200">
                   {step4.percent}%
                 </span>
               </div>
-              <h5 className="text-xs font-black text-[#201D1D] leading-tight">
+              <h5 className="text-[13px] font-black text-[#201D1D] leading-tight">
                 Commandes Validées
               </h5>
-              <p className="text-sm font-black text-[#D97706] mt-0.5">
+              <p className="text-[15px] font-black text-[#D97706] mt-0.5">
                 {formatNumber(step4.count)} ({step4.percent}%)
               </p>
-              <p className="text-[10px] text-[#7A808C] mt-1 line-clamp-2">
+              <p className="text-xs text-[#7A808C] mt-1 line-clamp-2">
                 Confirmation d'adresse obtenue par appel ou WhatsApp.
               </p>
             </div>
@@ -678,20 +684,20 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             {/* Stage 5 */}
             <div className="p-3.5 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0]/70 hover:shadow-xs transition-all">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="w-5 h-5 rounded-full bg-[#059669] text-white flex items-center justify-center text-[10px] font-black">
+                <span className="w-5 h-5 rounded-full bg-[#059669] text-white flex items-center justify-center text-xs font-black">
                   5
                 </span>
-                <span className="text-[10px] font-extrabold text-[#059669] bg-white px-2 py-0.5 rounded-md border border-[#A7F3D0]">
+                <span className="text-xs font-extrabold text-[#059669] bg-white px-2 py-0.5 rounded-md border border-[#A7F3D0]">
                   Succès Net
                 </span>
               </div>
-              <h5 className="text-xs font-black text-[#201D1D] leading-tight">
+              <h5 className="text-[13px] font-black text-[#201D1D] leading-tight">
                 Colis Livrés & Encaissés
               </h5>
-              <p className="text-sm font-black text-[#059669] mt-0.5">
+              <p className="text-[15px] font-black text-[#059669] mt-0.5">
                 {formatNumber(step5.count)} ({step5.percent}%)
               </p>
-              <p className="text-[10px] text-[#7A808C] mt-1 line-clamp-2">
+              <p className="text-xs text-[#7A808C] mt-1 line-clamp-2">
                 Fonds encaissés sur Wave ou remis en espèces par le livreur.
               </p>
             </div>
@@ -704,14 +710,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         {/* Acquisition Channels */}
         <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-4">
           <div>
-            <h3 className="text-sm font-black text-[#201D1D]">Canaux d'Acquisition Rentables</h3>
-            <p className="text-xs text-[#7A808C]">
+            <h3 className="text-[15px] font-black text-[#201D1D]">
+              Canaux d'Acquisition Rentables
+            </h3>
+            <p className="text-[13px] text-[#7A808C]">
               D'où proviennent vos commandes les plus rentables.
             </p>
           </div>
 
           {channels.length === 0 ? (
-            <div className="py-12 text-center text-xs text-[#94A3B8] border border-dashed border-[#E2E8F0] rounded-2xl p-6">
+            <div className="py-12 text-center text-[13px] text-[#94A3B8] border border-dashed border-[#E2E8F0] rounded-2xl p-6">
               Aucun canal d'acquisition pour le moment. Vos sources de ventes s'afficheront dès vos
               premières commandes.
             </div>
@@ -722,13 +730,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                   key={idx}
                   className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2"
                 >
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-[13px]">
                     <span className="font-bold text-[#201D1D]">{ch.name}</span>
                     <span className="font-mono font-black text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-md">
                       {ch.roi}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-[#7A808C]">
+                  <div className="flex items-center justify-between text-[13px] text-[#7A808C]">
                     <span>
                       {ch.orders} commandes générées ({ch.share}%)
                     </span>
@@ -743,14 +751,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         {/* Neighborhood Delivery Success */}
         <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-4">
           <div>
-            <h3 className="text-sm font-black text-[#201D1D]">Taux d'Encaissement par Quartier</h3>
-            <p className="text-xs text-[#7A808C]">
+            <h3 className="text-[15px] font-black text-[#201D1D]">
+              Taux d'Encaissement par Quartier
+            </h3>
+            <p className="text-[13px] text-[#7A808C]">
               Fiabilité de livraison et collecte COD par zone géographique.
             </p>
           </div>
 
           {neighborhoodsPerformance.length === 0 ? (
-            <div className="py-12 text-center text-xs text-[#94A3B8] border border-dashed border-[#E2E8F0] rounded-2xl p-6">
+            <div className="py-12 text-center text-[13px] text-[#94A3B8] border border-dashed border-[#E2E8F0] rounded-2xl p-6">
               Aucune donnée géographique. Les zones de livraison s'afficheront ici au fur et à
               mesure des commandes.
             </div>
@@ -759,16 +769,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               {neighborhoodsPerformance.map((nh, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#F8FAFC] transition-colors text-xs"
+                  className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#F8FAFC] transition-colors text-[13px]"
                 >
                   <div className="flex items-center gap-2">
                     <MapPin className="w-3.5 h-3.5 text-[#235BF7]" />
                     <span className="font-bold text-[#201D1D]">{nh.name}</span>
-                    <span className="text-[10px] text-[#94A3B8]">({nh.volume})</span>
+                    <span className="text-xs text-[#94A3B8]">({nh.volume})</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span
-                      className="font-black px-2 py-0.5 rounded-md text-[11px]"
+                      className="font-black px-2 py-0.5 rounded-md text-[13px]"
                       style={{
                         backgroundColor: `${nh.color}15`,
                         color: nh.color,

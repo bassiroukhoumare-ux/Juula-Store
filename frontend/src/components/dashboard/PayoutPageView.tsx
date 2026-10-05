@@ -15,7 +15,7 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatNumber } from '@/lib/orderUtils';
+import { formatNumber, formatFCFA } from '@/lib/orderUtils';
 import { api, ApiError } from '@/lib/api';
 
 interface PayoutPageViewProps {
@@ -184,7 +184,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#7A808C]">
+            <div className="flex items-center gap-2 text-[13px] font-semibold text-[#7A808C]">
               <span>Portefeuille</span>
               <ChevronRight className="w-3.5 h-3.5 text-[#94A3B8]" />
               <span className="text-[#235BF7] font-bold">Juula Pay</span>
@@ -195,7 +195,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-[#EEF3FF] border border-[#BFDBFE] px-3.5 py-1.5 rounded-2xl text-xs font-bold text-[#235BF7] self-start sm:self-auto">
+        <div className="flex items-center gap-2 bg-[#EEF3FF] border border-[#BFDBFE] px-3.5 py-1.5 rounded-2xl text-[13px] font-bold text-[#235BF7] self-start sm:self-auto">
           <ShieldCheck className="w-4 h-4 text-[#235BF7]" />
           <span>Sécurité Juula Pay : Authentification PIN 6 Chiffres</span>
         </div>
@@ -211,13 +211,13 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-black uppercase tracking-wider text-[#059669] bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#A7F3D0]">
+            <span className="text-[13px] font-black uppercase tracking-wider text-[#059669] bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#A7F3D0]">
               Virement envoyé à Moneriz
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-[#201D1D]">
-              {formatNumber(amount)} {currency} en cours de transfert
+              {formatFCFA(amount)} en cours de transfert
             </h2>
-            <p className="text-xs sm:text-sm text-[#7A808C] max-w-md mx-auto">
+            <p className="text-[13px] sm:text-[15px] text-[#7A808C] max-w-md mx-auto">
               Les fonds arrivent dans quelques minutes sur votre compte{' '}
               <strong className="text-[#201D1D]">
                 {provider === 'wave' ? 'Wave Sénégal' : 'Orange Money'} (+221 {phone})
@@ -227,7 +227,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
           </div>
 
           {/* Receipt Card */}
-          <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-left text-xs space-y-2.5 max-w-md mx-auto font-mono">
+          <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-left text-[13px] space-y-2.5 max-w-md mx-auto font-mono">
             <div className="flex justify-between pb-2 border-b border-[#E2E8F0]">
               <span className="text-[#7A808C]">Référence Juula</span>
               <span className="font-bold text-[#201D1D]">{receiptTxnId}</span>
@@ -249,7 +249,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
             <div className="flex justify-between pt-2 border-t border-[#E2E8F0]">
               <span className="text-[#7A808C] font-sans font-bold">Nouveau solde disponible</span>
               <span className="font-bold text-[#235BF7] font-sans">
-                {formatNumber(availableBalance - amount)} {currency}
+                {formatFCFA(availableBalance - amount)}
               </span>
             </div>
           </div>
@@ -287,24 +287,24 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
               <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#F1F5F9]">
                   <div>
-                    <span className="text-xs font-semibold text-[#7A808C] block">
+                    <span className="text-[13px] font-semibold text-[#7A808C] block">
                       Solde disponible immédiatement pour retrait :
                     </span>
                     <span className="text-2xl sm:text-3xl font-black text-[#235BF7]">
-                      {formatNumber(availableBalance)} {currency}
+                      {formatFCFA(availableBalance)}
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setAmount(availableBalance)}
-                    className="self-start sm:self-auto text-xs font-bold text-[#235BF7] bg-[#EEF3FF] hover:bg-[#235BF7] hover:text-white px-4 py-2 rounded-xl transition-all cursor-pointer border border-[#BFDBFE]"
+                    className="self-start sm:self-auto text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] hover:bg-[#235BF7] hover:text-white px-4 py-2 rounded-xl transition-all cursor-pointer border border-[#BFDBFE]"
                   >
-                    Tout retirer ({formatNumber(availableBalance)} {currency})
+                    Tout retirer ({formatFCFA(availableBalance)})
                   </button>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-xs font-black uppercase tracking-wider text-[#201D1D] block">
+                  <label className="text-[13px] font-black uppercase tracking-wider text-[#201D1D] block">
                     Montant du retrait souhaité ({currency}) *
                   </label>
                   <div className="relative">
@@ -319,20 +319,20 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                       placeholder="Ex: 50 000"
                       required
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-[#7A808C]">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] font-black text-[#7A808C]">
                       {currency}
                     </span>
                   </div>
 
                   {/* Preset Amount Pills */}
                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <span className="text-[11px] text-[#94A3B8] font-bold">Montants rapides :</span>
+                    <span className="text-[13px] text-[#94A3B8] font-bold">Montants rapides :</span>
                     {presets.map((val, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => setAmount(val)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+                        className={`text-[13px] font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
                           amount === val
                             ? 'bg-[#235BF7] text-white border-[#235BF7]'
                             : 'bg-[#F8FAFC] text-[#201D1D] border-[#E2E8F0] hover:bg-[#EEF3FF]'
@@ -348,10 +348,10 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
               {/* 2. Destination Provider & Phone */}
               <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-5">
                 <div>
-                  <h3 className="text-sm font-black text-[#201D1D]">
+                  <h3 className="text-[15px] font-black text-[#201D1D]">
                     Destination du Virement Mobile Money
                   </h3>
-                  <p className="text-xs text-[#7A808C]">
+                  <p className="text-[13px] text-[#7A808C]">
                     Sélectionnez le réseau et entrez le numéro récepteur de votre compte.
                   </p>
                 </div>
@@ -372,12 +372,14 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-black text-[#201D1D]">Wave Sénégal</span>
-                        <span className="text-[9px] font-black uppercase text-[#10B981] bg-[#ECFDF5] px-1.5 py-0.5 rounded-md">
+                        <span className="text-[15px] font-black text-[#201D1D]">Wave Sénégal</span>
+                        <span className="text-[11px] font-black uppercase text-[#10B981] bg-[#ECFDF5] px-1.5 py-0.5 rounded-md">
                           0% Frais
                         </span>
                       </div>
-                      <span className="text-xs text-[#7A808C]">Transfert instantané &lt; 30s</span>
+                      <span className="text-[13px] text-[#7A808C]">
+                        Transfert instantané &lt; 30s
+                      </span>
                     </div>
                   </button>
 
@@ -391,17 +393,17 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                         : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
                     }`}
                   >
-                    <div className="w-11 h-11 rounded-2xl bg-[#FF7900] text-white font-black text-sm flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <div className="w-11 h-11 rounded-2xl bg-[#FF7900] text-white font-black text-[15px] flex items-center justify-center flex-shrink-0 shadow-xs">
                       OM
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-black text-[#201D1D]">Orange Money</span>
-                        <span className="text-[9px] font-black uppercase text-[#FF7900] bg-[#FFF5EB] px-1.5 py-0.5 rounded-md">
+                        <span className="text-[15px] font-black text-[#201D1D]">Orange Money</span>
+                        <span className="text-[11px] font-black uppercase text-[#FF7900] bg-[#FFF5EB] px-1.5 py-0.5 rounded-md">
                           Instantané
                         </span>
                       </div>
-                      <span className="text-xs text-[#7A808C]">
+                      <span className="text-[13px] text-[#7A808C]">
                         Dépôt direct vers votre compte OM
                       </span>
                     </div>
@@ -409,18 +411,18 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-wider text-[#201D1D] block">
+                  <label className="text-[13px] font-black uppercase tracking-wider text-[#201D1D] block">
                     Numéro de réception {provider === 'wave' ? 'Wave' : 'Orange Money'} *
                   </label>
                   <div className="flex items-center">
-                    <span className="px-3.5 py-3.5 rounded-l-2xl bg-[#F1F5F9] border border-r-0 border-[#CBD5E1] text-xs font-black text-[#201D1D]">
+                    <span className="px-3.5 py-3.5 rounded-l-2xl bg-[#F1F5F9] border border-r-0 border-[#CBD5E1] text-[13px] font-black text-[#201D1D]">
                       +221
                     </span>
                     <input
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-r-2xl bg-[#F8FAFC] border border-[#CBD5E1] text-sm font-black text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white focus:ring-2 focus:ring-[#235BF7]/10"
+                      className="w-full px-4 py-3.5 rounded-r-2xl bg-[#F8FAFC] border border-[#CBD5E1] text-[15px] font-black text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white focus:ring-2 focus:ring-[#235BF7]/10"
                       placeholder="77 412 89 30"
                       required
                     />
@@ -436,10 +438,10 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                       <KeyRound className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-[#201D1D]">
+                      <h3 className="text-[15px] font-black text-[#201D1D]">
                         Code PIN de Retrait à 6 Chiffres (Obligatoire)
                       </h3>
-                      <p className="text-[11px] text-[#7A808C]">
+                      <p className="text-[13px] text-[#7A808C]">
                         Entrez votre code de sécurité défini dans vos paramètres pour valider.
                       </p>
                     </div>
@@ -451,7 +453,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                       setIsForgotModalOpen(true);
                       setForgotStep('request_sent');
                     }}
-                    className="text-xs font-bold text-[#235BF7] hover:underline cursor-pointer self-start sm:self-auto"
+                    className="text-[13px] font-bold text-[#235BF7] hover:underline cursor-pointer self-start sm:self-auto"
                   >
                     Code PIN oublié ?
                   </button>
@@ -478,13 +480,13 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                   </div>
 
                   {pinError && (
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-600 animate-in shake duration-200">
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-[13px] font-bold text-red-600 animate-in shake duration-200">
                       <AlertCircle className="w-4 h-4 flex-shrink-0" />
                       <span>{pinError}</span>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between text-[11px] text-[#94A3B8] pt-1">
+                  <div className="flex items-center justify-between text-[13px] text-[#94A3B8] pt-1">
                     <span>Code actuel verrouillé : {payoutSecurity.maskedPin}</span>
                   </div>
                 </div>
@@ -504,7 +506,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     ? 'Authentification & Transfert en cours...'
                     : `Autoriser et Transférer ${formatNumber(amount)} ${currency}`}
                 </Button>
-                <p className="text-[11px] text-center text-[#94A3B8] mt-2 flex items-center justify-center gap-1.5">
+                <p className="text-[13px] text-center text-[#94A3B8] mt-2 flex items-center justify-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
                   <span>
                     Transfert sécurisé via passerelle Mobile Money certifiée Banque Centrale
@@ -518,15 +520,15 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
           <div className="lg:col-span-4 space-y-5">
             {/* Financial Breakdown Card */}
             <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-4">
-              <h3 className="text-sm font-black text-[#201D1D] pb-3 border-b border-[#F1F5F9]">
+              <h3 className="text-[15px] font-black text-[#201D1D] pb-3 border-b border-[#F1F5F9]">
                 Récapitulatif Financier
               </h3>
 
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3 text-[13px]">
                 <div className="flex justify-between items-center">
                   <span className="text-[#7A808C]">Montant demandé</span>
-                  <span className="font-black text-[#201D1D] text-sm">
-                    {formatNumber(amount)} {currency}
+                  <span className="font-black text-[#201D1D] text-[15px]">
+                    {formatFCFA(amount)}
                   </span>
                 </div>
 
@@ -550,12 +552,10 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 </div>
 
                 <div className="pt-3 border-t border-[#F1F5F9] flex justify-between items-baseline">
-                  <span className="font-black text-[#201D1D] text-xs">
+                  <span className="font-black text-[#201D1D] text-[13px]">
                     Net versé sur votre compte
                   </span>
-                  <span className="text-xl font-black text-[#235BF7]">
-                    {formatNumber(amount)} {currency}
-                  </span>
+                  <span className="text-xl font-black text-[#235BF7]">{formatFCFA(amount)}</span>
                 </div>
               </div>
             </div>
@@ -567,38 +567,36 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                   <ShieldCheck className="w-5 h-5 stroke-[2.5]" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider text-[#201D1D]">
+                  <h4 className="text-[13px] font-black uppercase tracking-wider text-[#201D1D]">
                     Sécurité des Retraits
                   </h4>
-                  <span className="text-[10px] text-[#7A808C]">
-                    Protection active contre la fraude
-                  </span>
+                  <span className="text-xs text-[#7A808C]">Protection active contre la fraude</span>
                 </div>
               </div>
 
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3 text-[13px]">
                 <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1">
-                  <span className="text-[10px] uppercase font-extrabold text-[#7A808C] block">
+                  <span className="text-xs uppercase font-extrabold text-[#7A808C] block">
                     Statut du Code PIN
                   </span>
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-emerald-600 font-black text-sm tracking-widest">
+                    <span className="font-mono text-emerald-600 font-black text-[15px] tracking-widest">
                       {payoutSecurity.maskedPin}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold bg-[#ECFDF5] text-[#059669] px-2 py-0.5 rounded-full border border-[#A7F3D0]">
+                    <span className="inline-flex items-center gap-1 text-xs font-extrabold bg-[#ECFDF5] text-[#059669] px-2 py-0.5 rounded-full border border-[#A7F3D0]">
                       <CheckCircle2 className="w-3 h-3 stroke-[2.5]" />
                       Actif & Protégé
                     </span>
                   </div>
                 </div>
 
-                <p className="text-[11px] text-[#7A808C] leading-relaxed">
+                <p className="text-[13px] text-[#7A808C] leading-relaxed">
                   Chaque virement exige obligatoirement votre code secret à 6 chiffres. En cas
                   d'oubli, la réinitialisation se fait exclusivement par lien sécurisé envoyé à
                   votre adresse vérifiée :
                 </p>
 
-                <div className="flex items-center gap-2 font-mono text-[11px] text-[#201D1D] bg-[#F8FAFC] border border-[#E2E8F0] p-2.5 rounded-xl">
+                <div className="flex items-center gap-2 font-mono text-[13px] text-[#201D1D] bg-[#F8FAFC] border border-[#E2E8F0] p-2.5 rounded-xl">
                   <Mail className="w-3.5 h-3.5 text-[#235BF7] shrink-0" />
                   <span className="truncate">{payoutSecurity.recoveryEmail}</span>
                 </div>
@@ -608,7 +606,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 <button
                   type="button"
                   onClick={onGoToSettings}
-                  className="w-full py-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#EEF3FF] text-[#235BF7] hover:text-[#1B4AD6] text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 border border-[#E2E8F0] hover:border-[#BFDBFE]"
+                  className="w-full py-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#EEF3FF] text-[#235BF7] hover:text-[#1B4AD6] text-[13px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 border border-[#E2E8F0] hover:border-[#BFDBFE]"
                 >
                   <span>Gérer dans Paramètres</span>
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -620,51 +618,51 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
             <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-2xl bg-[#EEF3FF] border border-[#BFDBFE] flex items-center justify-center text-[#235BF7] font-black text-sm shrink-0">
+                  <div className="w-9 h-9 rounded-2xl bg-[#EEF3FF] border border-[#BFDBFE] flex items-center justify-center text-[#235BF7] font-black text-[15px] shrink-0">
                     M
                   </div>
                   <div>
-                    <h4 className="text-xs font-black uppercase tracking-wider text-[#201D1D]">
+                    <h4 className="text-[13px] font-black uppercase tracking-wider text-[#201D1D]">
                       Passerelle Moneriz
                     </h4>
-                    <span className="text-[10px] text-[#7A808C]">
+                    <span className="text-xs text-[#7A808C]">
                       Paiements & Retraits Multi-Opérateurs
                     </span>
                   </div>
                 </div>
 
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold bg-[#ECFDF5] text-[#059669] px-2.5 py-1 rounded-full border border-[#A7F3D0]">
+                <span className="inline-flex items-center gap-1.5 text-xs font-extrabold bg-[#ECFDF5] text-[#059669] px-2.5 py-1 rounded-full border border-[#A7F3D0]">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                   Mode Live Actif
                 </span>
               </div>
 
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3 text-[13px]">
                 <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] uppercase font-bold text-[#7A808C]">
+                    <span className="text-xs uppercase font-bold text-[#7A808C]">
                       Clé Publique (Live) :
                     </span>
-                    <span className="font-mono text-[10px] text-[#201D1D] font-bold truncate max-w-[190px]">
+                    <span className="font-mono text-xs text-[#201D1D] font-bold truncate max-w-[190px]">
                       izp_live_pk_uc6uCy7ELZ...
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-1 border-t border-[#E2E8F0]">
-                    <span className="text-[10px] uppercase font-bold text-[#7A808C]">
+                    <span className="text-xs uppercase font-bold text-[#7A808C]">
                       Clé Privée Serveur :
                     </span>
-                    <span className="font-mono text-[10px] text-emerald-700 font-bold">
+                    <span className="font-mono text-xs text-emerald-700 font-bold">
                       izp_live_sk_••••••••••••QBGk
                     </span>
                   </div>
                 </div>
 
                 <div className="p-3 rounded-2xl bg-[#EEF3FF]/60 border border-[#BFDBFE] space-y-1">
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#235BF7]">
+                  <div className="flex items-center gap-1.5 text-[13px] font-bold text-[#235BF7]">
                     <Clock className="w-3.5 h-3.5 shrink-0" />
                     <span>Règlement des ventes (24h - 72h)</span>
                   </div>
-                  <p className="text-[11px] text-[#7A808C] leading-relaxed">
+                  <p className="text-[13px] text-[#7A808C] leading-relaxed">
                     Chaque encaissement en ligne via Wave, Orange Money ou Carte est sécurisé par
                     Moneriz et transféré sur votre solde disponible pour retrait sous 24h à 72h.
                   </p>
@@ -688,26 +686,26 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 </div>
 
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-full">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-full">
                     Procédure de Récupération Sécurisée
                   </span>
                   <h3 className="text-xl font-black text-[#201D1D]">
                     Email de Réinitialisation Envoyé !
                   </h3>
-                  <p className="text-xs text-[#7A808C] max-w-sm mx-auto">
+                  <p className="text-[13px] text-[#7A808C] max-w-sm mx-auto">
                     Conformément à la sécurité bancaire Juula, un lien unique à usage unique a été
                     expédié à l'adresse du propriétaire de la boutique :
                   </p>
-                  <p className="text-xs font-mono font-bold text-[#201D1D] bg-[#F8FAFC] py-1.5 px-3 rounded-lg border border-[#E2E8F0] inline-block">
+                  <p className="text-[13px] font-mono font-bold text-[#201D1D] bg-[#F8FAFC] py-1.5 px-3 rounded-lg border border-[#E2E8F0] inline-block">
                     {payoutSecurity.recoveryEmail}
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-left text-xs space-y-1">
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-left text-[13px] space-y-1">
                   <span className="font-bold text-amber-900 block">
                     Simulation d'environnement marchand :
                   </span>
-                  <span className="text-amber-800 text-[11px]">
+                  <span className="text-amber-800 text-[13px]">
                     Dans cette interface de démonstration, vous pouvez ouvrir directement la boîte
                     de réception simulée pour tester le lien de réinitialisation.
                   </span>
@@ -733,7 +731,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
             {forgotStep === 'email_preview' && (
               <div className="space-y-4">
                 {/* Simulated Email Header */}
-                <div className="border-b border-[#E2E8F0] pb-3 space-y-1 text-xs">
+                <div className="border-b border-[#E2E8F0] pb-3 space-y-1 text-[13px]">
                   <div className="flex justify-between text-[#7A808C]">
                     <span>
                       De :{' '}
@@ -741,18 +739,18 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                         Sécurité Juula Pay &lt;securite@juula.store&gt;
                       </strong>
                     </span>
-                    <span className="text-[10px]">À l'instant</span>
+                    <span className="text-xs">À l'instant</span>
                   </div>
                   <div className="text-[#7A808C]">
                     À : <strong className="text-[#201D1D]">{payoutSecurity.recoveryEmail}</strong>
                   </div>
-                  <div className="font-bold text-[#201D1D] pt-1 text-sm">
+                  <div className="font-bold text-[#201D1D] pt-1 text-[15px]">
                     🔒 Réinitialisation de votre code PIN de retrait Juula Store
                   </div>
                 </div>
 
                 {/* Simulated Email Content Body */}
-                <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-4 text-xs">
+                <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-4 text-[13px]">
                   <p className="text-[#201D1D]">
                     Bonjour <strong>Boutique Dakar Élégance</strong>,
                   </p>
@@ -770,14 +768,14 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setForgotStep('reset_form')}
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-black shadow-md transition-all cursor-pointer"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[13px] font-black shadow-md transition-all cursor-pointer"
                     >
                       <KeyRound className="w-4 h-4" />
                       <span>Définir mon nouveau Code PIN →</span>
                     </button>
                   </div>
 
-                  <p className="text-[10px] text-[#94A3B8]">
+                  <p className="text-xs text-[#94A3B8]">
                     Ce lien expire dans 15 minutes. Si vous n'êtes pas à l'origine de cette demande,
                     veuillez ignorer ce message.
                   </p>
@@ -787,7 +785,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsForgotModalOpen(false)}
-                    className="text-xs text-[#7A808C] hover:text-[#201D1D] cursor-pointer"
+                    className="text-[13px] text-[#7A808C] hover:text-[#201D1D] cursor-pointer"
                   >
                     Annuler
                   </button>
@@ -799,21 +797,21 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
               <form onSubmit={handleResetPinSubmit} className="space-y-4">
                 <div className="flex items-center gap-2 text-[#235BF7]">
                   <KeyRound className="w-5 h-5" />
-                  <span className="text-xs font-bold uppercase tracking-wider">
+                  <span className="text-[13px] font-bold uppercase tracking-wider">
                     Nouveau Code de Sécurité
                   </span>
                 </div>
                 <h3 className="text-xl font-black text-[#201D1D]">
                   Définir un Nouveau Code PIN à 6 Chiffres
                 </h3>
-                <p className="text-xs text-[#7A808C]">
+                <p className="text-[13px] text-[#7A808C]">
                   Entrez votre nouveau code PIN de retrait, puis confirmez-le une seconde fois.
                 </p>
 
                 {resetSuccessMessage ? (
                   <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
                     <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
-                    <span className="text-xs font-black text-emerald-800 block">
+                    <span className="text-[13px] font-black text-emerald-800 block">
                       {resetSuccessMessage}
                     </span>
                   </div>
@@ -821,7 +819,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                   <div className="space-y-4 pt-2">
                     {/* Input 1: New PIN */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[#201D1D] block">
+                      <label className="text-[13px] font-bold text-[#201D1D] block">
                         Nouveau code PIN (6 chiffres) :
                       </label>
                       <div className="flex items-center justify-center gap-1.5 sm:gap-2">
@@ -847,7 +845,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
 
                     {/* Input 2: Confirm PIN */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[#201D1D] block">
+                      <label className="text-[13px] font-bold text-[#201D1D] block">
                         Confirmer le code PIN (6 chiffres) :
                       </label>
                       <div className="flex items-center justify-center gap-1.5 sm:gap-2">
@@ -872,7 +870,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     </div>
 
                     {resetError && (
-                      <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-600">
+                      <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-[13px] font-bold text-red-600">
                         {resetError}
                       </div>
                     )}

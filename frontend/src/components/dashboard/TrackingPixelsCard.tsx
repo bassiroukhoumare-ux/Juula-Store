@@ -70,7 +70,7 @@ export const TrackingPixelsCard: React.FC = () => {
   };
 
   const inputClass = (invalid: boolean) =>
-    `w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs font-mono font-semibold text-[#201D1D] focus:outline-none focus:bg-white ${
+    `w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border text-[13px] font-mono font-semibold text-[#201D1D] focus:outline-none focus:bg-white ${
       invalid ? 'border-red-400 focus:border-red-500' : 'border-[#E2E8F0] focus:border-[#235BF7]'
     }`;
 
@@ -81,8 +81,8 @@ export const TrackingPixelsCard: React.FC = () => {
           <Radar className="w-4 h-4" />
         </div>
         <div>
-          <h3 className="text-sm font-black text-[#201D1D]">Pixels de suivi publicitaire</h3>
-          <p className="text-[11px] text-[#7A808C]">
+          <h3 className="text-[15px] font-black text-[#201D1D]">Pixels de suivi publicitaire</h3>
+          <p className="text-[13px] text-[#7A808C]">
             Mesurez vos publicités Facebook / Instagram et TikTok : visites, ouvertures du
             formulaire et commandes sont envoyées automatiquement depuis toutes vos pages produits.
           </p>
@@ -90,13 +90,13 @@ export const TrackingPixelsCard: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-xs text-[#7A808C]">
+        <div className="flex items-center gap-2 text-[13px] text-[#7A808C]">
           <Loader2 className="w-4 h-4 animate-spin" /> Chargement…
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-[#201D1D] mb-1">
+            <label className="flex items-center gap-1.5 text-[13px] font-bold text-[#201D1D] mb-1">
               <FacebookIcon /> ID du Pixel Meta (Facebook)
             </label>
             <input
@@ -108,7 +108,7 @@ export const TrackingPixelsCard: React.FC = () => {
               placeholder="Ex : 1234567890123456"
             />
             <p
-              className={`text-[10px] mt-1 ${fbInvalid ? 'text-red-600 font-semibold' : 'text-[#94A3B8]'}`}
+              className={`text-xs mt-1 ${fbInvalid ? 'text-red-600 font-semibold' : 'text-[#94A3B8]'}`}
             >
               {fbInvalid
                 ? 'Uniquement des chiffres (15 à 16 en général).'
@@ -117,7 +117,7 @@ export const TrackingPixelsCard: React.FC = () => {
           </div>
 
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-[#201D1D] mb-1">
+            <label className="flex items-center gap-1.5 text-[13px] font-bold text-[#201D1D] mb-1">
               <TiktokIcon /> ID du Pixel TikTok
             </label>
             <input
@@ -128,7 +128,7 @@ export const TrackingPixelsCard: React.FC = () => {
               placeholder="Ex : C4ABCDEFGH1234567890"
             />
             <p
-              className={`text-[10px] mt-1 ${ttInvalid ? 'text-red-600 font-semibold' : 'text-[#94A3B8]'}`}
+              className={`text-xs mt-1 ${ttInvalid ? 'text-red-600 font-semibold' : 'text-[#94A3B8]'}`}
             >
               {ttInvalid
                 ? 'Lettres majuscules et chiffres uniquement.'
@@ -139,7 +139,7 @@ export const TrackingPixelsCard: React.FC = () => {
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        <p className="text-[10px] text-[#94A3B8]">
+        <p className="text-xs text-[#94A3B8]">
           Événements envoyés : PageView, ViewContent, InitiateCheckout, Purchase (Meta) ·
           PlaceAnOrder, CompletePayment (TikTok). Laissez vide pour désactiver.
         </p>
@@ -147,7 +147,7 @@ export const TrackingPixelsCard: React.FC = () => {
           type="button"
           onClick={handleSave}
           disabled={loading || saving || fbInvalid || ttInvalid}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-black transition-all cursor-pointer disabled:opacity-50 shrink-0"
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[13px] font-black transition-all cursor-pointer disabled:opacity-50 shrink-0"
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -159,7 +159,7 @@ export const TrackingPixelsCard: React.FC = () => {
           {saved ? 'Pixels enregistrés !' : 'Enregistrer les pixels'}
         </button>
       </div>
-      {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+      {error && <p className="text-[13px] font-semibold text-red-600">{error}</p>}
     </div>
   );
 };

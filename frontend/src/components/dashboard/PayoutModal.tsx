@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { X, Check, Wallet, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatNumber } from '@/lib/orderUtils';
+import { formatFCFA } from '@/lib/orderUtils';
 
 interface PayoutModalProps {
   isOpen: boolean;
@@ -60,8 +60,8 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
               <Check className="w-8 h-8 stroke-[3]" />
             </div>
             <h3 className="text-xl font-black text-[#201D1D]">Virement en cours d'envoi !</h3>
-            <p className="text-sm text-[#7A808C] max-w-xs mx-auto">
-              {formatNumber(amount)} {currency} sont en cours de transfert vers votre compte{' '}
+            <p className="text-[15px] text-[#7A808C] max-w-xs mx-auto">
+              {formatFCFA(amount)} sont en cours de transfert vers votre compte{' '}
               {provider === 'wave'
                 ? 'Wave (+221 ' + phone + ')'
                 : 'Orange Money (+221 ' + phone + ')'}
@@ -72,29 +72,31 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
           <form onSubmit={handleWithdraw}>
             <div className="flex items-center gap-2 mb-1 text-[#235BF7]">
               <Wallet className="w-5 h-5" />
-              <span className="text-xs font-bold uppercase tracking-wider">Portefeuille Juula</span>
+              <span className="text-[13px] font-bold uppercase tracking-wider">
+                Portefeuille Juula
+              </span>
             </div>
             <h2 className="text-2xl font-black text-[#201D1D] tracking-tight">
               Demande de Retrait
             </h2>
-            <p className="text-sm text-[#7A808C] mt-1 mb-6">
+            <p className="text-[15px] text-[#7A808C] mt-1 mb-6">
               Transférez vos fonds encaissés en ligne directement sur votre compte Mobile Money.
             </p>
 
             {/* Current Available Balance Card */}
             <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] mb-5 flex items-center justify-between">
               <div>
-                <span className="text-xs font-semibold text-[#7A808C] block">
+                <span className="text-[13px] font-semibold text-[#7A808C] block">
                   Solde disponible immédiatement :
                 </span>
                 <span className="text-2xl font-black text-[#235BF7]">
-                  {formatNumber(availableBalance)} {currency}
+                  {formatFCFA(availableBalance)}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setAmount(availableBalance)}
-                className="text-xs font-bold text-[#235BF7] bg-[#EEF3FF] hover:bg-[#235BF7] hover:text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+                className="text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] hover:bg-[#235BF7] hover:text-white px-3 py-1.5 rounded-xl transition-all cursor-pointer"
               >
                 Tout retirer
               </button>
@@ -102,7 +104,7 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
 
             {/* Provider Selection */}
             <div className="space-y-3 mb-5">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#201D1D]/80 block">
+              <label className="text-[13px] font-bold uppercase tracking-wider text-[#201D1D]/80 block">
                 Destination du virement
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -115,12 +117,12 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                       : 'border-[#E2E8F0] bg-white hover:bg-[#F8FAFC]'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-[#1AA3FF] text-white font-black text-sm flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#1AA3FF] text-white font-black text-[15px] flex items-center justify-center flex-shrink-0">
                     W
                   </div>
                   <div>
-                    <span className="text-sm font-bold text-[#201D1D] block">Wave Sénégal</span>
-                    <span className="text-[11px] text-[#7A808C]">Instantané 0%</span>
+                    <span className="text-[15px] font-bold text-[#201D1D] block">Wave Sénégal</span>
+                    <span className="text-[13px] text-[#7A808C]">Instantané 0%</span>
                   </div>
                 </button>
 
@@ -133,12 +135,12 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                       : 'border-[#E2E8F0] bg-white hover:bg-[#F8FAFC]'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-[#FF7900] text-white font-black text-xs flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#FF7900] text-white font-black text-[13px] flex items-center justify-center flex-shrink-0">
                     OM
                   </div>
                   <div>
-                    <span className="text-sm font-bold text-[#201D1D] block">Orange Money</span>
-                    <span className="text-[11px] text-[#7A808C]">Instantané</span>
+                    <span className="text-[15px] font-bold text-[#201D1D] block">Orange Money</span>
+                    <span className="text-[13px] text-[#7A808C]">Instantané</span>
                   </div>
                 </button>
               </div>
@@ -146,7 +148,7 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
 
             {/* Amount input */}
             <div className="space-y-3 mb-5">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#201D1D]/80 block">
+              <label className="text-[13px] font-bold uppercase tracking-wider text-[#201D1D]/80 block">
                 Montant du retrait ({currency})
               </label>
               <div className="relative">
@@ -159,7 +161,7 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                   onChange={(e) => setAmount(Number(e.target.value))}
                   className="w-full px-4 py-3 rounded-xl bg-white border border-[#E2E8F0] text-lg font-black text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:ring-2 focus:ring-[#235BF7]/15"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#94A3B8]">
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] font-bold text-[#94A3B8]">
                   {currency}
                 </span>
               </div>
@@ -167,11 +169,11 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
 
             {/* Phone Number */}
             <div className="space-y-3 mb-6">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#201D1D]/80 block">
+              <label className="text-[13px] font-bold uppercase tracking-wider text-[#201D1D]/80 block">
                 Numéro de réception
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#94A3B8]">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-bold text-[#94A3B8]">
                   +221
                 </span>
                 <input
@@ -180,7 +182,7 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="77 412 89 30"
-                  className="w-full pl-16 pr-4 py-3 rounded-xl bg-white border border-[#E2E8F0] text-sm font-medium text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:ring-2 focus:ring-[#235BF7]/15"
+                  className="w-full pl-16 pr-4 py-3 rounded-xl bg-white border border-[#E2E8F0] text-[15px] font-medium text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:ring-2 focus:ring-[#235BF7]/15"
                 />
               </div>
             </div>
@@ -194,10 +196,10 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
               disabled={amount <= 0 || amount > availableBalance}
               iconRight={<ArrowRight className="w-4 h-4" />}
             >
-              Transférer {formatNumber(amount)} {currency}
+              Transférer {formatFCFA(amount)}
             </Button>
 
-            <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-[#7A808C]">
+            <div className="mt-4 flex items-center justify-center gap-1.5 text-[13px] text-[#7A808C]">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>Virement automatique sécurisé via API Mobile Money</span>
             </div>

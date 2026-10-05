@@ -70,14 +70,14 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
 
         {/* Header */}
         <div className="text-center space-y-2 mb-6">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF3FF] text-[#235BF7] text-xs font-black uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF3FF] text-[#235BF7] text-[13px] font-black uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Offre Marchand Juula</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-[#201D1D] tracking-tight">
             {isPro ? 'Votre Abonnement Juula Pro' : 'Passez au Plan Juula Pro'}
           </h2>
-          <p className="text-xs sm:text-sm text-[#7A808C] max-w-sm mx-auto">
+          <p className="text-[13px] sm:text-[15px] text-[#7A808C] max-w-sm mx-auto">
             {isPro
               ? 'Profitez de la puissance maximale de Juula Store sans aucune limite.'
               : 'Débloquez le paiement à la livraison, les pixels publicitaires et vendez sans aucune limite.'}
@@ -88,7 +88,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
         <div className="p-5 rounded-2xl bg-gradient-to-br from-[#201D1D] via-[#1E293B] to-[#201D1D] text-white shadow-xl relative overflow-hidden mb-6">
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#38BDF8] block">
+              <span className="text-xs font-black uppercase tracking-widest text-[#38BDF8] block">
                 Formule Tout Inclus
               </span>
               <h3 className="text-xl font-black text-white mt-0.5">Plan Juula Pro</h3>
@@ -96,16 +96,16 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
             <div className="text-right">
               <span className="text-2xl sm:text-3xl font-black text-white">
                 {formatNumber(PRO_PLAN_PRICE_FCFA)}{' '}
-                <span className="text-sm font-semibold text-white/80">FCFA</span>
+                <span className="text-[15px] font-semibold text-white/80">FCFA</span>
               </span>
-              <span className="block text-[11px] text-white/70">/ mois</span>
+              <span className="block text-[13px] text-white/70">/ mois</span>
             </div>
           </div>
 
           <div className="my-4 border-t border-white/10" />
 
           {/* Features Comparison Highlights */}
-          <ul className="space-y-2.5 text-xs">
+          <ul className="space-y-2.5 text-[13px]">
             <li className="flex items-center gap-2.5 text-white/95">
               <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
               <span>
@@ -140,7 +140,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
             </li>
           </ul>
 
-          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-white/70">
+          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[13px] text-white/70">
             <span>Paiement sécurisé Wave & OM</span>
             <span className="flex items-center gap-1 text-emerald-400 font-bold">
               <ShieldCheck className="w-3.5 h-3.5" /> Sans engagement
@@ -152,7 +152,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
         {isPro && planExpiresAt && (
           <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <div className="text-xs">
+            <div className="text-[13px]">
               <p className="font-bold text-emerald-900">Votre abonnement Pro est actif</p>
               <p className="text-emerald-700">
                 Valable jusqu’au{' '}
@@ -168,7 +168,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
         )}
 
         {errorMessage && (
-          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-[13px] text-red-700">
             {errorMessage}
           </div>
         )}
@@ -178,7 +178,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
           <button
             onClick={handleSubscribePro}
             disabled={isProcessing}
-            className="w-full py-4 px-6 rounded-2xl bg-[#235BF7] hover:bg-[#1B4AD6] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(30,96,248,0.4)] transition-all cursor-pointer disabled:opacity-50"
+            className="w-full py-4 px-6 rounded-2xl bg-[#235BF7] hover:bg-[#1B4AD6] active:scale-[0.98] text-white font-black text-[15px] tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(30,96,248,0.4)] transition-all cursor-pointer disabled:opacity-50"
           >
             {isProcessing ? (
               <span>Redirection vers le paiement sécurisé...</span>
@@ -199,7 +199,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
             <Link
               href="/pro"
               onClick={onClose}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#235BF7] hover:underline"
+              className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#235BF7] hover:underline"
             >
               <span>Voir la présentation complète & comparatif Juula Pro</span>
               <ArrowRight className="w-3.5 h-3.5" />

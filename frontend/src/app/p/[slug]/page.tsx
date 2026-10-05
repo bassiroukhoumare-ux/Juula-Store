@@ -47,6 +47,11 @@ export default async function PublicProductPage({ params, searchParams }: PagePr
   }
 
   return (
-    <PublicProductView config={config} pixels={pixelsOf(found.store)} isPreview={found.isPreview} />
+    <PublicProductView
+      config={config}
+      pixels={pixelsOf(found.store)}
+      isPreview={found.isPreview}
+      displayCurrency={found.store?.displayCurrency}
+    />
   );
 }

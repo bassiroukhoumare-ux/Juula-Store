@@ -12,6 +12,7 @@ import {
   type SubdomainProblem,
 } from '@/lib/store/subdomain';
 import { normalizeWhatsapp, formatWhatsapp } from '@/lib/store/whatsapp';
+import { isDisplayCurrency, type DisplayCurrency } from '@/lib/money';
 
 export type Availability =
   | { available: true; subdomain: string }
@@ -49,6 +50,7 @@ export interface StoreProfile {
   city: string | null;
   plan: 'FREE' | 'PRO';
   planExpiresAt: string | null;
+  displayCurrency: DisplayCurrency;
 }
 
 export function toStoreProfile(store: Store | null): StoreProfile {
@@ -63,10 +65,12 @@ export function toStoreProfile(store: Store | null): StoreProfile {
     city: store?.city ?? null,
     plan: isPro ? 'PRO' : 'FREE',
     planExpiresAt: store?.planExpiresAt?.toISOString() ?? null,
+    displayCurrency: isDisplayCurrency(store?.displayCurrency) ? store.displayCurrency : 'XOF',
   };
 }
 
 export interface ProfileInput {
+  displayCurrency?: DisplayCurrency | undefined;
   name?: string | undefined;
   subdomain?: string | undefined;
   logoUrl?: string | null | undefined;
@@ -194,6 +198,7 @@ export async function updateStoreProfile(
           onlineOnly,
           address: onlineOnly ? null : address,
           city,
+          ...(input.displayCurrency ? { displayCurrency: input.displayCurrency } : {}),
         },
       });
 

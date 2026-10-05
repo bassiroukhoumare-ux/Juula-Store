@@ -19,6 +19,7 @@ const Body = z
     logoUrl: z.string().url().max(500).nullable().optional(),
     whatsapp: z.string().trim().min(6).max(25).optional(),
     onlineOnly: z.boolean().optional(),
+    displayCurrency: z.enum(['XOF', 'EUR', 'USD']).optional(),
     address: z.string().trim().max(200).nullable().optional(),
     city: z.string().trim().max(80).nullable().optional(),
   })

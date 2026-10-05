@@ -117,14 +117,14 @@ export const SubdomainField: React.FC<SubdomainFieldProps> = ({
           className="flex-1 min-w-0 px-4 py-3.5 text-[15px] font-bold text-[#201D1D] bg-transparent focus:outline-none"
           aria-describedby={id ? `${id}-help` : undefined}
         />
-        <span className="flex items-center px-3 sm:px-4 bg-[#F4F6FB] text-sm font-bold text-[#6B7280] border-l border-[#E6EAF2] whitespace-nowrap">
+        <span className="flex items-center px-3 sm:px-4 bg-[#F4F6FB] text-[15px] font-bold text-[#6B7280] border-l border-[#E6EAF2] whitespace-nowrap">
           .{ROOT_DOMAIN}
         </span>
       </div>
       <p
         id={id ? `${id}-help` : undefined}
         aria-live="polite"
-        className={`mt-2 min-h-5 text-xs font-semibold flex items-center gap-1.5 ${
+        className={`mt-2 min-h-5 text-[13px] font-semibold flex items-center gap-1.5 ${
           status === 'available'
             ? 'text-[#16A34A]'
             : status === 'unavailable'

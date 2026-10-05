@@ -36,6 +36,7 @@ export function toOrderLead(order: StoreOrder): OrderLead {
     currency: order.currency,
     status: order.status as OrderStatus,
     createdAt: dateTimeFmt.format(order.createdAt),
+    createdAtIso: order.createdAt.toISOString(),
     deliveryNotes: order.deliveryNotes ?? undefined,
     deliveryAddress: order.deliveryAddress ?? undefined,
     quantity: order.quantity,

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Clock, Eye } from 'lucide-react';
+import { applyDisplayCurrency, isDisplayCurrency } from '@/lib/money';
 import { ImmersiveShowcase, type SubmittedOrder } from '@/components/showcase/ImmersiveShowcase';
 import type { StorePixels } from '@/lib/store/pixels';
 import {
@@ -18,13 +19,24 @@ interface PublicProductViewProps {
   pixels: StorePixels;
   /** Owner viewing an unpublished page: no pixels, orders disabled. */
   isPreview: boolean;
+  /** Merchant's display currency (prices are still charged in FCFA). */
+  displayCurrency?: string | null | undefined;
 }
 
 export const PublicProductView: React.FC<PublicProductViewProps> = ({
+  displayCurrency,
   config,
   pixels,
   isPreview,
 }) => {
+  // Server HTML is in FCFA; switch to the merchant's display currency once
+  // in the browser, then re-render the page with converted amounts.
+  const [currencyTick, setCurrencyTick] = useState(0);
+  useEffect(() => {
+    if (!isDisplayCurrency(displayCurrency) || displayCurrency === 'XOF') return;
+    void applyDisplayCurrency(displayCurrency).then(() => setCurrencyTick((t) => t + 1));
+  }, [displayCurrency]);
+
   const pendingPurchases = useRef(
     new Map<string, { reference: string; quantity: number; total: number }>(),
   );
@@ -135,7 +147,7 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
   }, [confirmPayment]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F6F7F9]">
       {isPreview && (
         <div className="sticky top-0 z-50 w-full bg-amber-500 text-white text-xs font-bold py-2 px-4 flex items-center justify-center gap-2">
           <Eye className="w-4 h-4" />
@@ -167,6 +179,7 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
         </div>
       )}
       <ImmersiveShowcase
+        key={currencyTick}
         config={config}
         submitOrder={submitOrder}
         confirmPayment={confirmPayment}

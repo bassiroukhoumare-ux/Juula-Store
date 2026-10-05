@@ -1,3 +1,4 @@
+import { formatMoney } from './money';
 /**
  * Utility functions for Order IDs and African E-commerce Store Codes
  * Format strict demandé : CMD-[CODE_BOUTIQUE]-[NUMERO_6_CHIFFRES]
@@ -15,7 +16,12 @@ export function getStoreCode(storeName: string): string {
   const firstWord = words[0];
   if (words.length === 1 && firstWord) {
     // 1 mot : on prend le mot nettoyé en majuscules (max 6 lettres)
-    return firstWord.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || 'JS';
+    return (
+      firstWord
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toUpperCase()
+        .slice(0, 6) || 'JS'
+    );
   }
 
   // Plusieurs mots : on prend les initiales de chaque mot
@@ -48,7 +54,10 @@ export function formatNumber(amount: number): string {
     .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+/**
+ * Amount (stored in FCFA) formatted in the merchant's display currency
+ * (FCFA by default; EUR / USD when chosen in Paramètres — see lib/money).
+ */
 export function formatFCFA(amount: number): string {
-  return `${formatNumber(amount)} FCFA`;
+  return formatMoney(amount);
 }
-

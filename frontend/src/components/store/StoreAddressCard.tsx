@@ -57,15 +57,15 @@ export const StoreAddressCard: React.FC<StoreAddressCardProps> = ({ profile, onS
           <Globe className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-black text-[#201D1D]">Ma boutique en ligne</h3>
-          <p className="text-[11px] text-[#7A808C]">Le nom et l’adresse que voient vos clients.</p>
+          <h3 className="text-[15px] font-black text-[#201D1D]">Ma boutique en ligne</h3>
+          <p className="text-[13px] text-[#7A808C]">Le nom et l’adresse que voient vos clients.</p>
         </div>
         {profile.subdomain && (
           <a
             href={storeOrigin(profile.subdomain)}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-xs font-bold text-[#201D1D]"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[13px] font-bold text-[#201D1D]"
           >
             <ExternalLink className="w-3.5 h-3.5" /> Voir ma boutique
           </a>
@@ -76,7 +76,7 @@ export const StoreAddressCard: React.FC<StoreAddressCardProps> = ({ profile, onS
         <div>
           <label
             htmlFor="settings-store-name"
-            className="block text-xs font-bold text-[#201D1D] mb-1.5"
+            className="block text-[13px] font-bold text-[#201D1D] mb-1.5"
           >
             Nom de la boutique
           </label>
@@ -92,7 +92,7 @@ export const StoreAddressCard: React.FC<StoreAddressCardProps> = ({ profile, onS
         <div>
           <label
             htmlFor="settings-store-sub"
-            className="block text-xs font-bold text-[#201D1D] mb-1.5"
+            className="block text-[13px] font-bold text-[#201D1D] mb-1.5"
           >
             Adresse de la boutique
           </label>
@@ -107,19 +107,19 @@ export const StoreAddressCard: React.FC<StoreAddressCardProps> = ({ profile, onS
       </div>
 
       {subChanged && profile.subdomain && sub && (
-        <p className="text-xs text-[#B45309] bg-[#FFF7E6] border border-[#FDE7C2] rounded-xl px-3 py-2">
+        <p className="text-[13px] text-[#B45309] bg-[#FFF7E6] border border-[#FDE7C2] rounded-xl px-3 py-2">
           Les liens déjà partagés avec <strong>{profile.subdomain}</strong> redirigeront
           automatiquement vers <strong>{sub}</strong>.
         </p>
       )}
-      {error && <p className="text-xs font-semibold text-[#DC2626]">{error}</p>}
+      {error && <p className="text-[13px] font-semibold text-[#DC2626]">{error}</p>}
 
       <div className="flex justify-end">
         <button
           type="button"
           onClick={handleSave}
           disabled={!canSave}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-black disabled:opacity-50 cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[13px] font-black disabled:opacity-50 cursor-pointer"
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />

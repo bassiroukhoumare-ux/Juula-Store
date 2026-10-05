@@ -109,14 +109,14 @@ export const WalletView: React.FC<WalletViewProps> = ({
       {/* ======================================================== */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 sm:p-8 rounded-[28px] bg-white border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EEF3FF] text-[#235BF7] text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EEF3FF] text-[#235BF7] text-[13px] font-bold uppercase tracking-wider">
             <Wallet className="w-3.5 h-3.5" />
             <span>Gestion Financière & Trésorerie</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-[#201D1D] tracking-tight">
             Portefeuille & Retraits Marchand
           </h2>
-          <p className="text-xs sm:text-sm text-[#7A808C] max-w-xl">
+          <p className="text-[13px] sm:text-[15px] text-[#7A808C] max-w-xl">
             Suivi des recettes, encaissements Wave / Orange Money / Espèces & virements marchands
             vers vos comptes.
           </p>
@@ -142,7 +142,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
         <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#235BF7] flex flex-col justify-between space-y-3">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A808C] truncate">
+              <span className="text-[13px] font-bold uppercase tracking-wider text-[#7A808C] truncate">
                 {periodData.label}
               </span>
               <div className="w-7 h-7 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
@@ -162,7 +162,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   key={p.id}
                   type="button"
                   onClick={() => setTimeFilter(p.id)}
-                  className={`flex-1 py-1 rounded-lg text-[10px] font-extrabold text-center transition-all cursor-pointer ${
+                  className={`flex-1 py-1 rounded-lg text-xs font-extrabold text-center transition-all cursor-pointer ${
                     timeFilter === p.id
                       ? 'bg-white text-[#235BF7] shadow-xs'
                       : 'text-[#7A808C] hover:text-[#201D1D]'
@@ -179,7 +179,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
               </span>
             </div>
 
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md mt-1">
+            <span className="inline-flex items-center gap-1 text-[13px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md mt-1">
               <TrendingUp className="w-3 h-3" />
               {periodData.growth}
             </span>
@@ -187,11 +187,11 @@ export const WalletView: React.FC<WalletViewProps> = ({
 
           {/* Synchronized Month Balance Tracker */}
           <div className="pt-2.5 border-t border-[#F1F5F9] mt-2 space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center justify-between text-[13px]">
               <span className="text-[#7A808C] font-semibold">Cumul ce mois (Octobre) :</span>
               <span className="font-extrabold text-[#201D1D]">{formatFCFA(monthTotal)}</span>
             </div>
-            <p className="text-[10px] text-[#94A3B8] leading-tight">
+            <p className="text-xs text-[#94A3B8] leading-tight">
               Synchronisé en temps réel avec vos ventes
             </p>
           </div>
@@ -201,7 +201,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
         <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#10B981] flex flex-col justify-between space-y-3">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A808C]">
+              <span className="text-[13px] font-bold uppercase tracking-wider text-[#7A808C]">
                 Solde En Ligne Disponible
               </span>
               <div className="w-7 h-7 rounded-xl bg-[#ECFDF5] text-[#10B981] flex items-center justify-center shrink-0">
@@ -215,11 +215,11 @@ export const WalletView: React.FC<WalletViewProps> = ({
               </span>
             </div>
 
-            <p className="text-xs text-[#7A808C] mt-1.5 leading-relaxed">
+            <p className="text-[13px] text-[#7A808C] mt-1.5 leading-relaxed">
               Paiements en ligne retirables {wallet.payoutHoldHours ?? 72} h après leur réception.
             </p>
             {(wallet.pendingOnlineAmount ?? 0) > 0 && (
-              <div className="mt-2 flex items-start gap-1.5 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-xl">
+              <div className="mt-2 flex items-start gap-1.5 text-[13px] font-bold text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-xl">
                 <Clock className="w-3.5 h-3.5 shrink-0 mt-px" />
                 <span>
                   + {formatFCFA(wallet.pendingOnlineAmount ?? 0)} en attente
@@ -256,7 +256,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
         <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#0EA5E9] flex flex-col justify-between space-y-3">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A808C]">
+              <span className="text-[13px] font-bold uppercase tracking-wider text-[#7A808C]">
                 Encaissé en Espèces (COD)
               </span>
               <div className="w-7 h-7 rounded-xl bg-[#EFF6FF] text-[#0EA5E9] flex items-center justify-center shrink-0">
@@ -270,12 +270,12 @@ export const WalletView: React.FC<WalletViewProps> = ({
               </span>
             </div>
 
-            <p className="text-xs text-[#7A808C] mt-1.5 leading-relaxed">
+            <p className="text-[13px] text-[#7A808C] mt-1.5 leading-relaxed">
               Argent remis en main propre par les coursiers après livraison à Dakar.
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px] text-[#0284C7] font-bold bg-[#F0F9FF] p-2 rounded-xl border border-[#BAE6FD]">
+          <div className="flex items-center gap-1.5 text-[13px] text-[#0284C7] font-bold bg-[#F0F9FF] p-2 rounded-xl border border-[#BAE6FD]">
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-[#0284C7]" />
             <span className="truncate">Livraisons confirmées & encaissées</span>
           </div>
@@ -285,7 +285,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
         <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#6366F1] flex flex-col justify-between space-y-3">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A808C]">
+              <span className="text-[13px] font-bold uppercase tracking-wider text-[#7A808C]">
                 Total Retraits Effectués
               </span>
               <div className="w-7 h-7 rounded-xl bg-[#EEF2FF] text-[#6366F1] flex items-center justify-center shrink-0">
@@ -299,12 +299,12 @@ export const WalletView: React.FC<WalletViewProps> = ({
               </span>
             </div>
 
-            <p className="text-xs text-[#7A808C] mt-1.5 leading-relaxed">
+            <p className="text-[13px] text-[#7A808C] mt-1.5 leading-relaxed">
               Cumul total viré sur vos comptes marchands Wave / Orange Money.
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px] text-[#059669] font-bold bg-[#ECFDF5] p-2 rounded-xl border border-[#A7F3D0]">
+          <div className="flex items-center gap-1.5 text-[13px] text-[#059669] font-bold bg-[#ECFDF5] p-2 rounded-xl border border-[#A7F3D0]">
             <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-[#10B981]" />
             <span className="truncate">
               {wallet.payoutHistory.length} virements réalisés • 0 incident
@@ -324,7 +324,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
             <h3 className="text-base sm:text-lg font-black text-[#201D1D]">
               Journal des Flux Financiers
             </h3>
-            <p className="text-xs text-[#7A808C]">
+            <p className="text-[13px] text-[#7A808C]">
               Séparation transparente entre encaissements clients reçus et retraits marchands
             </p>
           </div>
@@ -334,7 +334,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
             <button
               type="button"
               onClick={() => setHistoryTab('inflows')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-bold transition-all cursor-pointer ${
                 historyTab === 'inflows'
                   ? 'bg-white text-[#235BF7] shadow-xs'
                   : 'text-[#7A808C] hover:text-[#201D1D]'
@@ -343,7 +343,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
               <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
               <span>Versements & Encaissements</span>
               <span
-                className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                className={`text-xs font-black px-1.5 py-0.5 rounded-full ${
                   historyTab === 'inflows'
                     ? 'bg-[#EEF3FF] text-[#235BF7]'
                     : 'bg-[#E2E8F0] text-[#7A808C]'
@@ -356,7 +356,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
             <button
               type="button"
               onClick={() => setHistoryTab('outflows')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-bold transition-all cursor-pointer ${
                 historyTab === 'outflows'
                   ? 'bg-white text-[#235BF7] shadow-xs'
                   : 'text-[#7A808C] hover:text-[#201D1D]'
@@ -365,7 +365,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
               <ArrowUpRight className="w-3.5 h-3.5 text-[#235BF7]" />
               <span>Retraits Marchand</span>
               <span
-                className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                className={`text-xs font-black px-1.5 py-0.5 rounded-full ${
                   historyTab === 'outflows'
                     ? 'bg-[#EEF3FF] text-[#235BF7]'
                     : 'bg-[#E2E8F0] text-[#7A808C]'
@@ -385,14 +385,14 @@ export const WalletView: React.FC<WalletViewProps> = ({
             {/* Filtres par source d'encaissement */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-[#7A808C] flex items-center gap-1">
+                <span className="text-[13px] font-bold text-[#7A808C] flex items-center gap-1">
                   <Filter className="w-3 h-3" /> Filtrer :
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setInflowFilter('all')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                    className={`px-3 py-1 rounded-xl text-[13px] font-bold transition-colors cursor-pointer ${
                       inflowFilter === 'all'
                         ? 'bg-[#201D1D] text-white shadow-xs'
                         : 'bg-[#F8FAFC] border border-[#E2E8F0] text-[#7A808C] hover:bg-white'
@@ -403,7 +403,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setInflowFilter('online')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                    className={`px-3 py-1 rounded-xl text-[13px] font-bold transition-colors cursor-pointer ${
                       inflowFilter === 'online'
                         ? 'bg-[#235BF7] text-white shadow-xs'
                         : 'bg-[#F8FAFC] border border-[#E2E8F0] text-[#7A808C] hover:bg-white'
@@ -414,7 +414,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setInflowFilter('cod')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                    className={`px-3 py-1 rounded-xl text-[13px] font-bold transition-colors cursor-pointer ${
                       inflowFilter === 'cod'
                         ? 'bg-emerald-600 text-white shadow-xs'
                         : 'bg-[#F8FAFC] border border-[#E2E8F0] text-[#7A808C] hover:bg-white'
@@ -425,7 +425,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                 </div>
               </div>
 
-              <span className="text-[11px] font-semibold text-[#7A808C]">
+              <span className="text-[13px] font-semibold text-[#7A808C]">
                 Total affiché :{' '}
                 <span className="font-black text-[#201D1D]">
                   {formatFCFA(filteredInflows.reduce((sum, i) => sum + i.amount, 0))}
@@ -435,9 +435,9 @@ export const WalletView: React.FC<WalletViewProps> = ({
 
             {/* Table des Encaissements */}
             <div className="overflow-x-auto rounded-2xl border border-[#F1F5F9]">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-[13px]">
                 <thead>
-                  <tr className="border-b border-[#F1F5F9] bg-[#F8FAFC] text-[#7A808C] font-bold uppercase text-[10px] tracking-wider">
+                  <tr className="border-b border-[#F1F5F9] bg-[#F8FAFC] text-[#7A808C] font-bold uppercase text-xs tracking-wider">
                     <th className="py-3 px-4">Réf. Commande</th>
                     <th className="py-3 px-4">Client & Secteur</th>
                     <th className="py-3 px-4">Canal d'encaissement</th>
@@ -463,26 +463,26 @@ export const WalletView: React.FC<WalletViewProps> = ({
                           <span className="font-extrabold text-[#201D1D] block">
                             {item.customerName}
                           </span>
-                          <span className="text-[11px] text-[#7A808C] flex items-center gap-1">
+                          <span className="text-[13px] text-[#7A808C] flex items-center gap-1">
                             <MapPin className="w-2.5 h-2.5 text-[#235BF7]" />
                             {item.neighborhood}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           {item.source === 'online_wave' && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#EEF3FF] text-[#235BF7]">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-bold bg-[#EEF3FF] text-[#235BF7]">
                               <CreditCard className="w-3 h-3" />
                               Wave (En ligne)
                             </span>
                           )}
                           {item.source === 'online_orange' && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#FFF5EB] text-[#EA580C]">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-bold bg-[#FFF5EB] text-[#EA580C]">
                               <Smartphone className="w-3 h-3" />
                               Orange Money (En ligne)
                             </span>
                           )}
                           {item.source === 'cod_cash' && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#ECFDF5] text-[#059669]">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-bold bg-[#ECFDF5] text-[#059669]">
                               <Banknote className="w-3 h-3" />
                               Espèces Livraison (COD)
                             </span>
@@ -491,11 +491,11 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         <td className="py-3.5 px-4 text-[#7A808C] whitespace-nowrap">
                           {item.date}
                         </td>
-                        <td className="py-3.5 px-4 font-black text-sm text-emerald-600 whitespace-nowrap">
+                        <td className="py-3.5 px-4 font-black text-[15px] text-emerald-600 whitespace-nowrap">
                           +{formatFCFA(item.amount)}
                         </td>
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-1 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-1 rounded-full">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Encaissé & Validé</span>
                           </span>
@@ -515,7 +515,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
         {historyTab === 'outflows' && (
           <div className="space-y-4 animate-in fade-in duration-150">
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 Virements automatiques via API Wave & Orange Money
               </span>
@@ -533,9 +533,9 @@ export const WalletView: React.FC<WalletViewProps> = ({
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-[#F1F5F9]">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-[13px]">
                 <thead>
-                  <tr className="border-b border-[#F1F5F9] bg-[#F8FAFC] text-[#7A808C] font-bold uppercase text-[10px] tracking-wider">
+                  <tr className="border-b border-[#F1F5F9] bg-[#F8FAFC] text-[#7A808C] font-bold uppercase text-xs tracking-wider">
                     <th className="py-3 px-4">Réf. Virement</th>
                     <th className="py-3 px-4">Opérateur</th>
                     <th className="py-3 px-4">Numéro Destinataire</th>
@@ -560,7 +560,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-bold ${
                               payout.provider === 'wave'
                                 ? 'bg-[#EEF3FF] text-[#235BF7]'
                                 : 'bg-[#FFF5EB] text-[#EA580C]'
@@ -576,21 +576,21 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         <td className="py-3.5 px-4 text-[#7A808C] whitespace-nowrap">
                           {payout.date}
                         </td>
-                        <td className="py-3.5 px-4 font-black text-sm text-[#201D1D] whitespace-nowrap">
+                        <td className="py-3.5 px-4 font-black text-[15px] text-[#201D1D] whitespace-nowrap">
                           {formatFCFA(payout.amount)}
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           {payout.status === 'completed' ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-1 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-1 rounded-full">
                               <CheckCircle2 className="w-3 h-3" />
                               <span>Virement Effectué</span>
                             </span>
                           ) : payout.status === 'failed' ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-700 bg-red-50 px-2.5 py-1 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-[13px] font-bold text-red-700 bg-red-50 px-2.5 py-1 rounded-full">
                               <span>Échoué — montant recrédité</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-[13px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
                               <Clock className="w-3 h-3" />
                               <span>En cours</span>
                             </span>
@@ -600,7 +600,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                           <button
                             type="button"
                             onClick={() => setSelectedReceipt(payout)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#334155] font-bold text-[11px] transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#334155] font-bold text-[13px] transition-colors cursor-pointer"
                           >
                             <Receipt className="w-3 h-3" />
                             <span>Voir reçu</span>
@@ -630,7 +630,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
           >
             <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
                   Preuve de Virement API
                 </span>
                 <h3 className="text-base font-black text-[#201D1D] mt-1">
@@ -647,16 +647,18 @@ export const WalletView: React.FC<WalletViewProps> = ({
             </div>
 
             <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-center space-y-1">
-              <span className="text-xs text-[#7A808C] font-semibold">Montant viré avec succès</span>
+              <span className="text-[13px] text-[#7A808C] font-semibold">
+                Montant viré avec succès
+              </span>
               <h2 className="text-2xl font-black text-[#201D1D]">
                 {formatFCFA(selectedReceipt.amount)}
               </h2>
-              <span className="text-[11px] font-bold text-emerald-600 block">
+              <span className="text-[13px] font-bold text-emerald-600 block">
                 Statut : Transaction confirmée par l'opérateur
               </span>
             </div>
 
-            <div className="space-y-2 text-xs">
+            <div className="space-y-2 text-[13px]">
               <div className="flex justify-between py-1.5 border-b border-[#F1F5F9]">
                 <span className="text-[#7A808C]">Référence transaction :</span>
                 <span className="font-mono font-bold text-[#201D1D]">
@@ -682,7 +684,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
             <button
               type="button"
               onClick={() => setSelectedReceipt(null)}
-              className="w-full py-2.5 rounded-xl bg-[#201D1D] text-white text-xs font-bold hover:bg-[#1E293B] transition-colors cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-[#201D1D] text-white text-[13px] font-bold hover:bg-[#1E293B] transition-colors cursor-pointer"
             >
               Fermer le reçu
             </button>

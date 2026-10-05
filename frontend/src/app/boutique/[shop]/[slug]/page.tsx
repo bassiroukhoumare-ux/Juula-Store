@@ -49,6 +49,11 @@ export default async function StoreProductPage({ params, searchParams }: PagePro
   const { shop, slug } = await params;
   const { store, product } = await load(shop, slug, toSearch(await searchParams));
   return (
-    <PublicProductView config={productConfig(product)} pixels={pixelsOf(store)} isPreview={false} />
+    <PublicProductView
+      config={productConfig(product)}
+      pixels={pixelsOf(store)}
+      isPreview={false}
+      displayCurrency={store.displayCurrency}
+    />
   );
 }

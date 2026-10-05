@@ -45,13 +45,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                   }`}
                 />
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="absolute -top-1.5 -right-2.5 bg-[#10B981] text-white text-[9px] font-black px-1.5 py-0.2 rounded-full ring-2 ring-white">
+                  <span className="absolute -top-1.5 -right-2.5 bg-[#10B981] text-white text-[11px] font-black px-1.5 py-0.2 rounded-full ring-2 ring-white">
                     {tab.badge}
                   </span>
                 ) : null}
               </div>
               <span
-                className={`text-[10px] mt-1 font-bold tracking-tight ${
+                className={`text-xs mt-1 font-bold tracking-tight ${
                   isActive ? 'text-[#235BF7]' : 'text-[#7A808C]'
                 }`}
               >
@@ -70,7 +70,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <div className="w-7 h-7 rounded-xl bg-[#EEF3FF] flex items-center justify-center">
             <Smartphone className="w-4 h-4 text-[#235BF7]" />
           </div>
-          <span className="text-[10px] mt-0.5 font-extrabold text-[#235BF7]">Vitrine</span>
+          <span className="text-xs mt-0.5 font-extrabold text-[#235BF7]">Vitrine</span>
         </button>
       </div>
     </nav>

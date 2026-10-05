@@ -72,11 +72,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
             style={{ backgroundColor: accentColor }}
           />
-          <h3 className="text-sm font-extrabold text-[#201D1D] tracking-tight">{title}</h3>
+          <h3 className="text-[15px] font-extrabold text-[#201D1D] tracking-tight">{title}</h3>
         </div>
 
         <span
-          className="text-xs font-bold px-2 py-0.5 rounded-full"
+          className="text-[13px] font-bold px-2 py-0.5 rounded-full"
           style={{ backgroundColor: badgeBg, color: badgeText }}
         >
           {orders.length}
@@ -84,7 +84,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       </div>
 
       {/* Sub-header with total amount */}
-      <div className="flex items-center justify-between text-[11px] text-[#7A808C] px-1 mb-3">
+      <div className="flex items-center justify-between text-[13px] text-[#7A808C] px-1 mb-3">
         <span>Total de l'étape :</span>
         <span className="font-extrabold text-[#201D1D]">{formatFCFA(totalAmount)}</span>
       </div>
@@ -98,7 +98,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               ${isDragOver ? 'border-[#235BF7] bg-white' : 'border-[#CBD5E1]'}
             `}
           >
-            <p className="text-xs text-[#94A3B8] font-medium">
+            <p className="text-[13px] text-[#94A3B8] font-medium">
               {isDragOver ? 'Déposer la commande ici' : 'Glissez une commande ici'}
             </p>
           </div>

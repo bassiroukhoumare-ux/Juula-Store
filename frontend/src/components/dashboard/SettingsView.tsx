@@ -15,6 +15,7 @@ import {
 import { FunnelPageConfig } from '@/types/juula';
 import { TrackingPixelsCard } from './TrackingPixelsCard';
 import { StoreAddressCard } from '@/components/store/StoreAddressCard';
+import { CurrencyCard } from '@/components/store/CurrencyCard';
 import type { StoreProfile } from '@/components/store/OnboardingScreen';
 
 interface SettingsViewProps {
@@ -84,15 +85,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-md">
+            <span className="text-[13px] font-bold uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-md">
               Configuration
             </span>
-            <span className="text-xs text-[#7A808C] font-semibold">Boutique & Logistique</span>
+            <span className="text-[13px] text-[#7A808C] font-semibold">Boutique & Logistique</span>
           </div>
-          <h2 className="text-2xl font-black text-[#201D1D] tracking-tight mt-1">
-            Paramètres du SaaS Juula
-          </h2>
-          <p className="text-xs text-[#7A808C] mt-0.5">
+          <h2 className="text-2xl font-black text-[#201D1D] tracking-tight mt-1">Paramètres</h2>
+          <p className="text-[13px] text-[#7A808C] mt-0.5">
             Configurez les frais de livraison par défaut, le préfixe de vos numéros de commande et
             vos comptes Wave / Orange Money.
           </p>
@@ -100,7 +99,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         <button
           onClick={handleSave}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-black shadow-[0_2px_10px_rgba(30,96,248,0.25)] transition-all cursor-pointer"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[13px] font-black shadow-[0_2px_10px_rgba(30,96,248,0.25)] transition-all cursor-pointer"
         >
           {isSaved ? (
             <>
@@ -120,6 +119,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <StoreAddressCard profile={storeProfile} onSaved={onStoreProfileSaved} />
       )}
 
+      {storeProfile && onStoreProfileSaved && (
+        <CurrencyCard profile={storeProfile} onSaved={onStoreProfileSaved} />
+      )}
+
       <TrackingPixelsCard />
 
       <form onSubmit={handleSave} className="space-y-6">
@@ -130,8 +133,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <Store className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-[#201D1D]">Identité de la Boutique</h3>
-              <p className="text-[11px] text-[#7A808C]">
+              <h3 className="text-[15px] font-black text-[#201D1D]">Identité de la Boutique</h3>
+              <p className="text-[13px] text-[#7A808C]">
                 Ces informations personnalisent automatiquement vos tunnels et le préfixe de
                 commande.
               </p>
@@ -140,7 +143,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-[#201D1D] mb-1">
+              <label className="block text-[13px] font-bold text-[#201D1D] mb-1">
                 Code Préfixe Commande (ex: BDE) *
               </label>
               <div className="relative">
@@ -149,17 +152,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   maxLength={6}
                   value={storeCode}
                   onChange={(e) => setStoreCode(e.target.value.toUpperCase())}
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-mono font-bold text-[#235BF7] uppercase focus:outline-none focus:border-[#235BF7] focus:bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] font-mono font-bold text-[#235BF7] uppercase focus:outline-none focus:border-[#235BF7] focus:bg-white"
                   placeholder="BDE"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#94A3B8]">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#94A3B8]">
                   Format : CMD-{storeCode || 'BDE'}-000001
                 </span>
               </div>
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-[#201D1D] mb-1">
+              <label className="block text-[13px] font-bold text-[#201D1D] mb-1">
                 Numéro WhatsApp support & confirmations *
               </label>
               <div className="relative">
@@ -168,7 +171,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   type="text"
                   value={whatsappNumber}
                   onChange={(e) => setWhatsappNumber(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-medium text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] font-medium text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
                   placeholder="+221 77 412 89 30"
                 />
               </div>
@@ -183,10 +186,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <Truck className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-[#201D1D]">
+              <h3 className="text-[15px] font-black text-[#201D1D]">
                 Logistique & Tarification de Livraison
               </h3>
-              <p className="text-[11px] text-[#7A808C]">
+              <p className="text-[13px] text-[#7A808C]">
                 Définissez si la livraison est offerte ou payante pour vos clients à Dakar.
               </p>
             </div>
@@ -205,12 +208,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-black text-[#201D1D]">
+                  <span className="text-[13px] font-black text-[#201D1D]">
                     Livraison Gratuite (Offerte)
                   </span>
                   {deliveryFree && <CheckCircle2 className="w-4 h-4 text-[#10B981]" />}
                 </div>
-                <p className="text-[11px] text-[#7A808C]">
+                <p className="text-[13px] text-[#7A808C]">
                   Augmente fortement le taux de conversion. Aucun frais supplémentaire facturé.
                 </p>
               </button>
@@ -225,12 +228,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-black text-[#201D1D]">
+                  <span className="text-[13px] font-black text-[#201D1D]">
                     Frais de Livraison Fixes
                   </span>
                   {!deliveryFree && <CheckCircle2 className="w-4 h-4 text-[#235BF7]" />}
                 </div>
-                <p className="text-[11px] text-[#7A808C]">
+                <p className="text-[13px] text-[#7A808C]">
                   Ajoute automatiquement le tarif de coursier au montant total à régler.
                 </p>
               </button>
@@ -238,7 +241,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
             {!deliveryFree && (
               <div className="p-4 rounded-2xl bg-[#EEF3FF]/40 border border-[#BFDBFE] space-y-2">
-                <label className="block text-xs font-bold text-[#235BF7]">
+                <label className="block text-[13px] font-bold text-[#235BF7]">
                   Montant des frais de livraison standard (FCFA) *
                 </label>
                 <div className="flex items-center gap-3">
@@ -248,9 +251,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     step={500}
                     value={deliveryFee}
                     onChange={(e) => setDeliveryFee(Number(e.target.value))}
-                    className="w-48 px-4 py-2.5 rounded-xl bg-white border border-[#BFDBFE] text-sm font-black text-[#235BF7] focus:outline-none"
+                    className="w-48 px-4 py-2.5 rounded-xl bg-white border border-[#BFDBFE] text-[15px] font-black text-[#235BF7] focus:outline-none"
                   />
-                  <span className="text-xs text-[#7A808C]">
+                  <span className="text-[13px] text-[#7A808C]">
                     Exemple : 1 500 FCFA pour la zone urbaine de Dakar
                   </span>
                 </div>
@@ -258,14 +261,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             )}
 
             <div>
-              <label className="block text-xs font-bold text-[#201D1D] mb-1">
+              <label className="block text-[13px] font-bold text-[#201D1D] mb-1">
                 Mention de livraison affichée sur la vitrine *
               </label>
               <input
                 type="text"
                 value={deliveryNotice}
                 onChange={(e) => setDeliveryNotice(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
+                className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
                 placeholder="Expédition locale sous 2h à 4h à Dakar"
               />
             </div>
@@ -279,10 +282,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <CreditCard className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-[#201D1D]">
+              <h3 className="text-[15px] font-black text-[#201D1D]">
                 Moyens de Paiement & Encaissement
               </h3>
-              <p className="text-[11px] text-[#7A808C]">
+              <p className="text-[13px] text-[#7A808C]">
                 Configurez vos comptes récepteurs pour les retraits automatiques et paiements
                 directs.
               </p>
@@ -294,12 +297,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#1AA3FF] text-white flex items-center justify-center text-[10px] font-black">
+                  <div className="w-6 h-6 rounded-full bg-[#1AA3FF] text-white flex items-center justify-center text-xs font-black">
                     W
                   </div>
-                  <span className="text-xs font-black text-[#201D1D]">Wave Sénégal</span>
+                  <span className="text-[13px] font-black text-[#201D1D]">Wave Sénégal</span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
                   Actif
                 </span>
               </div>
@@ -307,10 +310,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 type="text"
                 value={waveMerchantNumber}
                 onChange={(e) => setWaveMerchantNumber(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#201D1D]"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E8F0] text-[13px] font-semibold text-[#201D1D]"
                 placeholder="Numéro Wave Marchand"
               />
-              <span className="text-[10px] text-[#94A3B8] block">
+              <span className="text-xs text-[#94A3B8] block">
                 Fonds déposés instantanément sur votre solde Juula.
               </span>
             </div>
@@ -319,12 +322,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#FF7900] text-white flex items-center justify-center text-[10px] font-black">
+                  <div className="w-6 h-6 rounded-full bg-[#FF7900] text-white flex items-center justify-center text-xs font-black">
                     OM
                   </div>
-                  <span className="text-xs font-black text-[#201D1D]">Orange Money Sénégal</span>
+                  <span className="text-[13px] font-black text-[#201D1D]">
+                    Orange Money Sénégal
+                  </span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
                   Actif
                 </span>
               </div>
@@ -332,10 +337,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 type="text"
                 value={orangeMerchantNumber}
                 onChange={(e) => setOrangeMerchantNumber(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#201D1D]"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E8F0] text-[13px] font-semibold text-[#201D1D]"
                 placeholder="Numéro Orange Money Marchand"
               />
-              <span className="text-[10px] text-[#94A3B8] block">
+              <span className="text-xs text-[#94A3B8] block">
                 Validations instantanées par QR ou Push USSD.
               </span>
             </div>
@@ -350,10 +355,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <KeyRound className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-black text-[#201D1D]">
+                <h3 className="text-[15px] font-black text-[#201D1D]">
                   Sécurité des Virements : Code PIN à 6 Chiffres
                 </h3>
-                <p className="text-[11px] text-[#7A808C]">
+                <p className="text-[13px] text-[#7A808C]">
                   Code secret requis pour autoriser tout virement Mobile Money vers Wave ou Orange
                   Money.
                 </p>
@@ -361,7 +366,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              <span className="text-xs font-mono font-bold text-[#059669] bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#A7F3D0]">
+              <span className="text-[13px] font-mono font-bold text-[#059669] bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#A7F3D0]">
                 {payoutSecurity.isPinSet
                   ? `Code Actif : ${payoutSecurity.maskedPin}`
                   : 'Non défini'}
@@ -371,7 +376,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
             <div className="md:col-span-7 space-y-4">
-              <p className="text-xs text-[#7A808C] leading-relaxed">
+              <p className="text-[13px] text-[#7A808C] leading-relaxed">
                 Ce code de validation unique protège l'ensemble de vos fonds encaissés. Dès sa
                 création, vos chiffres sont masqués ({payoutSecurity.maskedPin}) pour éviter toute
                 indiscrétion.
@@ -386,19 +391,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       setPinError(null);
                       setPinSuccess(null);
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#EEF3FF] text-[#235BF7] hover:bg-[#235BF7] hover:text-white text-xs font-black transition-all cursor-pointer border border-[#BFDBFE]"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#EEF3FF] text-[#235BF7] hover:bg-[#235BF7] hover:text-white text-[13px] font-black transition-all cursor-pointer border border-[#BFDBFE]"
                   >
                     <Lock className="w-3.5 h-3.5" />
                     <span>Modifier le Code PIN à 6 Chiffres</span>
                   </button>
-                  <span className="text-[11px] text-[#94A3B8]">
+                  <span className="text-[13px] text-[#94A3B8]">
                     Dernière mise à jour : Actif et verrouillé
                   </span>
                 </div>
               ) : (
                 <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#CBD5E1] space-y-4 animate-in fade-in duration-200">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-[#201D1D] block">
+                    <label className="text-[13px] font-bold text-[#201D1D] block">
                       Nouveau code PIN (6 chiffres) :
                     </label>
                     <div className="flex items-center gap-2">
@@ -423,7 +428,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-[#201D1D] block">
+                    <label className="text-[13px] font-bold text-[#201D1D] block">
                       Confirmer le nouveau code PIN (6 chiffres) :
                     </label>
                     <div className="flex items-center gap-2">
@@ -448,13 +453,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </div>
 
                   {pinError && (
-                    <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-600">
+                    <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-[13px] font-bold text-red-600">
                       {pinError}
                     </div>
                   )}
 
                   {pinSuccess && (
-                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700">
+                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700">
                       {pinSuccess}
                     </div>
                   )}
@@ -484,7 +489,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                           setPinSuccess(null);
                         }, 1200);
                       }}
-                      className="px-4 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-black cursor-pointer shadow-xs"
+                      className="px-4 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[13px] font-black cursor-pointer shadow-xs"
                     >
                       Enregistrer le nouveau code PIN
                     </button>
@@ -494,7 +499,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         setIsEditingPin(false);
                         setPinError(null);
                       }}
-                      className="px-3 py-2 rounded-xl text-xs font-semibold text-[#7A808C] hover:text-[#201D1D] cursor-pointer"
+                      className="px-3 py-2 rounded-xl text-[13px] font-semibold text-[#7A808C] hover:text-[#201D1D] cursor-pointer"
                     >
                       Annuler
                     </button>
@@ -503,12 +508,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               )}
             </div>
 
-            <div className="md:col-span-5 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2 text-xs">
+            <div className="md:col-span-5 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2 text-[13px]">
               <span className="font-bold text-[#201D1D] block flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-[#235BF7]" />
                 <span>Adresse email de récupération</span>
               </span>
-              <p className="text-[11px] text-[#7A808C]">
+              <p className="text-[13px] text-[#7A808C]">
                 En cas d'oubli de votre code PIN, un email de réinitialisation sécurisé sera envoyé
                 à cette adresse :
               </p>
@@ -523,7 +528,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-black shadow-md cursor-pointer transition-all"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[13px] font-black shadow-md cursor-pointer transition-all"
           >
             <Save className="w-4 h-4" />
             <span>Enregistrer toutes les modifications</span>

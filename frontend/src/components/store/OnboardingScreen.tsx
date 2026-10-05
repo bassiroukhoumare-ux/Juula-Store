@@ -19,6 +19,7 @@ export interface StoreProfile {
   address: string | null;
   city: string | null;
   plan?: 'FREE' | 'PRO';
+  displayCurrency?: 'XOF' | 'EUR' | 'USD';
   planExpiresAt?: string | null;
 }
 

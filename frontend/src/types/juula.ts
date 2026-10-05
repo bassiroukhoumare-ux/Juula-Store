@@ -27,6 +27,8 @@ export interface OrderLead {
   currency: string;
   status: OrderStatus;
   createdAt: string;
+  /** ISO timestamp (for date filters and charts); absent on locally simulated orders. */
+  createdAtIso?: string | undefined;
   deliveryNotes?: string | undefined;
   deliveryAddress?: string | undefined;
   hasVoiceNote?: boolean | undefined;

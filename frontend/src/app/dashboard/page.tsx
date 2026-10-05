@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Header, HeaderWidgetsState } from '@/components/dashboard/Header';
@@ -28,6 +28,14 @@ import { pickStoreWide } from '@/lib/store/store-fields';
 import { getStoreCode } from '@/lib/orderUtils';
 import { useToast } from '@/contexts/ToastContext';
 import { displayFont } from '@/app/fonts';
+import { applyDisplayCurrency } from '@/lib/money';
+import {
+  ordersInPeriod,
+  ordersInPreviousPeriod,
+  periodRange,
+  rangeLabel,
+  type PeriodId,
+} from '@/lib/store/period';
 import {
   DashboardTab,
   FunnelPageConfig,
@@ -211,6 +219,8 @@ export default function JuulaStoreApp() {
 
         const { store } = await api<{ store: StoreProfile }>('/api/store');
         setStoreProfile(store);
+        // Display currency (FCFA / € / $) before any amount is rendered.
+        await applyDisplayCurrency(store.displayCurrency ?? 'XOF');
         if (!isProfileComplete(store)) {
           setSession('onboarding');
           return;
@@ -279,8 +289,14 @@ export default function JuulaStoreApp() {
   );
 
   // Filter & Dashboard Widget Customization States
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('30 derniers jours');
-  const [selectedDateRange, setSelectedDateRange] = useState<string>('1 Jan, 2026 - 4 Oct, 2026');
+  // Period filter: drives KPIs, revenue chart and analytics (not the Kanban).
+  const [periodId, setPeriodId] = useState<PeriodId>('30d');
+  const range = useMemo(() => periodRange(periodId), [periodId]);
+  const periodOrders = useMemo(() => ordersInPeriod(orders, range), [orders, range]);
+  const previousOrders = useMemo(() => ordersInPreviousPeriod(orders, range), [orders, range]);
+  const periodKpis = useMemo(() => kpisFromOrders(periodOrders, kpis), [periodOrders, kpis]);
+  // Header search → Kanban filter.
+  const [orderSearch, setOrderSearch] = useState('');
   const [activeWidgets, setActiveWidgets] = useState<HeaderWidgetsState>({
     kpiCards: true,
     profitChart: true,
@@ -407,8 +423,14 @@ export default function JuulaStoreApp() {
 
   // Paramètres → name / address saved server-side (the server already wrote
   // the name into every product); mirror it locally.
+  // Bumped to re-render every amount after the display currency changes.
+  const [, setCurrencyTick] = useState(0);
+
   const handleStoreProfileSaved = (profile: StoreProfile) => {
     setStoreProfile(profile);
+    void applyDisplayCurrency(profile.displayCurrency ?? 'XOF').then(() =>
+      setCurrencyTick((t) => t + 1),
+    );
     if (!profile.name) return;
     const patch = { storeName: profile.name, storeCode: getStoreCode(profile.name) };
     setFunnelPages((prev) => prev.map((p) => ({ ...p, config: { ...p.config, ...patch } })));
@@ -610,16 +632,27 @@ export default function JuulaStoreApp() {
               onOpenRecharge={() => setIsRechargeOpen(true)}
               onOpenPayoutModal={() => setIsPayoutPageOpen(true)}
               onOpenStorefrontPreview={() => setViewMode('vitrine')}
-              currentViewMode={viewMode}
-              onToggleViewMode={setViewMode}
               onCreatePageClick={() => {
                 setIsPayoutPageOpen(false);
                 setActiveTab('wizard');
               }}
-              selectedPeriod={selectedPeriod}
-              onSelectPeriod={setSelectedPeriod}
-              selectedDateRange={selectedDateRange}
-              onSelectDateRange={setSelectedDateRange}
+              periodId={periodId}
+              onSelectPeriod={setPeriodId}
+              dateRangeLabel={rangeLabel(range)}
+              orders={orders}
+              payouts={wallet.payoutHistory}
+              avatarUrl={storeProfile.logoUrl}
+              storeName={storeProfile.name ?? funnelConfig.storeName}
+              onOpenOrder={(reference) => {
+                setIsPayoutPageOpen(false);
+                setActiveTab('kanban');
+                setFocusOrderId(reference);
+              }}
+              onSearch={(q) => {
+                setOrderSearch(q);
+                setIsPayoutPageOpen(false);
+                setActiveTab('kanban');
+              }}
               activeWidgets={activeWidgets}
               onToggleWidget={(key) =>
                 setActiveWidgets((prev) => ({
@@ -648,10 +681,12 @@ export default function JuulaStoreApp() {
                 <>
                   {activeTab === 'cockpit' && (
                     <CockpitView
-                      kpis={kpis}
+                      kpis={periodKpis}
                       wallet={wallet}
                       funnelConfig={funnelConfig}
-                      recentOrders={orders}
+                      recentOrders={periodOrders}
+                      previousOrders={previousOrders}
+                      periodRange={range}
                       onCreatePageClick={() => setActiveTab('wizard')}
                       onOpenRecharge={() => setIsRechargeOpen(true)}
                       onOpenPayoutModal={() => setIsPayoutPageOpen(true)}
@@ -659,8 +694,6 @@ export default function JuulaStoreApp() {
                       onOpenKanban={() => setActiveTab('kanban')}
                       onOpenWallet={() => setActiveTab('wallet')}
                       activeWidgets={activeWidgets}
-                      selectedPeriod={selectedPeriod}
-                      selectedDateRange={selectedDateRange}
                     />
                   )}
 
@@ -670,6 +703,7 @@ export default function JuulaStoreApp() {
                       onOrdersChange={handleOrdersChange}
                       onOpenStorefrontPreview={() => setViewMode('vitrine')}
                       focusOrderId={focusOrderId}
+                      searchQuery={orderSearch}
                     />
                   )}
 
@@ -714,8 +748,8 @@ export default function JuulaStoreApp() {
 
                   {activeTab === 'analytics' && (
                     <AnalyticsView
-                      kpis={kpis}
-                      orders={orders}
+                      kpis={periodKpis}
+                      orders={periodOrders}
                       onOpenStorefrontPreview={() => setViewMode('vitrine')}
                     />
                   )}

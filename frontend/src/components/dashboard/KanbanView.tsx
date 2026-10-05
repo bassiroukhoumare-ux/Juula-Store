@@ -34,14 +34,18 @@ interface KanbanViewProps {
   onOpenStorefrontPreview: () => void;
   /** Order to open/expand on arrival (deep link from the "new order" email). */
   focusOrderId?: string | null;
+  /** Search typed in the dashboard header. */
+  searchQuery?: string;
 }
 
 export const KanbanView: React.FC<KanbanViewProps> = ({
   orders,
   onOrdersChange,
   focusOrderId = null,
+  searchQuery: externalSearch = '',
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(externalSearch);
+  useEffect(() => setSearchQuery(externalSearch), [externalSearch]);
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'online' | 'cod'>('all');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('all');
   const [mobileStatusTab, setMobileStatusTab] = useState<'all' | OrderStatus>('all');
@@ -169,17 +173,17 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 sm:p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-md">
+            <span className="text-[13px] font-bold uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-md">
               Pipeline Logistique
             </span>
-            <span className="text-xs text-[#7A808C] font-semibold">
+            <span className="text-[13px] text-[#7A808C] font-semibold">
               {orders.length} commandes enregistrées
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-[#201D1D] tracking-tight mt-1">
             Commandes Cash on Delivery & En Ligne
           </h2>
-          <p className="text-xs text-[#7A808C] mt-0.5">
+          <p className="text-[13px] text-[#7A808C] mt-0.5">
             Suivi des expéditions Dakar, contact client instantané & encaissements.
           </p>
         </div>
@@ -195,9 +199,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                 : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#7A808C] hover:bg-white'
             }`}
           >
-            <span className="text-[10px] uppercase font-bold tracking-wider">Toutes</span>
+            <span className="text-xs uppercase font-bold tracking-wider">Toutes</span>
             <span
-              className={`text-xs font-black px-2 py-0.5 rounded-full ${
+              className={`text-[13px] font-black px-2 py-0.5 rounded-full ${
                 paymentFilter === 'all' ? 'bg-[#235BF7] text-white' : 'bg-[#E2E8F0] text-[#201D1D]'
               }`}
             >
@@ -214,9 +218,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                 : 'bg-white border-[#E2E8F0] text-[#7A808C] hover:bg-[#F8FAFC]'
             }`}
           >
-            <span className="text-[10px] uppercase font-bold tracking-wider">En Ligne</span>
+            <span className="text-xs uppercase font-bold tracking-wider">En Ligne</span>
             <span
-              className={`text-xs font-black px-2 py-0.5 rounded-full ${
+              className={`text-[13px] font-black px-2 py-0.5 rounded-full ${
                 paymentFilter === 'online'
                   ? 'bg-[#235BF7] text-white'
                   : 'bg-[#EEF3FF] text-[#235BF7]'
@@ -235,11 +239,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                 : 'bg-white border-[#E2E8F0] text-[#7A808C] hover:bg-[#F8FAFC]'
             }`}
           >
-            <span className="text-[10px] uppercase font-bold tracking-wider truncate">
-              COD Espèces
-            </span>
+            <span className="text-xs uppercase font-bold tracking-wider truncate">COD Espèces</span>
             <span
-              className={`text-xs font-black px-2 py-0.5 rounded-full ${
+              className={`text-[13px] font-black px-2 py-0.5 rounded-full ${
                 paymentFilter === 'cod' ? 'bg-[#201D1D] text-white' : 'bg-[#F1F5F9] text-[#334155]'
               }`}
             >
@@ -271,7 +273,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
               type="button"
               onClick={() => setSelectedNeighborhood(nh)}
               className={`
-                px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer
+                px-3 py-1.5 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-colors cursor-pointer
                 ${
                   selectedNeighborhood === nh
                     ? 'bg-[#235BF7] text-white shadow-xs'
@@ -289,7 +291,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
           <button
             type="button"
             onClick={() => setViewMode('kanban')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-[13px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
               viewMode === 'kanban'
                 ? 'bg-white text-[#235BF7] shadow-xs'
                 : 'text-[#7A808C] hover:text-[#201D1D]'
@@ -303,7 +305,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
           <button
             type="button"
             onClick={() => setViewMode('list')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-[13px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
               viewMode === 'list'
                 ? 'bg-white text-[#235BF7] shadow-xs'
                 : 'text-[#7A808C] hover:text-[#201D1D]'
@@ -317,7 +319,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
           <button
             type="button"
             onClick={() => setViewMode('table')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-[13px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
               viewMode === 'table'
                 ? 'bg-white text-[#235BF7] shadow-xs'
                 : 'text-[#7A808C] hover:text-[#201D1D]'
@@ -361,7 +363,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
       {viewMode === 'list' && (
         <div className="hidden md:block space-y-2.5">
           {filteredOrders.length === 0 ? (
-            <div className="bg-white rounded-[28px] p-12 text-center text-xs text-[#94A3B8] border border-[#ECEFF4]">
+            <div className="bg-white rounded-[28px] p-12 text-center text-[13px] text-[#94A3B8] border border-[#ECEFF4]">
               Aucune commande ne correspond aux filtres.
             </div>
           ) : (
@@ -397,12 +399,12 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                     />
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-md">
+                        <span className="font-mono text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-md">
                           {order.id}
                         </span>
-                        <span className="text-[11px] text-[#94A3B8]">{order.createdAt}</span>
+                        <span className="text-[13px] text-[#94A3B8]">{order.createdAt}</span>
                       </div>
-                      <span className="text-[11px] font-bold text-[#475569] block mt-0.5">
+                      <span className="text-[13px] font-bold text-[#475569] block mt-0.5">
                         {order.status === 'new'
                           ? 'Nouvelle'
                           : order.status === 'confirmed'
@@ -417,12 +419,12 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   {/* Section 2 : Client & Quartier (Strictement 1 ligne) */}
                   <div className="w-52 shrink-0 min-w-0">
                     <span
-                      className="font-extrabold text-sm text-[#201D1D] block truncate"
+                      className="font-extrabold text-[15px] text-[#201D1D] block truncate"
                       title={order.customerName}
                     >
                       {order.customerName}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] text-[#235BF7] font-semibold truncate max-w-full">
+                    <span className="inline-flex items-center gap-1 text-[13px] text-[#235BF7] font-semibold truncate max-w-full">
                       <MapPin className="w-3 h-3 shrink-0" />
                       <span className="truncate">
                         {(order.neighborhood.split('(')[0] ?? '').trim()}
@@ -436,7 +438,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                       <button
                         type="button"
                         onClick={() => handlePlayAudio(order.id, order.voiceNoteUrl!)}
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[13px] font-bold transition-all cursor-pointer ${
                           isPlaying
                             ? 'bg-[#235BF7] text-white shadow-xs'
                             : 'bg-[#EFF6FF] text-[#235BF7] hover:bg-[#DBEAFE]'
@@ -456,7 +458,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                       </button>
                     ) : (
                       <span
-                        className="text-[11px] text-[#7A808C] italic block truncate"
+                        className="text-[13px] text-[#7A808C] italic block truncate"
                         title={order.deliveryNotes || order.deliveryAddress}
                       >
                         « {order.deliveryNotes || order.deliveryAddress || 'Aucune consigne'} »
@@ -479,15 +481,15 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1">
-                        <span className="font-black text-sm text-[#201D1D] whitespace-nowrap">
+                        <span className="font-black text-[15px] text-[#201D1D] whitespace-nowrap">
                           {formatFCFA(totalVal)}
                         </span>
-                        <span className="text-[10px] font-bold text-[#475569] bg-[#F1F5F9] px-1.5 py-0.5 rounded border border-[#E2E8F0]">
+                        <span className="text-xs font-bold text-[#475569] bg-[#F1F5F9] px-1.5 py-0.5 rounded border border-[#E2E8F0]">
                           x{order.quantity || 1}
                         </span>
                       </div>
                       <span
-                        className="text-[11px] text-[#7A808C] block truncate"
+                        className="text-[13px] text-[#7A808C] block truncate"
                         title={order.productName}
                       >
                         {order.productName}
@@ -498,19 +500,19 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   {/* Section 5 : Mode de règlement */}
                   <div className="w-32 shrink-0">
                     {order.paymentType === 'online_wave' && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-1 rounded-lg">
+                      <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-1 rounded-lg">
                         <CreditCard className="w-3 h-3" />
                         <span>Wave Validé</span>
                       </span>
                     )}
                     {order.paymentType === 'online_orange' && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#EA580C] bg-[#FFF5EB] px-2 py-1 rounded-lg">
+                      <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#EA580C] bg-[#FFF5EB] px-2 py-1 rounded-lg">
                         <Smartphone className="w-3 h-3" />
                         <span>Orange Validé</span>
                       </span>
                     )}
                     {order.paymentType === 'cod' && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 rounded-lg">
+                      <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 rounded-lg">
                         <Banknote className="w-3 h-3" />
                         <span>COD Espèces</span>
                       </span>
@@ -541,7 +543,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                       value={order.status}
                       onChange={(e) => handleMoveStatus(order.id, e.target.value as OrderStatus)}
                       aria-label="Statut de la commande"
-                      className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#334155] cursor-pointer focus:outline-none focus:border-[#235BF7]"
+                      className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-2.5 py-1.5 text-[13px] font-bold text-[#334155] cursor-pointer focus:outline-none focus:border-[#235BF7]"
                     >
                       <option value="new">Nouvelle</option>
                       <option value="confirmed">En route</option>
@@ -562,9 +564,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
       {viewMode === 'table' && (
         <div className="hidden md:block bg-white rounded-[28px] border border-[#ECEFF4] shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-[13px]">
               <thead>
-                <tr className="border-b border-[#F1F5F9] bg-[#F8FAFC] text-[#7A808C] font-bold text-[11px] uppercase tracking-wider">
+                <tr className="border-b border-[#F1F5F9] bg-[#F8FAFC] text-[#7A808C] font-bold text-[13px] uppercase tracking-wider">
                   <th className="py-3.5 px-4">Commande</th>
                   <th className="py-3.5 px-4">Client</th>
                   <th className="py-3.5 px-4">Quartier & Consignes</th>
@@ -595,7 +597,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                       <tr key={order.id} className="hover:bg-[#F8FAFC]/80 transition-colors">
                         <td className="py-3.5 px-4 font-mono font-bold text-[#235BF7] whitespace-nowrap">
                           {order.id}
-                          <span className="block font-sans font-normal text-[10px] text-[#94A3B8]">
+                          <span className="block font-sans font-normal text-xs text-[#94A3B8]">
                             {order.createdAt}
                           </span>
                         </td>
@@ -603,7 +605,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                           <span className="font-extrabold text-[#201D1D] block truncate max-w-[150px]">
                             {order.customerName}
                           </span>
-                          <span className="text-[11px] text-[#7A808C]">{order.phone}</span>
+                          <span className="text-[13px] text-[#7A808C]">{order.phone}</span>
                         </td>
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-1 font-semibold text-[#334155] whitespace-nowrap">
@@ -614,7 +616,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                             <button
                               type="button"
                               onClick={() => handlePlayAudio(order.id, order.voiceNoteUrl!)}
-                              className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-[#235BF7] bg-[#EEF3FF] hover:bg-[#DBEAFE] px-2 py-0.5 rounded-full cursor-pointer"
+                              className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[#235BF7] bg-[#EEF3FF] hover:bg-[#DBEAFE] px-2 py-0.5 rounded-full cursor-pointer"
                             >
                               {isPlaying ? (
                                 <Pause className="w-3 h-3 fill-current" />
@@ -624,7 +626,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                               <span>Note vocale (0:38)</span>
                             </button>
                           ) : (
-                            <span className="text-[10px] text-[#94A3B8] italic block truncate max-w-[160px] mt-0.5">
+                            <span className="text-xs text-[#94A3B8] italic block truncate max-w-[160px] mt-0.5">
                               {order.deliveryNotes || 'Standard'}
                             </span>
                           )}
@@ -644,12 +646,12 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                             )}
                             <div className="min-w-0 flex-1">
                               <span
-                                className="text-xs font-bold text-[#201D1D] block truncate"
+                                className="text-[13px] font-bold text-[#201D1D] block truncate"
                                 title={order.productName}
                               >
                                 {order.productName}
                               </span>
-                              <span className="text-[10px] font-semibold text-[#7A808C]">
+                              <span className="text-xs font-semibold text-[#7A808C]">
                                 Qté :{' '}
                                 <strong className="text-[#201D1D]">{order.quantity || 1}</strong>
                               </span>
@@ -658,19 +660,19 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           {order.paymentType === 'online_wave' && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#235BF7]">
+                            <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#235BF7]">
                               <CreditCard className="w-3 h-3" />
                               Wave (Validé)
                             </span>
                           )}
                           {order.paymentType === 'online_orange' && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#EA580C]">
+                            <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#EA580C]">
                               <Smartphone className="w-3 h-3" />
                               Orange (Validé)
                             </span>
                           )}
                           {order.paymentType === 'cod' && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#059669]">
+                            <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#059669]">
                               <Banknote className="w-3 h-3" />
                               Espèces (COD)
                             </span>
@@ -686,7 +688,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                               handleMoveStatus(order.id, e.target.value as OrderStatus)
                             }
                             aria-label="Statut de la commande"
-                            className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-2 py-1 text-xs font-bold text-[#334155] cursor-pointer focus:outline-none focus:border-[#235BF7]"
+                            className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-2 py-1 text-[13px] font-bold text-[#334155] cursor-pointer focus:outline-none focus:border-[#235BF7]"
                           >
                             <option value="new">Nouvelle</option>
                             <option value="confirmed">Confirmé</option>
@@ -759,7 +761,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
               key={tab.id}
               type="button"
               onClick={() => setMobileStatusTab(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-[13px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                 mobileStatusTab === tab.id
                   ? 'bg-[#235BF7] text-white shadow-xs'
                   : 'bg-white border border-[#E2E8F0] text-[#7A808C]'
@@ -767,7 +769,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             >
               <span>{tab.label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                className={`text-xs px-1.5 py-0.2 rounded-full ${
                   mobileStatusTab === tab.id
                     ? 'bg-white/20 text-white'
                     : 'bg-[#F1F5F9] text-[#201D1D]'
@@ -782,7 +784,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
         {/* Lignes de commandes mobile */}
         <div className="space-y-2">
           {mobileOrders.length === 0 ? (
-            <div className="bg-white rounded-2xl p-6 text-center text-xs text-[#94A3B8] border border-[#ECEFF4]">
+            <div className="bg-white rounded-2xl p-6 text-center text-[13px] text-[#94A3B8] border border-[#ECEFF4]">
               Aucune commande trouvée pour ces critères.
             </div>
           ) : (
@@ -813,27 +815,27 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-[11px] font-bold text-[#235BF7] bg-[#EEF3FF] px-1.5 py-0.5 rounded">
+                        <span className="font-mono text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] px-1.5 py-0.5 rounded">
                           {order.id}
                         </span>
                         {isPaidOnline && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-[#FF7900] text-white">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-black uppercase tracking-wider bg-[#FF7900] text-white">
                             Payé
                           </span>
                         )}
-                        <span className="text-[11px] text-[#94A3B8]">{order.createdAt}</span>
+                        <span className="text-[13px] text-[#94A3B8]">{order.createdAt}</span>
                       </div>
 
                       <div className="flex items-center justify-between gap-2 mt-1">
-                        <h4 className="text-xs font-black text-[#201D1D] truncate">
+                        <h4 className="text-[13px] font-black text-[#201D1D] truncate">
                           {order.customerName}
                         </h4>
-                        <span className="text-xs font-black text-[#201D1D] whitespace-nowrap">
+                        <span className="text-[13px] font-black text-[#201D1D] whitespace-nowrap">
                           {formatFCFA(order.totalAmount || order.amount + (order.deliveryFee || 0))}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-[11px] text-[#7A808C] mt-0.5">
+                      <div className="flex items-center gap-1.5 text-[13px] text-[#7A808C] mt-0.5">
                         <MapPin className="w-3 h-3 text-[#235BF7] shrink-0" />
                         <span className="truncate">
                           {(order.neighborhood.split('(')[0] ?? '').trim()}
@@ -872,17 +874,17 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                         <div className="flex-1 min-w-0 space-y-1">
                           <div className="flex items-center justify-between gap-1">
                             <span
-                              className="font-bold text-[#201D1D] text-xs truncate"
+                              className="font-bold text-[#201D1D] text-[13px] truncate"
                               title={order.productName}
                             >
                               {order.productName}
                             </span>
-                            <span className="text-[10px] font-bold text-[#475569] bg-[#F1F5F9] px-1.5 py-0.5 rounded border border-[#E2E8F0] shrink-0">
+                            <span className="text-xs font-bold text-[#475569] bg-[#F1F5F9] px-1.5 py-0.5 rounded border border-[#E2E8F0] shrink-0">
                               Qté :{' '}
                               <strong className="text-[#201D1D]">{order.quantity || 1}</strong>
                             </span>
                           </div>
-                          <div className="flex items-center justify-between text-[11px] text-[#7A808C]">
+                          <div className="flex items-center justify-between text-[13px] text-[#7A808C]">
                             <span>Règlement :</span>
                             <span className="font-bold text-[#201D1D]">
                               {order.paymentType === 'online_wave'
@@ -897,26 +899,26 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
                       {/* Note vocale ou adresse */}
                       {order.hasVoiceNote && order.voiceNoteUrl ? (
-                        <div className="p-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-xs space-y-1.5">
-                          <div className="flex items-center justify-between text-[#235BF7] font-bold text-xs">
+                        <div className="p-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[13px] space-y-1.5">
+                          <div className="flex items-center justify-between text-[#235BF7] font-bold text-[13px]">
                             <span className="flex items-center gap-1.5">
                               <Volume2 className="w-3.5 h-3.5" /> Note vocale d'adresse
                             </span>
-                            <span className="text-[11px]">0:38</span>
+                            <span className="text-[13px]">0:38</span>
                           </div>
                           <audio src={order.voiceNoteUrl} controls className="h-8 w-full rounded" />
                         </div>
                       ) : (
-                        <div className="p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs space-y-1">
-                          <span className="text-[10px] uppercase font-bold text-[#235BF7] flex items-center gap-1">
+                        <div className="p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-[13px] space-y-1">
+                          <span className="text-xs uppercase font-bold text-[#235BF7] flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
                             Adresse précise :
                           </span>
-                          <p className="text-[#334155] text-[11px] leading-snug">
+                          <p className="text-[#334155] text-[13px] leading-snug">
                             {order.deliveryAddress || order.neighborhood}
                           </p>
                           {order.deliveryNotes && (
-                            <p className="italic text-[#7A808C] text-[10px]">
+                            <p className="italic text-[#7A808C] text-xs">
                               « {order.deliveryNotes} »
                             </p>
                           )}
@@ -929,7 +931,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                           href={whatsappUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="py-2.5 px-3 rounded-xl bg-[#201D1D] hover:bg-black text-white flex items-center justify-center gap-2 font-bold text-xs shadow-xs transition-colors"
+                          className="py-2.5 px-3 rounded-xl bg-[#201D1D] hover:bg-black text-white flex items-center justify-center gap-2 font-bold text-[13px] shadow-xs transition-colors"
                         >
                           <WhatsAppIcon className="w-4 h-4" />
                           <span>WhatsApp</span>
@@ -937,7 +939,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
                         <a
                           href={`tel:${cleanPhone}`}
-                          className="py-2.5 px-3 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white flex items-center justify-center gap-2 font-bold text-xs shadow-xs transition-colors"
+                          className="py-2.5 px-3 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white flex items-center justify-center gap-2 font-bold text-[13px] shadow-xs transition-colors"
                         >
                           <PhoneCall className="w-4 h-4" />
                           <span>Appeler</span>
@@ -952,7 +954,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                             handleMoveStatus(order.id, e.target.value as OrderStatus)
                           }
                           aria-label="Statut de la commande"
-                          className="w-full bg-white border border-[#CBD5E1] rounded-xl py-2 px-3 text-xs font-bold text-[#201D1D] cursor-pointer"
+                          className="w-full bg-white border border-[#CBD5E1] rounded-xl py-2 px-3 text-[13px] font-bold text-[#201D1D] cursor-pointer"
                         >
                           <option value="new">Étape 1 : Nouvelle demande</option>
                           <option value="confirmed">Étape 2 : Confirmé (En route)</option>

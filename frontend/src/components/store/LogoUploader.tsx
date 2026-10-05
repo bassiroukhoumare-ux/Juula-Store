@@ -55,7 +55,7 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
           <Camera className="w-5 h-5 text-white" />
         </span>
         {progress !== null && (
-          <span className="absolute inset-0 bg-white/85 flex flex-col items-center justify-center text-[11px] font-black text-[#235BF7]">
+          <span className="absolute inset-0 bg-white/85 flex flex-col items-center justify-center text-[13px] font-black text-[#235BF7]">
             <Loader2 className="w-5 h-5 animate-spin mb-0.5" />
             {progress}%
           </span>
@@ -66,11 +66,11 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={progress !== null}
-          className="text-sm font-black text-[#235BF7] hover:underline cursor-pointer disabled:opacity-60"
+          className="text-[15px] font-black text-[#235BF7] hover:underline cursor-pointer disabled:opacity-60"
         >
           {value ? 'Changer le logo' : 'Ajouter le logo de la boutique'}
         </button>
-        <p className="text-xs text-[#6B7280] mt-0.5">
+        <p className="text-[13px] text-[#6B7280] mt-0.5">
           Votre logo ou une photo de profil. Il apparaît sur votre boutique et vos pages produits.
         </p>
       </div>
