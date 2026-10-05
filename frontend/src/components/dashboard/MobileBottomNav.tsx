@@ -1,13 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  Compass,
-  ShoppingBag,
-  Package,
-  Wallet,
-  Smartphone,
-} from 'lucide-react';
+import { Compass, ShoppingBag, Package, Wallet, Smartphone } from 'lucide-react';
 import { DashboardTab } from '@/types/juula';
 
 interface MobileBottomNavProps {
@@ -31,7 +25,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   ];
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E5E9F0] px-2 py-2 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
+    <nav className="lg:hidden fixed bottom-3 left-3 right-3 z-40 bg-white/90 backdrop-blur-xl border border-[#ECEFF4] rounded-[24px] px-2 py-2 shadow-[0_18px_40px_-18px_rgba(32,29,29,0.35)]">
       <div className="flex items-center justify-around max-w-md mx-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -41,7 +35,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl relative transition-all cursor-pointer ${
-                isActive ? 'text-[#1E60F8]' : 'text-[#64748B] hover:text-[#0F172A]'
+                isActive ? 'text-[#235BF7]' : 'text-[#7A808C] hover:text-[#201D1D]'
               }`}
             >
               <div className="relative">
@@ -58,14 +52,12 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               </div>
               <span
                 className={`text-[10px] mt-1 font-bold tracking-tight ${
-                  isActive ? 'text-[#1E60F8]' : 'text-[#64748B]'
+                  isActive ? 'text-[#235BF7]' : 'text-[#7A808C]'
                 }`}
               >
                 {tab.label}
               </span>
-              {isActive && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1E60F8] mt-0.5" />
-              )}
+              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#235BF7] mt-0.5" />}
             </button>
           );
         })}
@@ -73,14 +65,12 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         {/* Vitrine Client Preview Button */}
         <button
           onClick={onOpenStorefrontPreview}
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl text-[#1E60F8] hover:opacity-80 transition-all cursor-pointer"
+          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl text-[#235BF7] hover:opacity-80 transition-all cursor-pointer"
         >
-          <div className="w-7 h-7 rounded-xl bg-[#EFF4FF] flex items-center justify-center">
-            <Smartphone className="w-4 h-4 text-[#1E60F8]" />
+          <div className="w-7 h-7 rounded-xl bg-[#EEF3FF] flex items-center justify-center">
+            <Smartphone className="w-4 h-4 text-[#235BF7]" />
           </div>
-          <span className="text-[10px] mt-0.5 font-extrabold text-[#1E60F8]">
-            Vitrine
-          </span>
+          <span className="text-[10px] mt-0.5 font-extrabold text-[#235BF7]">Vitrine</span>
         </button>
       </div>
     </nav>

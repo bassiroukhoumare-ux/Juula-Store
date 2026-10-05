@@ -18,7 +18,7 @@ const FacebookIcon = () => (
 );
 
 const TiktokIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="#0F172A" aria-hidden="true">
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="#201D1D" aria-hidden="true">
     <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
   </svg>
 );
@@ -70,19 +70,19 @@ export const TrackingPixelsCard: React.FC = () => {
   };
 
   const inputClass = (invalid: boolean) =>
-    `w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs font-mono font-semibold text-[#0F172A] focus:outline-none focus:bg-white ${
-      invalid ? 'border-red-400 focus:border-red-500' : 'border-[#E2E8F0] focus:border-[#1E60F8]'
+    `w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs font-mono font-semibold text-[#201D1D] focus:outline-none focus:bg-white ${
+      invalid ? 'border-red-400 focus:border-red-500' : 'border-[#E2E8F0] focus:border-[#235BF7]'
     }`;
 
   return (
-    <div className="p-6 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs space-y-4">
+    <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-4">
       <div className="flex items-center gap-2.5 pb-3 border-b border-[#F1F5F9]">
         <div className="w-8 h-8 rounded-xl bg-[#FDF2F8] text-[#DB2777] flex items-center justify-center">
           <Radar className="w-4 h-4" />
         </div>
         <div>
-          <h3 className="text-sm font-black text-[#0F172A]">Pixels de suivi publicitaire</h3>
-          <p className="text-[11px] text-[#64748B]">
+          <h3 className="text-sm font-black text-[#201D1D]">Pixels de suivi publicitaire</h3>
+          <p className="text-[11px] text-[#7A808C]">
             Mesurez vos publicités Facebook / Instagram et TikTok : visites, ouvertures du
             formulaire et commandes sont envoyées automatiquement depuis toutes vos pages produits.
           </p>
@@ -90,13 +90,13 @@ export const TrackingPixelsCard: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-xs text-[#64748B]">
+        <div className="flex items-center gap-2 text-xs text-[#7A808C]">
           <Loader2 className="w-4 h-4 animate-spin" /> Chargement…
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A] mb-1">
+            <label className="flex items-center gap-1.5 text-xs font-bold text-[#201D1D] mb-1">
               <FacebookIcon /> ID du Pixel Meta (Facebook)
             </label>
             <input
@@ -117,7 +117,7 @@ export const TrackingPixelsCard: React.FC = () => {
           </div>
 
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A] mb-1">
+            <label className="flex items-center gap-1.5 text-xs font-bold text-[#201D1D] mb-1">
               <TiktokIcon /> ID du Pixel TikTok
             </label>
             <input
@@ -147,7 +147,7 @@ export const TrackingPixelsCard: React.FC = () => {
           type="button"
           onClick={handleSave}
           disabled={loading || saving || fbInvalid || ttInvalid}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-xs font-black transition-all cursor-pointer disabled:opacity-50 shrink-0"
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-black transition-all cursor-pointer disabled:opacity-50 shrink-0"
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />

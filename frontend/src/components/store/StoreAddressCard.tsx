@@ -51,21 +51,21 @@ export const StoreAddressCard: React.FC<StoreAddressCardProps> = ({ profile, onS
   };
 
   return (
-    <div className="p-6 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs space-y-5">
+    <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-5">
       <div className="flex items-center gap-2.5 pb-3 border-b border-[#F1F5F9]">
         <div className="w-8 h-8 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center">
           <Globe className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-black text-[#0F172A]">Ma boutique en ligne</h3>
-          <p className="text-[11px] text-[#64748B]">Le nom et l’adresse que voient vos clients.</p>
+          <h3 className="text-sm font-black text-[#201D1D]">Ma boutique en ligne</h3>
+          <p className="text-[11px] text-[#7A808C]">Le nom et l’adresse que voient vos clients.</p>
         </div>
         {profile.subdomain && (
           <a
             href={storeOrigin(profile.subdomain)}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-xs font-bold text-[#0F172A]"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-xs font-bold text-[#201D1D]"
           >
             <ExternalLink className="w-3.5 h-3.5" /> Voir ma boutique
           </a>
@@ -76,7 +76,7 @@ export const StoreAddressCard: React.FC<StoreAddressCardProps> = ({ profile, onS
         <div>
           <label
             htmlFor="settings-store-name"
-            className="block text-xs font-bold text-[#0F172A] mb-1.5"
+            className="block text-xs font-bold text-[#201D1D] mb-1.5"
           >
             Nom de la boutique
           </label>
@@ -92,7 +92,7 @@ export const StoreAddressCard: React.FC<StoreAddressCardProps> = ({ profile, onS
         <div>
           <label
             htmlFor="settings-store-sub"
-            className="block text-xs font-bold text-[#0F172A] mb-1.5"
+            className="block text-xs font-bold text-[#201D1D] mb-1.5"
           >
             Adresse de la boutique
           </label>

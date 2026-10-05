@@ -60,24 +60,24 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-white border border-[#E5E9F0] rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-white border border-[#ECEFF4] rounded-[28px] p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors cursor-pointer z-10"
+          className="absolute top-5 right-5 p-2 rounded-full text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F5F9] transition-colors cursor-pointer z-10"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
         <div className="text-center space-y-2 mb-6">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EFF4FF] text-[#1E60F8] text-xs font-black uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF3FF] text-[#235BF7] text-xs font-black uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Offre Marchand Juula</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-black text-[#201D1D] tracking-tight">
             {isPro ? 'Votre Abonnement Juula Pro' : 'Passez au Plan Juula Pro'}
           </h2>
-          <p className="text-xs sm:text-sm text-[#64748B] max-w-sm mx-auto">
+          <p className="text-xs sm:text-sm text-[#7A808C] max-w-sm mx-auto">
             {isPro
               ? 'Profitez de la puissance maximale de Juula Store sans aucune limite.'
               : 'Débloquez le paiement à la livraison, les pixels publicitaires et vendez sans aucune limite.'}
@@ -85,7 +85,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
         </div>
 
         {/* Pricing Card */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white shadow-xl relative overflow-hidden mb-6">
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-[#201D1D] via-[#1E293B] to-[#201D1D] text-white shadow-xl relative overflow-hidden mb-6">
           <div className="flex items-start justify-between">
             <div>
               <span className="text-[10px] font-black uppercase tracking-widest text-[#38BDF8] block">
@@ -178,7 +178,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
           <button
             onClick={handleSubscribePro}
             disabled={isProcessing}
-            className="w-full py-4 px-6 rounded-2xl bg-[#1E60F8] hover:bg-[#164ED0] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(30,96,248,0.4)] transition-all cursor-pointer disabled:opacity-50"
+            className="w-full py-4 px-6 rounded-2xl bg-[#235BF7] hover:bg-[#1B4AD6] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(30,96,248,0.4)] transition-all cursor-pointer disabled:opacity-50"
           >
             {isProcessing ? (
               <span>Redirection vers le paiement sécurisé...</span>
@@ -199,7 +199,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
             <Link
               href="/pro"
               onClick={onClose}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1E60F8] hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#235BF7] hover:underline"
             >
               <span>Voir la présentation complète & comparatif Juula Pro</span>
               <ArrowRight className="w-3.5 h-3.5" />

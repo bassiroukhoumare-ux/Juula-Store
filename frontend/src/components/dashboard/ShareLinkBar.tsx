@@ -57,13 +57,13 @@ export const ShareLinkBar: React.FC<ShareLinkBarProps> = ({
   };
 
   return (
-    <div className="mb-5 p-4 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs flex flex-col md:flex-row md:items-center gap-3">
+    <div className="mb-5 p-4 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs flex flex-col md:flex-row md:items-center gap-3">
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-        <div className="w-9 h-9 rounded-xl bg-[#EFF4FF] text-[#1E60F8] flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
           <Link2 className="w-4 h-4" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-bold text-[#64748B] flex items-center gap-1.5">
+          <p className="text-[11px] font-bold text-[#7A808C] flex items-center gap-1.5">
             Lien de la page produit
             {isPublished ? (
               <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md">
@@ -75,7 +75,7 @@ export const ShareLinkBar: React.FC<ShareLinkBarProps> = ({
               </span>
             )}
           </p>
-          <p className="text-xs font-mono font-semibold text-[#0F172A] truncate" title={url}>
+          <p className="text-xs font-mono font-semibold text-[#201D1D] truncate" title={url}>
             {origin || subdomain ? url : `/p/${slug}`}
           </p>
           {!isPublished && (
@@ -99,7 +99,7 @@ export const ShareLinkBar: React.FC<ShareLinkBarProps> = ({
         <button
           onClick={handleCopy}
           disabled={!origin}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-xs font-black transition-colors cursor-pointer disabled:opacity-60"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-black transition-colors cursor-pointer disabled:opacity-60"
         >
           {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           {copied ? 'Lien copié !' : 'Copier le lien'}
@@ -107,7 +107,7 @@ export const ShareLinkBar: React.FC<ShareLinkBarProps> = ({
         {canShare && (
           <button
             onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] text-xs font-bold transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#201D1D] text-xs font-bold transition-colors cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5" />
             Partager
@@ -117,7 +117,7 @@ export const ShareLinkBar: React.FC<ShareLinkBarProps> = ({
           href={openHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] text-xs font-bold transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#201D1D] text-xs font-bold transition-colors"
         >
           <ExternalLink className="w-3.5 h-3.5" />
           Ouvrir

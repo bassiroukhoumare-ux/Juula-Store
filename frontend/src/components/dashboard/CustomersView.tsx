@@ -1,18 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Users,
-  Search,
-  Phone,
-  PhoneCall,
-  MapPin,
-  ShoppingBag,
-  CreditCard,
-  Banknote,
-  Smartphone,
-  ExternalLink,
-} from 'lucide-react';
+import { Users, Search, Phone, PhoneCall, MapPin } from 'lucide-react';
 import { OrderLead } from '@/types/juula';
 import { Input } from '@/components/ui/Input';
 import { formatFCFA } from '@/lib/orderUtils';
@@ -73,8 +62,8 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
           order.paymentType === 'online_wave'
             ? 'Wave'
             : order.paymentType === 'online_orange'
-            ? 'Orange Money'
-            : 'Espèces (COD)',
+              ? 'Orange Money'
+              : 'Espèces (COD)',
       });
     }
   });
@@ -85,27 +74,29 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.phone.toLowerCase().includes(search.toLowerCase()) ||
-      c.neighborhood.toLowerCase().includes(search.toLowerCase())
+      c.neighborhood.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-0.5 rounded-lg">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-lg">
               CRM Marchand
             </span>
-            <span className="text-xs text-[#64748B]">
-              {customersList.length} client{customersList.length > 1 ? 's' : ''} enregistré{customersList.length > 1 ? 's' : ''}
+            <span className="text-xs text-[#7A808C]">
+              {customersList.length} client{customersList.length > 1 ? 's' : ''} enregistré
+              {customersList.length > 1 ? 's' : ''}
             </span>
           </div>
-          <h2 className="text-2xl font-black text-[#0F172A] tracking-tight mt-1">
+          <h2 className="text-2xl font-black text-[#201D1D] tracking-tight mt-1">
             Clients & Leads Cash on Delivery
           </h2>
-          <p className="text-xs text-[#64748B] mt-0.5">
-            Historique complet de vos acheteurs, adresses de livraison habituelles et contact direct WhatsApp & Appel.
+          <p className="text-xs text-[#7A808C] mt-0.5">
+            Historique complet de vos acheteurs, adresses de livraison habituelles et contact direct
+            WhatsApp & Appel.
           </p>
         </div>
 
@@ -120,10 +111,10 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       </div>
 
       {/* Customers Table / Cards */}
-      <div className="bg-white rounded-3xl border border-[#E5E9F0] shadow-xs overflow-hidden">
+      <div className="bg-white rounded-[28px] border border-[#ECEFF4] shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#F8FAFC] border-b border-[#E5E9F0] text-[#64748B] font-bold uppercase text-[10px] tracking-wider">
+            <thead className="bg-[#F8FAFC] border-b border-[#ECEFF4] text-[#7A808C] font-bold uppercase text-[10px] tracking-wider">
               <tr>
                 <th className="py-3.5 px-6">Client & Contact</th>
                 <th className="py-3.5 px-6">Quartier & Adresse Habituelle</th>
@@ -139,109 +130,114 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                   <td colSpan={6} className="py-12 text-center text-[#94A3B8]">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Users className="w-8 h-8 text-[#CBD5E1]" />
-                      <p className="text-sm font-bold text-[#64748B]">Aucun client enregistré pour le moment</p>
-                      <p className="text-xs text-[#94A3B8]">Vos futurs clients s'afficheront ici automatiquement dès leurs premières commandes.</p>
+                      <p className="text-sm font-bold text-[#7A808C]">
+                        Aucun client enregistré pour le moment
+                      </p>
+                      <p className="text-xs text-[#94A3B8]">
+                        Vos futurs clients s'afficheront ici automatiquement dès leurs premières
+                        commandes.
+                      </p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 filtered.map((customer, idx) => {
-                const initials = customer.name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .slice(0, 2)
-                  .toUpperCase();
+                  const initials = customer.name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase();
 
-                // Message WhatsApp conforme : UNIQUEMENT LE NOM DE LA BOUTIQUE DU MARCHAND (SANS "JUULA STORE")
-                const waMessage = encodeURIComponent(
-                  `Bonjour ${customer.name} ! C'est ${storeName}. Nous espérons que votre commande vous apporte entière satisfaction ! Avez-vous besoin d'une assistance ou d'un conseil ?`
-                );
+                  // Message WhatsApp conforme : UNIQUEMENT LE NOM DE LA BOUTIQUE DU MARCHAND (SANS "JUULA STORE")
+                  const waMessage = encodeURIComponent(
+                    `Bonjour ${customer.name} ! C'est ${storeName}. Nous espérons que votre commande vous apporte entière satisfaction ! Avez-vous besoin d'une assistance ou d'un conseil ?`,
+                  );
 
-                const cleanPhone = customer.phone.replace(/[^0-9+]/g, '');
+                  const cleanPhone = customer.phone.replace(/[^0-9+]/g, '');
 
-                return (
-                  <tr key={idx} className="hover:bg-[#F8FAFC] transition-colors">
-                    {/* Customer Name & Initials */}
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#1E60F8] to-[#60A5FA] text-white font-extrabold flex items-center justify-center flex-shrink-0 text-xs shadow-xs">
-                          {initials}
+                  return (
+                    <tr key={idx} className="hover:bg-[#F8FAFC] transition-colors">
+                      {/* Customer Name & Initials */}
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#235BF7] to-[#60A5FA] text-white font-extrabold flex items-center justify-center flex-shrink-0 text-xs shadow-xs">
+                            {initials}
+                          </div>
+                          <div>
+                            <span className="font-extrabold text-[#201D1D] block text-xs">
+                              {customer.name}
+                            </span>
+                            <span className="text-[11px] text-[#7A808C] flex items-center gap-1">
+                              <Phone className="w-3 h-3 text-[#94A3B8]" />
+                              {customer.phone}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-extrabold text-[#0F172A] block text-xs">
-                            {customer.name}
-                          </span>
-                          <span className="text-[11px] text-[#64748B] flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-[#94A3B8]" />
-                            {customer.phone}
-                          </span>
+                      </td>
+
+                      {/* Address & Neighborhood */}
+                      <td className="py-4 px-6 max-w-xs">
+                        <div className="flex items-center gap-1.5 font-bold text-[#201D1D]">
+                          <MapPin className="w-3.5 h-3.5 text-[#235BF7] flex-shrink-0" />
+                          <span className="truncate">{customer.neighborhood}</span>
                         </div>
-                      </div>
-                    </td>
+                        {customer.deliveryAddress && (
+                          <p className="text-[10px] text-[#7A808C] truncate mt-0.5">
+                            {customer.deliveryAddress}
+                          </p>
+                        )}
+                      </td>
 
-                    {/* Address & Neighborhood */}
-                    <td className="py-4 px-6 max-w-xs">
-                      <div className="flex items-center gap-1.5 font-bold text-[#0F172A]">
-                        <MapPin className="w-3.5 h-3.5 text-[#1E60F8] flex-shrink-0" />
-                        <span className="truncate">{customer.neighborhood}</span>
-                      </div>
-                      {customer.deliveryAddress && (
-                        <p className="text-[10px] text-[#64748B] truncate mt-0.5">
-                          {customer.deliveryAddress}
-                        </p>
-                      )}
-                    </td>
+                      {/* Order count */}
+                      <td className="py-4 px-6 font-black text-[#201D1D]">
+                        <span className="bg-[#EEF3FF] text-[#235BF7] px-2 py-0.5 rounded-full font-bold">
+                          {customer.orderCount} commande{customer.orderCount > 1 ? 's' : ''}
+                        </span>
+                      </td>
 
-                    {/* Order count */}
-                    <td className="py-4 px-6 font-black text-[#0F172A]">
-                      <span className="bg-[#EFF4FF] text-[#1E60F8] px-2 py-0.5 rounded-full font-bold">
-                        {customer.orderCount} commande{customer.orderCount > 1 ? 's' : ''}
-                      </span>
-                    </td>
+                      {/* Total Spent */}
+                      <td className="py-4 px-6 font-black text-[#201D1D]">
+                        {formatFCFA(customer.totalSpent)}
+                      </td>
 
-                    {/* Total Spent */}
-                    <td className="py-4 px-6 font-black text-[#0F172A]">
-                      {formatFCFA(customer.totalSpent)}
-                    </td>
+                      {/* Preferred Payment */}
+                      <td className="py-4 px-6">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#F1F5F9] text-[#334155]">
+                          {customer.preferredPayment}
+                        </span>
+                      </td>
 
-                    {/* Preferred Payment */}
-                    <td className="py-4 px-6">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#F1F5F9] text-[#334155]">
-                        {customer.preferredPayment}
-                      </span>
-                    </td>
+                      {/* Quick Actions: BOUTONS WHATSAPP (VERT) ET APPEL DIRECT (BLEU DEMANDE UTILISATEUR) */}
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {/* 1. Bouton WhatsApp avec nom de boutique du marchand */}
+                          <a
+                            href={`https://wa.me/${customer.whatsappNumber}?text=${waMessage}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                            title={`Contacter ${customer.name} sur WhatsApp`}
+                          >
+                            <WhatsAppIcon className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </a>
 
-                    {/* Quick Actions: BOUTONS WHATSAPP (VERT) ET APPEL DIRECT (BLEU DEMANDE UTILISATEUR) */}
-                    <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {/* 1. Bouton WhatsApp avec nom de boutique du marchand */}
-                        <a
-                          href={`https://wa.me/${customer.whatsappNumber}?text=${waMessage}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
-                          title={`Contacter ${customer.name} sur WhatsApp`}
-                        >
-                          <WhatsAppIcon className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
-                        </a>
-
-                        {/* 2. Bouton Appel Téléphonique Direct - En BLEU avec texte et icône BLANCS */}
-                        <a
-                          href={`tel:${cleanPhone}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer border border-[#164ED0]/30"
-                          title={`Appeler directement ${customer.name}`}
-                        >
-                          <PhoneCall className="w-3.5 h-3.5 text-white" />
-                          <span className="text-white">Appeler</span>
-                        </a>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+                          {/* 2. Bouton Appel Téléphonique Direct - En BLEU avec texte et icône BLANCS */}
+                          <a
+                            href={`tel:${cleanPhone}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer border border-[#1B4AD6]/30"
+                            title={`Appeler directement ${customer.name}`}
+                          >
+                            <PhoneCall className="w-3.5 h-3.5 text-white" />
+                            <span className="text-white">Appeler</span>
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

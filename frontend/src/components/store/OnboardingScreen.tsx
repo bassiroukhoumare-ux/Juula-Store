@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { ArrowRight, Globe, Loader2, MapPin, MessageCircle, Store } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { JuulaLogo } from '@/components/brand/JuulaLogo';
+import { displayFont } from '@/app/fonts';
 import { LogoUploader } from '@/components/store/LogoUploader';
 import { SubdomainField, type SubdomainStatus } from '@/components/store/SubdomainField';
 import { normalizeSubdomain, ROOT_DOMAIN } from '@/lib/store/subdomain';
@@ -115,7 +116,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F6FB] flex items-start sm:items-center justify-center px-4 py-8 sm:py-12">
+    <div
+      className={`${displayFont.className} min-h-screen bg-[#EDEFF3] flex items-start sm:items-center justify-center px-4 py-8 sm:py-12`}
+    >
       <div className="w-full max-w-xl">
         <div className="flex justify-center mb-6">
           <JuulaLogo height={44} />

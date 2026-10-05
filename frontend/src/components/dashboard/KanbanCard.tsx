@@ -132,7 +132,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         className={`group relative bg-white rounded-2xl p-3.5 transition-all duration-150 space-y-2.5 cursor-grab active:cursor-grabbing select-none ${
           isPaidOnline
             ? 'border-2 border-[#FF7900] ring-2 ring-[#FF7900]/15 shadow-sm bg-gradient-to-b from-[#FFFDFB] to-white hover:border-[#FF7900]'
-            : 'border border-[#E2E8F0] shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-[#1E60F8]/40'
+            : 'border border-[#E2E8F0] shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-[#235BF7]/40'
         }`}
       >
         {/* ======================================================== */}
@@ -140,8 +140,8 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         {/* ======================================================== */}
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5 min-w-0">
-            <GripVertical className="w-3 h-3 text-[#94A3B8] opacity-50 group-hover:opacity-100 group-hover:text-[#1E60F8] transition-colors shrink-0" />
-            <span className="font-mono font-bold text-[#1E60F8] bg-[#EFF4FF] px-2 py-0.5 rounded-md text-[11px] shrink-0">
+            <GripVertical className="w-3 h-3 text-[#94A3B8] opacity-50 group-hover:opacity-100 group-hover:text-[#235BF7] transition-colors shrink-0" />
+            <span className="font-mono font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-md text-[11px] shrink-0">
               {order.id}
             </span>
             <span className="text-[11px] text-[#94A3B8] truncate">{order.createdAt}</span>
@@ -176,13 +176,13 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
             <span
-              className="text-sm font-extrabold text-[#0F172A] truncate block leading-tight"
+              className="text-sm font-extrabold text-[#201D1D] truncate block leading-tight"
               title={order.customerName}
             >
               {order.customerName}
             </span>
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#475569] mt-0.5">
-              <MapPin className="w-3 h-3 text-[#1E60F8] shrink-0" />
+              <MapPin className="w-3 h-3 text-[#235BF7] shrink-0" />
               <span className="truncate max-w-[130px]">{shortNeighborhood}</span>
             </span>
           </div>
@@ -193,7 +193,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-8 h-8 rounded-xl bg-[#0F172A] hover:bg-black text-white flex items-center justify-center shadow-xs transition-transform active:scale-95 cursor-pointer"
+              className="w-8 h-8 rounded-xl bg-[#201D1D] hover:bg-black text-white flex items-center justify-center shadow-xs transition-transform active:scale-95 cursor-pointer"
               title={`WhatsApp avec ${order.customerName} (${order.whatsappNumber || cleanPhone})`}
               aria-label="Contacter sur WhatsApp"
             >
@@ -202,7 +202,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
 
             <a
               href={telUrl}
-              className="w-8 h-8 rounded-xl bg-[#EFF4FF] hover:bg-[#1E60F8] text-[#1E60F8] hover:text-white flex items-center justify-center transition-all border border-[#BFDBFE] shadow-xs active:scale-95 cursor-pointer"
+              className="w-8 h-8 rounded-xl bg-[#EEF3FF] hover:bg-[#235BF7] text-[#235BF7] hover:text-white flex items-center justify-center transition-all border border-[#BFDBFE] shadow-xs active:scale-95 cursor-pointer"
               title={`Appeler ${order.customerName} (${cleanPhone})`}
               aria-label="Appeler le client"
             >
@@ -222,14 +222,14 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               className="w-11 h-11 rounded-lg object-cover bg-white shrink-0 border border-[#CBD5E1]"
             />
           ) : (
-            <div className="w-11 h-11 rounded-lg bg-[#EFF4FF] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
-              <Package className="w-5 h-5 text-[#1E60F8]" />
+            <div className="w-11 h-11 rounded-lg bg-[#EEF3FF] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+              <Package className="w-5 h-5 text-[#235BF7]" />
             </div>
           )}
 
           <div className="min-w-0 flex-1">
             <span
-              className="text-xs font-bold text-[#0F172A] block truncate"
+              className="text-xs font-bold text-[#201D1D] block truncate"
               title={order.productName}
             >
               {order.productName}
@@ -237,15 +237,15 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
             <div className="flex items-center justify-between text-xs mt-1">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[10px] font-bold text-[#475569] bg-white px-1.5 py-0.5 rounded border border-[#E2E8F0] shadow-2xs">
-                  Qté : <strong className="text-[#0F172A]">{order.quantity || 1}</strong>
+                  Qté : <strong className="text-[#201D1D]">{order.quantity || 1}</strong>
                 </span>
                 {order.selectedColor && (
-                  <span className="text-[10px] font-bold text-[#1E60F8] bg-[#EFF4FF] px-1.5 py-0.5 rounded border border-[#BFDBFE]">
+                  <span className="text-[10px] font-bold text-[#235BF7] bg-[#EEF3FF] px-1.5 py-0.5 rounded border border-[#BFDBFE]">
                     {order.selectedColor}
                   </span>
                 )}
               </div>
-              <span className="font-black text-[#0F172A] text-xs">{formatFCFA(totalDisplay)}</span>
+              <span className="font-black text-[#201D1D] text-xs">{formatFCFA(totalDisplay)}</span>
             </div>
           </div>
         </div>
@@ -262,7 +262,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               <button
                 type="button"
                 onClick={toggleAudio}
-                className="w-7 h-7 rounded-lg bg-[#1E60F8] hover:bg-[#164ED0] text-white flex items-center justify-center shrink-0 shadow-xs transition-transform active:scale-95 cursor-pointer"
+                className="w-7 h-7 rounded-lg bg-[#235BF7] hover:bg-[#1B4AD6] text-white flex items-center justify-center shrink-0 shadow-xs transition-transform active:scale-95 cursor-pointer"
                 title={isPlayingAudio ? 'Mettre en pause' : 'Écouter la note vocale'}
               >
                 {isPlayingAudio ? (
@@ -272,10 +272,10 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
                 )}
               </button>
               <div className="min-w-0">
-                <span className="text-[11px] font-bold text-[#1E60F8] block truncate">
+                <span className="text-[11px] font-bold text-[#235BF7] block truncate">
                   Note vocale client
                 </span>
-                <span className="text-[10px] text-[#64748B] flex items-center gap-1">
+                <span className="text-[10px] text-[#7A808C] flex items-center gap-1">
                   <span
                     className={`inline-block w-1.5 h-1.5 rounded-full ${
                       isPlayingAudio ? 'bg-emerald-500 animate-pulse' : 'bg-[#94A3B8]'
@@ -286,7 +286,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-1 text-[11px] font-bold text-[#1E60F8] shrink-0">
+            <div className="flex items-center gap-1 text-[11px] font-bold text-[#235BF7] shrink-0">
               <Volume2 className="w-3 h-3" />
               <span>0:38</span>
             </div>
@@ -301,11 +301,11 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         ) : (
           <div
             onClick={() => setShowDetailModal(true)}
-            className="flex items-center justify-between px-2 py-1.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+            className="flex items-center justify-between px-2 py-1.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
             title="Cliquer pour afficher les détails complets"
           >
             <div className="flex items-center gap-1.5 min-w-0">
-              <MessageSquare className="w-3 h-3 text-[#1E60F8] shrink-0" />
+              <MessageSquare className="w-3 h-3 text-[#235BF7] shrink-0" />
               <span className="truncate italic">« {messagePreview} »</span>
             </div>
             <ChevronRight className="w-3 h-3 text-[#94A3B8] shrink-0 ml-1" />
@@ -325,7 +325,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
             <button
               type="button"
               onClick={() => onMoveStatus(order.id, flow.prev!)}
-              className="w-8 h-8 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-all flex items-center justify-center cursor-pointer shadow-2xs active:scale-95"
+              className="w-8 h-8 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F5F9] transition-all flex items-center justify-center cursor-pointer shadow-2xs active:scale-95"
               title="Revenir à l'étape précédente"
               aria-label="Étape précédente"
             >
@@ -353,7 +353,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               <button
                 type="button"
                 onClick={() => onMoveStatus(order.id, 'confirmed')}
-                className="w-8 h-8 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white transition-all flex items-center justify-center shadow-xs active:scale-95 cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white transition-all flex items-center justify-center shadow-xs active:scale-95 cursor-pointer"
                 title="Confirmer la commande (Passer en route)"
                 aria-label="Confirmer la commande"
               >
@@ -387,20 +387,20 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl p-6 w-full max-w-md border border-[#E2E8F0] shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+            className="bg-white rounded-[28px] p-6 w-full max-w-md border border-[#E2E8F0] shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
           >
             {/* Header Modal */}
             <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
               <div>
-                <span className="font-mono text-xs font-bold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-0.5 rounded-md">
+                <span className="font-mono text-xs font-bold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-md">
                   {order.id}
                 </span>
-                <h3 className="text-base font-black text-[#0F172A] mt-1">{order.customerName}</h3>
+                <h3 className="text-base font-black text-[#201D1D] mt-1">{order.customerName}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowDetailModal(false)}
-                className="p-1.5 rounded-full text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+                className="p-1.5 rounded-full text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -416,33 +416,33 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
                     className="w-12 h-12 rounded-xl object-cover bg-white shrink-0 border border-[#CBD5E1]"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-[#EFF4FF] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
-                    <Package className="w-5 h-5 text-[#1E60F8]" />
+                  <div className="w-12 h-12 rounded-xl bg-[#EEF3FF] flex items-center justify-center shrink-0 border border-[#DBEAFE]">
+                    <Package className="w-5 h-5 text-[#235BF7]" />
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <span className="font-extrabold text-[#0F172A] block truncate">
+                  <span className="font-extrabold text-[#201D1D] block truncate">
                     {order.productName}
                   </span>
-                  <div className="flex items-center justify-between text-[11px] text-[#64748B] mt-1">
+                  <div className="flex items-center justify-between text-[11px] text-[#7A808C] mt-1">
                     <span className="font-bold bg-white px-2 py-0.5 rounded border border-[#E2E8F0]">
                       Quantité commandée :{' '}
-                      <strong className="text-[#0F172A]">{order.quantity || 1}</strong>
+                      <strong className="text-[#201D1D]">{order.quantity || 1}</strong>
                     </span>
-                    <span className="text-[#1E60F8] font-black text-sm">
+                    <span className="text-[#235BF7] font-black text-sm">
                       {formatFCFA(totalDisplay)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-[#64748B] text-[11px] pt-1.5 border-t border-[#E2E8F0]">
+              <div className="flex items-center justify-between text-[#7A808C] text-[11px] pt-1.5 border-t border-[#E2E8F0]">
                 <span>Téléphone client :</span>
-                <span className="font-bold text-[#0F172A] font-mono">{order.phone}</span>
+                <span className="font-bold text-[#201D1D] font-mono">{order.phone}</span>
               </div>
-              <div className="flex items-center justify-between text-[#64748B] text-[11px]">
+              <div className="flex items-center justify-between text-[#7A808C] text-[11px]">
                 <span>Règlement :</span>
-                <span className="font-bold text-[#0F172A]">
+                <span className="font-bold text-[#201D1D]">
                   {order.paymentType === 'online_wave'
                     ? 'Wave (Payé en ligne)'
                     : order.paymentType === 'online_orange'
@@ -454,22 +454,22 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
 
             {/* Adresse et Repères */}
             <div className="space-y-1 text-xs">
-              <span className="font-bold text-[#0F172A] flex items-center gap-1 text-[11px] uppercase tracking-wide">
-                <MapPin className="w-3.5 h-3.5 text-[#1E60F8]" />
+              <span className="font-bold text-[#201D1D] flex items-center gap-1 text-[11px] uppercase tracking-wide">
+                <MapPin className="w-3.5 h-3.5 text-[#235BF7]" />
                 Adresse de livraison & Repères
               </span>
               <p className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[#334155] text-xs leading-relaxed">
                 {order.deliveryAddress || order.neighborhood}
               </p>
               {order.deliveryNotes && (
-                <p className="italic text-[#64748B] text-[11px] px-1">« {order.deliveryNotes} »</p>
+                <p className="italic text-[#7A808C] text-[11px] px-1">« {order.deliveryNotes} »</p>
               )}
             </div>
 
             {/* Note Vocale */}
             {order.hasVoiceNote && order.voiceNoteUrl && (
               <div className="p-3 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-[#1E60F8]">
+                <div className="flex items-center justify-between text-xs font-bold text-[#235BF7]">
                   <span className="flex items-center gap-1.5">
                     <Volume2 className="w-4 h-4" />
                     Note vocale d'adresse du client
@@ -486,7 +486,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="py-2.5 px-3 rounded-xl bg-[#0F172A] hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                className="py-2.5 px-3 rounded-xl bg-[#201D1D] hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors"
               >
                 <WhatsAppIcon className="w-4 h-4" />
                 <span>WhatsApp</span>
@@ -494,7 +494,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
 
               <a
                 href={telUrl}
-                className="py-2.5 px-3 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                className="py-2.5 px-3 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors"
               >
                 <PhoneCall className="w-4 h-4" />
                 <span>Appeler</span>

@@ -97,13 +97,13 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
   // Color options state
   const [newColorName, setNewColorName] = useState('');
-  const [newColorHex, setNewColorHex] = useState('#1E60F8');
+  const [newColorHex, setNewColorHex] = useState('#235BF7');
 
   const quickPalette = [
     { name: 'Noir', hex: '#111827' },
     { name: 'Blanc', hex: '#FFFFFF' },
-    { name: 'Bleu Royal', hex: '#1E60F8' },
-    { name: 'Bleu Marine', hex: '#0F172A' },
+    { name: 'Bleu Royal', hex: '#235BF7' },
+    { name: 'Bleu Marine', hex: '#201D1D' },
     { name: 'Rouge', hex: '#EF4444' },
     { name: 'Vert Émeraude', hex: '#10B981' },
     { name: 'Or / Doré', hex: '#D97706' },
@@ -114,7 +114,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
   const handleAddColor = (name?: string, hex?: string) => {
     const targetName = (name !== undefined ? name : newColorName).trim();
-    const targetHex = (hex !== undefined ? hex : newColorHex) || '#1E60F8';
+    const targetHex = (hex !== undefined ? hex : newColorHex) || '#235BF7';
     if (!targetName) return;
     const colors = config.availableColors || [];
     if (colors.some((c) => c.name.toLowerCase() === targetName.toLowerCase())) return;
@@ -456,25 +456,25 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
       {/* BANNIÈRE UNIQUE & ÉPURÉE : ÉDITION DU TUNNEL EN COURS    */}
       {/* (FOND BLANC, CONTOURS BLEUS ET INFOS CONSOLIDÉES SANS DOUBLONS) */}
       {/* ======================================================== */}
-      <div className="relative overflow-hidden rounded-3xl bg-white border-2 border-[#1E60F8]/25 shadow-[0_4px_24px_rgba(30,96,248,0.06)] hover:border-[#1E60F8]/45 transition-all p-5 sm:p-6 bg-gradient-to-r from-[#EFF6FF]/40 via-white to-white">
+      <div className="relative overflow-hidden rounded-[28px] bg-white border-2 border-[#235BF7]/25 shadow-[0_4px_24px_rgba(30,96,248,0.06)] hover:border-[#235BF7]/45 transition-all p-5 sm:p-6 bg-gradient-to-r from-[#EFF6FF]/40 via-white to-white">
         {/* Accent bleu au sommet */}
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#1E60F8] via-[#60A5FA] to-[#1E60F8]" />
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#235BF7] via-[#60A5FA] to-[#235BF7]" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           {/* Section Gauche : Titre et sous-titre épurés (Demande Audio) */}
           <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0">
-            <div className="w-12 h-12 rounded-2xl bg-[#EFF4FF] border border-[#BFDBFE] flex items-center justify-center text-[#1E60F8] shrink-0 shadow-xs mt-1 sm:mt-0">
+            <div className="w-12 h-12 rounded-2xl bg-[#EEF3FF] border border-[#BFDBFE] flex items-center justify-center text-[#235BF7] shrink-0 shadow-xs mt-1 sm:mt-0">
               <Store className="w-6 h-6" />
             </div>
 
             <div className="min-w-0 flex-1">
-              <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight truncate">
+              <h2 className="text-xl sm:text-2xl font-black text-[#201D1D] tracking-tight truncate">
                 {config.productTitle ||
                   activePage?.config?.productTitle ||
                   activePage?.internalName ||
                   'Montre Automatique Royale Saphir Noire'}
               </h2>
-              <p className="text-xs text-[#64748B] mt-0.5 max-w-2xl truncate">
+              <p className="text-xs text-[#7A808C] mt-0.5 max-w-2xl truncate">
                 Édition en direct • Page de vente immersive avec vidéo verticale, commande 1-clic
                 COD / Wave et avis clients.
               </p>
@@ -487,10 +487,10 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
             <button
               type="button"
               onClick={onOpenStorefrontPreview}
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#F8FAFC] text-[#0F172A] text-xs font-bold transition-all border border-[#CBD5E1] shadow-2xs hover:border-[#1E60F8]/50 active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#F8FAFC] text-[#201D1D] text-xs font-bold transition-all border border-[#CBD5E1] shadow-2xs hover:border-[#235BF7]/50 active:scale-95 cursor-pointer"
               title="Ouvrir la page client dans un nouvel onglet"
             >
-              <ExternalLink className="w-4 h-4 text-[#1E60F8]" />
+              <ExternalLink className="w-4 h-4 text-[#235BF7]" />
               <span>Aperçu Plein Écran</span>
             </button>
 
@@ -498,10 +498,10 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
             <button
               type="button"
               onClick={onOpenMobileSimulator || onOpenStorefrontPreview}
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#EFF4FF] hover:bg-[#DBEAFE] text-[#1E60F8] text-xs font-bold transition-all border border-[#BFDBFE] shadow-2xs active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#EEF3FF] hover:bg-[#DBEAFE] text-[#235BF7] text-xs font-bold transition-all border border-[#BFDBFE] shadow-2xs active:scale-95 cursor-pointer"
               title="Tester l'expérience smartphone"
             >
-              <Smartphone className="w-4 h-4 text-[#1E60F8]" />
+              <Smartphone className="w-4 h-4 text-[#235BF7]" />
               <span>Simulateur Mobile</span>
             </button>
 
@@ -530,7 +530,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
               <button
                 type="button"
                 onClick={handleSave}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer"
               >
                 {isSaved ? (
                   <>
@@ -557,7 +557,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
         {/* COLONNE GAUCHE 1 (3 cols) : MES PAGES DE VENTE (CONTRASTE SOMBRE DEMANDÉ) */}
         {/* ======================================================== */}
         <aside className="xl:col-span-3 space-y-4 xl:sticky xl:top-24">
-          <div className="bg-[#0F172A] rounded-3xl p-4 border border-[#1E293B] shadow-md space-y-3 text-white">
+          <div className="bg-[#201D1D] rounded-[28px] p-4 border border-[#1E293B] shadow-md space-y-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
@@ -571,7 +571,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
               <button
                 type="button"
                 onClick={() => setIsNewPageModalOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-[11px] font-bold transition-all shadow-xs cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[11px] font-bold transition-all shadow-xs cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Nouveau</span>
@@ -591,7 +591,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     onClick={() => onSelectPage?.(p.id)}
                     className={`p-3 rounded-2xl border transition-all cursor-pointer select-none ${
                       isSelected
-                        ? 'border-2 border-[#1E60F8] bg-[#1E293B] shadow-sm'
+                        ? 'border-2 border-[#235BF7] bg-[#1E293B] shadow-sm'
                         : 'border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-white'
                     }`}
                   >
@@ -678,7 +678,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
         {/* COLONNE GAUCHE 2 (3 cols) : ÉTAPES DE CONFIGURATION      */}
         {/* ======================================================== */}
         <aside className="xl:col-span-3 space-y-4 xl:sticky xl:top-24">
-          <div className="bg-white rounded-3xl p-3 border border-[#E5E9F0] shadow-xs space-y-1.5">
+          <div className="bg-white rounded-[28px] p-3 border border-[#ECEFF4] shadow-xs space-y-1.5">
             <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#94A3B8]">
               Étapes de Configuration
             </div>
@@ -695,8 +695,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   onClick={() => setCurrentStep(step.num)}
                   className={`w-full text-left p-3.5 rounded-2xl flex items-center gap-3 transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-[#1E60F8] text-white shadow-sm ring-2 ring-[#1E60F8]/20'
-                      : 'hover:bg-[#F8FAFC] text-[#0F172A]'
+                      ? 'bg-[#235BF7] text-white shadow-sm ring-2 ring-[#235BF7]/20'
+                      : 'hover:bg-[#F8FAFC] text-[#201D1D]'
                   }`}
                 >
                   <div
@@ -705,7 +705,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                         ? 'bg-white/20 text-white'
                         : isPast
                           ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                          : 'bg-[#F1F5F9] text-[#64748B]'
+                          : 'bg-[#F1F5F9] text-[#7A808C]'
                     }`}
                   >
                     {isPast ? <Check className="w-4 h-4 stroke-[3]" /> : step.num}
@@ -714,14 +714,14 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   <div className="flex-1 min-w-0">
                     <span
                       className={`text-xs font-extrabold block leading-tight truncate ${
-                        isActive ? 'text-white' : 'text-[#0F172A]'
+                        isActive ? 'text-white' : 'text-[#201D1D]'
                       }`}
                     >
                       {step.label}
                     </span>
                     <span
                       className={`text-[10px] block truncate mt-0.5 ${
-                        isActive ? 'text-white/80' : 'text-[#64748B]'
+                        isActive ? 'text-white/80' : 'text-[#7A808C]'
                       }`}
                     >
                       {step.subtitle}
@@ -739,20 +739,20 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
           </div>
 
           {/* Quick Info Box */}
-          <div className="p-4 rounded-3xl bg-[#EFF4FF] border border-[#BFDBFE]/60 space-y-2 text-xs">
-            <span className="font-extrabold text-[#1E60F8] block">Boutique Actuelle</span>
+          <div className="p-4 rounded-[28px] bg-[#EEF3FF] border border-[#BFDBFE]/60 space-y-2 text-xs">
+            <span className="font-extrabold text-[#235BF7] block">Boutique Actuelle</span>
             <div className="text-[#1E3A8A] leading-relaxed text-[11px] space-y-1">
               <div className="flex justify-between">
-                <span className="text-[#64748B]">Nom :</span>
+                <span className="text-[#7A808C]">Nom :</span>
                 <span className="font-bold">{config.storeName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#64748B]">Préfixe :</span>
+                <span className="text-[#7A808C]">Préfixe :</span>
                 <span className="font-mono font-bold">{config.storeCode || 'BDE'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#64748B]">Format commande :</span>
-                <span className="font-mono font-bold text-[#1E60F8]">
+                <span className="text-[#7A808C]">Format commande :</span>
+                <span className="font-mono font-bold text-[#235BF7]">
                   CMD-{config.storeCode || 'BDE'}-000001
                 </span>
               </div>
@@ -768,12 +768,12 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
           {/* ÉTAPE 1 : MÉDIAS & VISUELS                               */}
           {/* ======================================================== */}
           {currentStep === 1 && (
-            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs space-y-6">
+            <div className="p-6 sm:p-8 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-6">
               <div>
-                <h3 className="text-xl font-black text-[#0F172A] tracking-tight">
+                <h3 className="text-xl font-black text-[#201D1D] tracking-tight">
                   Étape 1 : Galerie Médias & Vidéo Démo
                 </h3>
-                <p className="text-xs text-[#64748B] mt-0.5">
+                <p className="text-xs text-[#7A808C] mt-0.5">
                   Importez jusqu'à 5 photos haute résolution et votre vidéo verticale pour captiver
                   les visiteurs.
                 </p>
@@ -782,10 +782,10 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
               {/* Photos Gallery */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#0F172A]">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#201D1D]">
                     Photos du Produit ({config.mediaItems.length}/5)
                   </label>
-                  <span className="text-[11px] text-[#64748B]">Format portrait recommandé</span>
+                  <span className="text-[11px] text-[#7A808C]">Format portrait recommandé</span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -823,14 +823,14 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="aspect-square rounded-2xl border-2 border-dashed border-[#CBD5E1] p-3 flex flex-col items-center justify-center text-center gap-1.5 hover:border-[#1E60F8] hover:bg-[#EFF4FF]/40 transition-all bg-[#F8FAFC] cursor-pointer group"
+                      className="aspect-square rounded-2xl border-2 border-dashed border-[#CBD5E1] p-3 flex flex-col items-center justify-center text-center gap-1.5 hover:border-[#235BF7] hover:bg-[#EEF3FF]/40 transition-all bg-[#F8FAFC] cursor-pointer group"
                       title="Choisir une image depuis votre ordinateur ou mobile (Hébergé sur Cloudinary)"
                     >
-                      <ImageIcon className="w-6 h-6 text-[#94A3B8] group-hover:text-[#1E60F8] transition-colors" />
-                      <span className="text-[11px] font-bold text-[#0F172A] group-hover:text-[#1E60F8] transition-colors">
+                      <ImageIcon className="w-6 h-6 text-[#94A3B8] group-hover:text-[#235BF7] transition-colors" />
+                      <span className="text-[11px] font-bold text-[#201D1D] group-hover:text-[#235BF7] transition-colors">
                         {isUploadingPhoto ? `Envoi… ${photoProgress}%` : '+ Ajouter photo'}
                       </span>
-                      <span className="text-[9px] text-[#64748B] font-medium">
+                      <span className="text-[9px] text-[#7A808C] font-medium">
                         {isUploadingPhoto ? 'Ne fermez pas la page' : 'JPG, PNG, HEIC · 10 Mo'}
                       </span>
                     </button>
@@ -854,7 +854,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                       value={newImageUrl}
                       onChange={(e) => setNewImageUrl(e.target.value)}
                       placeholder="Coller l'URL d'une image haute-résolution..."
-                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white"
+                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
                     />
                     <Button
                       variant="secondary"
@@ -890,9 +890,9 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                       type="button"
                       onClick={() => videoInputRef.current?.click()}
                       disabled={videoProgress !== null}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-[#CBD5E1] bg-[#F8FAFC] hover:border-[#1E60F8] hover:bg-[#EFF4FF]/40 text-xs font-bold text-[#0F172A] transition-all cursor-pointer disabled:cursor-wait"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-[#CBD5E1] bg-[#F8FAFC] hover:border-[#235BF7] hover:bg-[#EEF3FF]/40 text-xs font-bold text-[#201D1D] transition-all cursor-pointer disabled:cursor-wait"
                     >
-                      <Video className="w-4 h-4 text-[#1E60F8]" />
+                      <Video className="w-4 h-4 text-[#235BF7]" />
                       {videoProgress !== null
                         ? `Envoi de la vidéo… ${videoProgress}%`
                         : config.videoUrl
@@ -902,12 +902,12 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     {videoProgress !== null && (
                       <div className="h-1.5 rounded-full bg-[#E2E8F0] overflow-hidden">
                         <div
-                          className="h-full bg-[#1E60F8] transition-all"
+                          className="h-full bg-[#235BF7] transition-all"
                           style={{ width: `${videoProgress}%` }}
                         />
                       </div>
                     )}
-                    <p className="text-[10px] text-[#64748B]">
+                    <p className="text-[10px] text-[#7A808C]">
                       MP4, MOV ou WebM · 100 Mo maximum · format vertical conseillé
                     </p>
                     {config.videoUrl && videoProgress === null && (
@@ -923,7 +923,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                       value={config.videoUrl || ''}
                       onChange={(e) => setConfig({ ...config, videoUrl: e.target.value })}
                       placeholder="https://.../video.mp4"
-                      icon={<Video className="w-4 h-4 text-[#1E60F8]" />}
+                      icon={<Video className="w-4 h-4 text-[#235BF7]" />}
                     />
                   </div>
                 )}
@@ -947,12 +947,12 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
           {/* ÉTAPE 2 : TITRES, IA AVEC CHAMP MOT-CLÉ & TARIFS         */}
           {/* ======================================================== */}
           {currentStep === 2 && (
-            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs space-y-6">
+            <div className="p-6 sm:p-8 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-6">
               <div>
-                <h3 className="text-xl font-black text-[#0F172A] tracking-tight">
+                <h3 className="text-xl font-black text-[#201D1D] tracking-tight">
                   Étape 2 : Titre du Produit, IA & Tarifs
                 </h3>
-                <p className="text-xs text-[#64748B] mt-0.5">
+                <p className="text-xs text-[#7A808C] mt-0.5">
                   Utilisez l'assistant IA en saisissant vos mots-clés, définissez votre prix et
                   configurez vos frais de livraison.
                 </p>
@@ -961,7 +961,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
               {/* Title Input & AI Button */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#0F172A]">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#201D1D]">
                     Titre du Produit *
                   </label>
 
@@ -969,7 +969,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsAiBoxOpen(!isAiBoxOpen)}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1E60F8] bg-[#EFF4FF] hover:bg-[#DBEAFE] px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#235BF7] bg-[#EEF3FF] hover:bg-[#DBEAFE] px-3 py-1.5 rounded-xl transition-all cursor-pointer"
                   >
                     <Wand2 className="w-3.5 h-3.5" />
                     <span>
@@ -986,19 +986,19 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
                 {/* Espace interactif de génération IA (Demande Audio explicite) */}
                 {isAiBoxOpen && (
-                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border-2 border-[#1E60F8]/30 space-y-3 animate-in fade-in">
+                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border-2 border-[#235BF7]/30 space-y-3 animate-in fade-in">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
-                        <Sparkles className="w-4 h-4 text-[#1E60F8]" />
+                      <span className="text-xs font-bold text-[#201D1D] flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-[#235BF7]" />
                         <span>Générateur de Titres IA pour E-commerce Africain</span>
                       </span>
-                      <span className="text-[10px] text-[#64748B]">
+                      <span className="text-[10px] text-[#7A808C]">
                         Spécialement optimisé pour l'Afrique de l'Ouest
                       </span>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[11px] font-bold text-[#64748B] block">
+                      <label className="text-[11px] font-bold text-[#7A808C] block">
                         Décrivez brièvement votre produit ou vos mots-clés :
                       </label>
                       <div className="flex gap-2">
@@ -1007,13 +1007,13 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                           value={aiProductPrompt}
                           onChange={(e) => setAiProductPrompt(e.target.value)}
                           placeholder="Ex: Montre homme luxe acier noir étanche, Chaussures cuir Dakar..."
-                          className="flex-1 px-3 py-2 rounded-xl bg-white border border-[#CBD5E1] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8]"
+                          className="flex-1 px-3 py-2 rounded-xl bg-white border border-[#CBD5E1] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7]"
                         />
                         <button
                           type="button"
                           onClick={handleGenerateAiTitles}
                           disabled={isGeneratingTitle}
-                          className="px-4 py-2 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                          className="px-4 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
                         >
                           <Wand2 className="w-3.5 h-3.5" />
                           <span>{isGeneratingTitle ? 'Génération...' : 'Générer'}</span>
@@ -1023,7 +1023,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
                     {/* Tone Options */}
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="text-[11px] text-[#64748B] font-semibold">
+                      <span className="text-[11px] text-[#7A808C] font-semibold">
                         Ton du titre :
                       </span>
                       <div className="flex gap-1.5">
@@ -1038,8 +1038,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                             onClick={() => setAiTone(t.id as typeof aiTone)}
                             className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
                               aiTone === t.id
-                                ? 'bg-[#1E60F8] text-white'
-                                : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-neutral-100'
+                                ? 'bg-[#235BF7] text-white'
+                                : 'bg-white border border-[#E2E8F0] text-[#7A808C] hover:bg-neutral-100'
                             }`}
                           >
                             {t.label}
@@ -1051,7 +1051,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     {/* Suggestions list */}
                     {aiSuggestions.length > 0 && (
                       <div className="space-y-1.5 pt-2 border-t border-[#E2E8F0]">
-                        <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
+                        <span className="text-[10px] font-bold text-[#7A808C] uppercase tracking-wider block">
                           Suggestions générées (cliquez pour appliquer) :
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1063,7 +1063,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                                 setConfig({ ...config, productTitle: title });
                                 setIsAiBoxOpen(false);
                               }}
-                              className="text-left p-2.5 rounded-xl text-xs font-semibold text-[#0F172A] hover:bg-[#1E60F8] hover:text-white transition-all cursor-pointer border border-[#E2E8F0] bg-white flex items-center justify-between group shadow-xs"
+                              className="text-left p-2.5 rounded-xl text-xs font-semibold text-[#201D1D] hover:bg-[#235BF7] hover:text-white transition-all cursor-pointer border border-[#E2E8F0] bg-white flex items-center justify-between group shadow-xs"
                             >
                               <span className="line-clamp-2">{title}</span>
                               <Check className="w-4 h-4 opacity-0 group-hover:opacity-100 flex-shrink-0 ml-2" />
@@ -1097,12 +1097,12 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
               <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Truck className="w-4 h-4 text-[#1E60F8]" />
-                    <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
+                    <Truck className="w-4 h-4 text-[#235BF7]" />
+                    <span className="text-xs font-bold text-[#201D1D] uppercase tracking-wider">
                       Frais de Livraison pour ce Produit
                     </span>
                   </div>
-                  <span className="text-[11px] font-bold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-0.5 rounded-lg">
+                  <span className="text-[11px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-lg">
                     {config.deliveryPricingType === 'fixed'
                       ? formatFCFA(config.fixedDeliveryFee || 0)
                       : 'Offerte'}
@@ -1122,8 +1122,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     }
                     className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center border cursor-pointer ${
                       config.deliveryPricingType !== 'fixed'
-                        ? 'bg-[#1E60F8] text-white border-[#1E60F8] shadow-xs'
-                        : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-slate-50'
+                        ? 'bg-[#235BF7] text-white border-[#235BF7] shadow-xs'
+                        : 'bg-white text-[#7A808C] border-[#E2E8F0] hover:bg-slate-50'
                     }`}
                   >
                     Livraison Offerte (Gratuit)
@@ -1141,8 +1141,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     }
                     className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center border cursor-pointer ${
                       config.deliveryPricingType === 'fixed'
-                        ? 'bg-[#1E60F8] text-white border-[#1E60F8] shadow-xs'
-                        : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-slate-50'
+                        ? 'bg-[#235BF7] text-white border-[#235BF7] shadow-xs'
+                        : 'bg-white text-[#7A808C] border-[#E2E8F0] hover:bg-slate-50'
                     }`}
                   >
                     Frais Fixes Ajoutés
@@ -1170,10 +1170,10 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
               <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider block">
+                    <span className="text-xs font-bold text-[#201D1D] uppercase tracking-wider block">
                       Paliers de Réductions par Quantité (Packs Dégressifs)
                     </span>
-                    <p className="text-[11px] text-[#64748B] mt-0.5">
+                    <p className="text-[11px] text-[#7A808C] mt-0.5">
                       Permettez aux acheteurs de bénéficier d'une remise quand ils prennent 2, 3 ou
                       4 pièces.
                     </p>
@@ -1187,7 +1187,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                       }
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1E60F8]"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#235BF7]"></div>
                   </label>
                 </div>
 
@@ -1230,7 +1230,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                           className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                         >
                           <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-lg bg-[#EFF4FF] text-[#1E60F8] font-black text-xs flex items-center justify-center shrink-0">
+                            <span className="w-8 h-8 rounded-lg bg-[#EEF3FF] text-[#235BF7] font-black text-xs flex items-center justify-center shrink-0">
                               {tier.minQty}×
                             </span>
                             <div>
@@ -1242,10 +1242,10 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                                   updated[idx] = { ...tier, label: e.target.value };
                                   setConfig({ ...config, quantityDiscounts: updated });
                                 }}
-                                className="text-xs font-bold text-[#0F172A] bg-transparent border-b border-transparent hover:border-[#CBD5E1] focus:border-[#1E60F8] focus:outline-none"
+                                className="text-xs font-bold text-[#201D1D] bg-transparent border-b border-transparent hover:border-[#CBD5E1] focus:border-[#235BF7] focus:outline-none"
                                 placeholder="Libellé de l'offre (ex: Pack Duo)"
                               />
-                              <span className="text-[11px] text-[#64748B] block mt-0.5">
+                              <span className="text-[11px] text-[#7A808C] block mt-0.5">
                                 {tier.discountValue === 0
                                   ? `Tarif standard : ${formatFCFA(config.price)} par article`
                                   : `Remise -${tier.discountValue}% (${formatFCFA(unitDiscounted)}/pc) — Total : ${formatFCFA(tierTotal)}`}
@@ -1255,7 +1255,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1.5 bg-[#F8FAFC] px-2.5 py-1.5 rounded-xl border border-[#E2E8F0]">
-                              <span className="text-[11px] font-semibold text-[#64748B]">
+                              <span className="text-[11px] font-semibold text-[#7A808C]">
                                 Remise :
                               </span>
                               <input
@@ -1273,7 +1273,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                                 }}
                                 className="w-12 text-xs font-black text-center bg-white border border-[#CBD5E1] rounded px-1 py-0.5"
                               />
-                              <span className="text-xs font-bold text-[#0F172A]">%</span>
+                              <span className="text-xs font-bold text-[#201D1D]">%</span>
                             </div>
 
                             {idx > 0 && (
@@ -1332,7 +1332,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                           quantityDiscounts: [...currentTiers, newTier],
                         });
                       }}
-                      className="w-full py-2.5 px-3 rounded-xl border border-dashed border-[#CBD5E1] text-[#1E60F8] hover:bg-[#EFF4FF] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="w-full py-2.5 px-3 rounded-xl border border-dashed border-[#CBD5E1] text-[#235BF7] hover:bg-[#EEF3FF] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Ajouter un palier supplémentaire (ex: 4 pièces, 5 pièces)</span>
@@ -1344,8 +1344,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
               {/* Stock & Urgence (Optionnel) */}
               <div className="pt-6 border-t border-[#F1F5F9] space-y-4">
                 <div className="flex items-center gap-2">
-                  <Box className="w-4 h-4 text-[#1E60F8]" />
-                  <h4 className="text-sm font-black text-[#0F172A] tracking-tight">
+                  <Box className="w-4 h-4 text-[#235BF7]" />
+                  <h4 className="text-sm font-black text-[#201D1D] tracking-tight">
                     Stock & Urgence (Optionnel)
                   </h4>
                 </div>
@@ -1385,19 +1385,19 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
               <div className="pt-6 border-t border-[#F1F5F9] space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Palette className="w-4 h-4 text-[#1E60F8]" />
+                    <Palette className="w-4 h-4 text-[#235BF7]" />
                     <div>
-                      <h4 className="text-sm font-black text-[#0F172A] tracking-tight">
+                      <h4 className="text-sm font-black text-[#201D1D] tracking-tight">
                         Couleurs & Variantes du Produit (Optionnel)
                       </h4>
-                      <p className="text-xs text-[#64748B]">
+                      <p className="text-xs text-[#7A808C]">
                         Permet au client de sélectionner sa couleur préférée directement sur la page
                         de commande.
                       </p>
                     </div>
                   </div>
                   {(config.availableColors?.length ?? 0) > 0 && (
-                    <span className="text-[11px] font-bold text-[#1E60F8] bg-[#EFF4FF] px-2.5 py-1 rounded-full">
+                    <span className="text-[11px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-1 rounded-full">
                       {config.availableColors?.length} couleur
                       {(config.availableColors?.length ?? 0) > 1 ? 's' : ''}
                     </span>
@@ -1406,7 +1406,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
                 {/* Quick palette buttons */}
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] block mb-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#7A808C] block mb-2">
                     Sélection rapide de couleurs :
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -1436,7 +1436,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                             isAlreadyAdded
                               ? 'bg-slate-100 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed'
-                              : 'bg-white hover:bg-slate-50 text-[#0F172A] border-[#E2E8F0] hover:border-[#CBD5E1] shadow-2xs'
+                              : 'bg-white hover:bg-slate-50 text-[#201D1D] border-[#E2E8F0] hover:border-[#CBD5E1] shadow-2xs'
                           }`}
                         >
                           <span
@@ -1447,7 +1447,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                           {isAlreadyAdded ? (
                             <Check className="w-3 h-3 text-slate-400 ml-0.5" />
                           ) : (
-                            <Plus className="w-3 h-3 text-[#64748B] ml-0.5" />
+                            <Plus className="w-3 h-3 text-[#7A808C] ml-0.5" />
                           )}
                         </button>
                       );
@@ -1465,7 +1465,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                       className="w-10 h-10 rounded-xl border border-[#CBD5E1] cursor-pointer bg-white p-0.5"
                       title="Choisir une nuance personnalisée"
                     />
-                    <span className="text-xs font-mono text-[#64748B] font-bold uppercase">
+                    <span className="text-xs font-mono text-[#7A808C] font-bold uppercase">
                       {newColorHex}
                     </span>
                   </div>
@@ -1475,7 +1475,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     value={newColorName}
                     onChange={(e) => setNewColorName(e.target.value)}
                     placeholder="Nom de la couleur personnalisée (ex: Bleu Nuit, Ocre...)"
-                    className="flex-1 w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8]"
+                    className="flex-1 w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7]"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -1499,14 +1499,14 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                 {/* Active colors list */}
                 {(config.availableColors || []).length > 0 && (
                   <div className="space-y-2 pt-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] block">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A808C] block">
                       Couleurs actives sur votre page :
                     </span>
                     <div className="flex flex-wrap gap-2">
                       {(config.availableColors || []).map((col) => (
                         <div
                           key={col.id}
-                          className="inline-flex items-center gap-2 pl-2 pr-1.5 py-1 rounded-xl bg-white border border-[#E2E8F0] shadow-xs text-xs font-bold text-[#0F172A]"
+                          className="inline-flex items-center gap-2 pl-2 pr-1.5 py-1 rounded-xl bg-white border border-[#E2E8F0] shadow-xs text-xs font-bold text-[#201D1D]"
                         >
                           <span
                             className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
@@ -1554,12 +1554,12 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
           {/* ÉTAPE 3 : BÉNÉFICES & ARGUMENTS DE VENTE                 */}
           {/* ======================================================== */}
           {currentStep === 3 && (
-            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs space-y-6">
+            <div className="p-6 sm:p-8 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-6">
               <div>
-                <h3 className="text-xl font-black text-[#0F172A] tracking-tight">
+                <h3 className="text-xl font-black text-[#201D1D] tracking-tight">
                   Étape 3 : Bénéfices & Arguments de Vente
                 </h3>
-                <p className="text-xs text-[#64748B] mt-0.5">
+                <p className="text-xs text-[#7A808C] mt-0.5">
                   Présentez les 3 à 5 atouts majeurs qui rassurent et déclenchent l'achat chez le
                   client.
                 </p>
@@ -1567,7 +1567,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#0F172A]">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#201D1D]">
                     Liste des Arguments ({config.benefits.length})
                   </label>
 
@@ -1585,14 +1585,14 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                 <div className="space-y-2.5">
                   {config.benefits.map((benefit, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-[#EFF4FF] text-[#1E60F8] font-bold text-xs flex items-center justify-center flex-shrink-0">
+                      <span className="w-6 h-6 rounded-lg bg-[#EEF3FF] text-[#235BF7] font-bold text-xs flex items-center justify-center flex-shrink-0">
                         {idx + 1}
                       </span>
                       <input
                         type="text"
                         value={benefit}
                         onChange={(e) => handleUpdateBenefit(idx, e.target.value)}
-                        className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
                       />
                       {config.benefits.length > 1 && (
                         <button
@@ -1635,12 +1635,12 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
           {/* (SECTION TRÈS IMPORTANTE DEMANDÉE PAR L'AUDIO)           */}
           {/* ======================================================== */}
           {currentStep === 4 && (
-            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs space-y-6">
+            <div className="p-6 sm:p-8 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-6">
               <div>
-                <h3 className="text-xl font-black text-[#0F172A] tracking-tight">
+                <h3 className="text-xl font-black text-[#201D1D] tracking-tight">
                   Étape 4 : Témoignages & Preuves Réelles (Photos, Vidéos, Audios)
                 </h3>
-                <p className="text-xs text-[#64748B] mt-0.5">
+                <p className="text-xs text-[#7A808C] mt-0.5">
                   Configurez vos vraies preuves de livraison : photos reçues, vidéos unboxing ou
                   notes vocales WhatsApp.
                 </p>
@@ -1648,7 +1648,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
               {/* Formulaire d'ajout d'une nouvelle preuve */}
               <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-4">
-                <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider block">
+                <span className="text-xs font-bold text-[#201D1D] uppercase tracking-wider block">
                   + Ajouter un Nouveau Témoignage Réel
                 </span>
 
@@ -1659,8 +1659,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     onClick={() => setNewProofType('audio')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
                       newProofType === 'audio'
-                        ? 'bg-[#1E60F8] text-white border-[#1E60F8] shadow-xs'
-                        : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-slate-50'
+                        ? 'bg-[#235BF7] text-white border-[#235BF7] shadow-xs'
+                        : 'bg-white text-[#7A808C] border-[#E2E8F0] hover:bg-slate-50'
                     }`}
                   >
                     <Headphones className="w-3.5 h-3.5" />
@@ -1672,8 +1672,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     onClick={() => setNewProofType('video')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
                       newProofType === 'video'
-                        ? 'bg-[#1E60F8] text-white border-[#1E60F8] shadow-xs'
-                        : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-slate-50'
+                        ? 'bg-[#235BF7] text-white border-[#235BF7] shadow-xs'
+                        : 'bg-white text-[#7A808C] border-[#E2E8F0] hover:bg-slate-50'
                     }`}
                   >
                     <Film className="w-3.5 h-3.5" />
@@ -1685,8 +1685,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     onClick={() => setNewProofType('image')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
                       newProofType === 'image'
-                        ? 'bg-[#1E60F8] text-white border-[#1E60F8] shadow-xs'
-                        : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-slate-50'
+                        ? 'bg-[#235BF7] text-white border-[#235BF7] shadow-xs'
+                        : 'bg-white text-[#7A808C] border-[#E2E8F0] hover:bg-slate-50'
                     }`}
                   >
                     <Camera className="w-3.5 h-3.5" />
@@ -1698,10 +1698,10 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                 <div className="space-y-3">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold text-[#0F172A] block">
+                      <label className="text-xs font-bold text-[#201D1D] block">
                         Titre / Légende du témoignage (Par défaut : "Client satisfait")
                       </label>
-                      <span className="text-[10px] text-[#64748B]">Optionnel</span>
+                      <span className="text-[10px] text-[#7A808C]">Optionnel</span>
                     </div>
                     <Input
                       value={newProofTitle}
@@ -1712,7 +1712,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
                   {/* Choix de la source : Import local depuis machine ou Saisie de lien */}
                   <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] space-y-3">
-                    <span className="text-xs font-bold text-[#0F172A] block">
+                    <span className="text-xs font-bold text-[#201D1D] block">
                       Fichier média (
                       {newProofType === 'audio'
                         ? 'Note vocale audio'
@@ -1724,12 +1724,12 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* Option A : Upload depuis l'ordinateur */}
-                      <label className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed border-[#CBD5E1] hover:border-[#1E60F8] bg-[#F8FAFC] hover:bg-[#EFF4FF] transition-all cursor-pointer group text-center">
-                        <Upload className="w-5 h-5 text-[#94A3B8] group-hover:text-[#1E60F8] mb-1.5 transition-colors" />
-                        <span className="text-xs font-bold text-[#0F172A] group-hover:text-[#1E60F8]">
+                      <label className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed border-[#CBD5E1] hover:border-[#235BF7] bg-[#F8FAFC] hover:bg-[#EEF3FF] transition-all cursor-pointer group text-center">
+                        <Upload className="w-5 h-5 text-[#94A3B8] group-hover:text-[#235BF7] mb-1.5 transition-colors" />
+                        <span className="text-xs font-bold text-[#201D1D] group-hover:text-[#235BF7]">
                           Importer depuis mon ordinateur
                         </span>
-                        <span className="text-[10px] text-[#64748B] mt-0.5">
+                        <span className="text-[10px] text-[#7A808C] mt-0.5">
                           {newProofType === 'audio'
                             ? 'MP3, WAV, M4A, OGG'
                             : newProofType === 'video'
@@ -1774,7 +1774,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
                       {/* Option B : Saisie manuelle d'une URL */}
                       <div className="flex flex-col justify-center space-y-1.5">
-                        <span className="text-[11px] font-semibold text-[#64748B]">
+                        <span className="text-[11px] font-semibold text-[#7A808C]">
                           Ou coller une URL directe :
                         </span>
                         <input
@@ -1791,7 +1791,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                                 ? 'https://.../unboxing.mp4'
                                 : 'https://.../photo.jpg'
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white"
+                          className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
                         />
                       </div>
                     </div>
@@ -1799,12 +1799,12 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     {/* Progression de l'envoi vers Cloudinary */}
                     {proofProgress !== null && (
                       <div className="space-y-1">
-                        <p className="text-xs font-semibold text-[#1E60F8]">
+                        <p className="text-xs font-semibold text-[#235BF7]">
                           Envoi en cours… {proofProgress}%
                         </p>
                         <div className="h-1.5 rounded-full bg-[#E2E8F0] overflow-hidden">
                           <div
-                            className="h-full bg-[#1E60F8] transition-all"
+                            className="h-full bg-[#235BF7] transition-all"
                             style={{ width: `${proofProgress}%` }}
                           />
                         </div>
@@ -1880,7 +1880,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
               {/* Liste des preuves actuellement dans le slider */}
               <div className="space-y-3 pt-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#0F172A] block">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#201D1D] block">
                   Preuves Actuellement Affichées sur la Vitrine ({config.proofItems?.length || 0})
                 </span>
 
@@ -1901,8 +1901,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                               item.type === 'audio'
                                 ? 'bg-[#25D366]'
                                 : item.type === 'video'
-                                  ? 'bg-[#1E60F8]'
-                                  : 'bg-[#0F172A]'
+                                  ? 'bg-[#235BF7]'
+                                  : 'bg-[#201D1D]'
                             }`}
                           >
                             {item.type === 'audio' ? (
@@ -1915,10 +1915,10 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                           </div>
 
                           <div className="min-w-0">
-                            <span className="text-xs font-bold text-[#0F172A] block truncate">
+                            <span className="text-xs font-bold text-[#201D1D] block truncate">
                               {item.title}
                             </span>
-                            <span className="text-[10px] text-[#64748B] block truncate">
+                            <span className="text-[10px] text-[#7A808C] block truncate">
                               {item.authorName} &bull; {item.city}{' '}
                               {item.duration ? `(${item.duration})` : ''}
                             </span>
@@ -1964,12 +1964,12 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
           {/* ÉTAPE 5 : CHECKOUT, COD, LIVRAISON & REASSURANCE         */}
           {/* ======================================================== */}
           {currentStep === 5 && (
-            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-[#E5E9F0] shadow-xs space-y-6">
+            <div className="p-6 sm:p-8 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-6">
               <div>
-                <h3 className="text-xl font-black text-[#0F172A] tracking-tight">
+                <h3 className="text-xl font-black text-[#201D1D] tracking-tight">
                   Étape 5 : Checkout, Logistique & Support Client
                 </h3>
-                <p className="text-xs text-[#64748B] mt-0.5">
+                <p className="text-xs text-[#7A808C] mt-0.5">
                   Finalisez vos promesses de livraison, garantie zéro risque et numéro de contact
                   direct.
                 </p>
@@ -1981,7 +1981,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   value={config.deliveryNotice}
                   onChange={(e) => setConfig({ ...config, deliveryNotice: e.target.value })}
                   placeholder="Ex: Expédition locale sous 2h à 4h à Dakar"
-                  icon={<Truck className="w-4 h-4 text-[#1E60F8]" />}
+                  icon={<Truck className="w-4 h-4 text-[#235BF7]" />}
                 />
 
                 <Input
@@ -2036,17 +2036,17 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
       {/* Modal Création Nouvelle Page / Tunnel */}
       {isNewPageModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E5E9F0] space-y-4">
+          <div className="bg-white rounded-[28px] max-w-md w-full p-6 shadow-2xl border border-[#ECEFF4] space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#EFF4FF] text-[#1E60F8] flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center font-bold">
                   <Plus className="w-4 h-4 stroke-[3]" />
                 </div>
-                <h3 className="text-base font-black text-[#0F172A]">Créer une nouvelle page</h3>
+                <h3 className="text-base font-black text-[#201D1D]">Créer une nouvelle page</h3>
               </div>
               <button
                 onClick={() => setIsNewPageModalOpen(false)}
-                className="p-1.5 text-[#94A3B8] hover:text-[#0F172A] rounded-lg cursor-pointer"
+                className="p-1.5 text-[#94A3B8] hover:text-[#201D1D] rounded-lg cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2054,7 +2054,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
             <form onSubmit={handleCreateSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#0F172A] block">
+                <label className="text-xs font-bold text-[#201D1D] block">
                   Nom interne de la page / tunnel <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -2063,11 +2063,11 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   value={newPageNameInput}
                   onChange={(e) => setNewPageNameInput(e.target.value)}
                   placeholder="Ex: Duo Sérum Éclat — Vente Flash TikTok"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-[#0F172A] focus:outline-none focus:border-[#1E60F8] focus:bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
                   autoFocus
                 />
-                <p className="text-[11px] text-[#64748B] flex items-start gap-1 pt-1">
-                  <AlertCircle className="w-3.5 h-3.5 text-[#1E60F8] shrink-0 mt-0.5" />
+                <p className="text-[11px] text-[#7A808C] flex items-start gap-1 pt-1">
+                  <AlertCircle className="w-3.5 h-3.5 text-[#235BF7] shrink-0 mt-0.5" />
                   <span>
                     Ce nom sert uniquement à votre organisation interne et ne sera jamais affiché
                     aux clients sur le site.
@@ -2079,14 +2079,14 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsNewPageModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#64748B] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#7A808C] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={!newPageNameInput.trim()}
-                  className="px-4 py-2 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
                 >
                   Créer en mode Brouillon
                 </button>

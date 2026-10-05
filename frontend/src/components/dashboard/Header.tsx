@@ -107,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-white border-b border-[#E5E9F0] px-4 sm:px-6 py-3.5 flex flex-col gap-3 sticky top-0 z-30 select-none">
+    <header className="bg-white/85 backdrop-blur-xl border-b border-[#ECEFF4] lg:border lg:border-[#ECEFF4] lg:m-3 lg:mb-0 lg:rounded-[22px] lg:shadow-[0_10px_30px_-22px_rgba(32,29,29,0.3)] px-4 sm:px-6 py-3.5 flex flex-col gap-3 sticky top-0 lg:top-3 z-30 select-none">
       {/* Top Search Bar, Mobile Brand & User Actions */}
       <div className="flex items-center justify-between gap-4">
         {/* Mobile Brand (Visible only when sidebar is hidden on mobile) */}
@@ -121,7 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
           <input
             type="text"
             placeholder="Rechercher une commande, un client, un quartier..."
-            className="w-full pl-10 pr-12 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1E60F8] focus:bg-white transition-all"
+            className="w-full pl-10 pr-12 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#201D1D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#235BF7] focus:bg-white transition-all"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#94A3B8] bg-white border border-[#E2E8F0] px-1.5 py-0.5 rounded">
             ⌘K
@@ -136,8 +136,8 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onToggleViewMode('dashboard')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 currentViewMode === 'dashboard'
-                  ? 'bg-white text-[#1E60F8] shadow-xs'
-                  : 'text-[#64748B] hover:text-[#0F172A]'
+                  ? 'bg-white text-[#235BF7] shadow-xs'
+                  : 'text-[#7A808C] hover:text-[#201D1D]'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -148,11 +148,11 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onToggleViewMode('vitrine')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 currentViewMode === 'vitrine'
-                  ? 'bg-white text-[#1E60F8] shadow-xs'
-                  : 'text-[#64748B] hover:text-[#0F172A]'
+                  ? 'bg-white text-[#235BF7] shadow-xs'
+                  : 'text-[#7A808C] hover:text-[#201D1D]'
               }`}
             >
-              <Smartphone className="w-3.5 h-3.5 text-[#1E60F8]" />
+              <Smartphone className="w-3.5 h-3.5 text-[#235BF7]" />
               <span className="hidden sm:inline">Vitrine Mobile</span>
             </button>
           </div>
@@ -162,8 +162,8 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => setIsDarkMode(!isDarkMode)}
             className={`p-2 rounded-xl border transition-colors cursor-pointer ${
               isDarkMode
-                ? 'bg-[#0F172A] text-amber-300 border-[#0F172A]'
-                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] border-[#E2E8F0]'
+                ? 'bg-[#201D1D] text-amber-300 border-[#201D1D]'
+                : 'text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F8FAFC] border-[#E2E8F0]'
             }`}
             title={isDarkMode ? 'Désactiver le mode nocturne' : 'Activer le mode nocturne'}
           >
@@ -179,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
                 setIsPeriodOpen(false);
                 setIsWidgetModalOpen(false);
               }}
-              className="p-2 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] border border-[#E2E8F0] transition-colors cursor-pointer relative"
+              className="p-2 rounded-xl text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F8FAFC] border border-[#E2E8F0] transition-colors cursor-pointer relative"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
@@ -189,12 +189,12 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Notifications Popover */}
             {isNotificationsOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-3xl p-4 border border-[#E5E9F0] shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-[28px] p-4 border border-[#ECEFF4] shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                   <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-xs text-[#0F172A]">Notifications</span>
+                    <span className="font-extrabold text-xs text-[#201D1D]">Notifications</span>
                     {unreadCount > 0 ? (
-                      <span className="text-[10px] font-black bg-[#EFF4FF] text-[#1E60F8] px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-black bg-[#EEF3FF] text-[#235BF7] px-2 py-0.5 rounded-full">
                         {unreadCount} non lue{unreadCount > 1 ? 's' : ''}
                       </span>
                     ) : (
@@ -205,7 +205,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                   <button
                     onClick={() => setIsNotificationsOpen(false)}
-                    className="p-1 text-[#94A3B8] hover:text-[#0F172A]"
+                    className="p-1 text-[#94A3B8] hover:text-[#201D1D]"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -214,7 +214,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="divide-y divide-[#F1F5F9] max-h-72 overflow-y-auto">
                   {notifications.length === 0 ? (
                     <div className="py-8 text-center text-xs text-[#94A3B8] space-y-1">
-                      <p className="font-semibold text-[#64748B]">Aucune notification</p>
+                      <p className="font-semibold text-[#7A808C]">Aucune notification</p>
                       <p className="text-[11px]">
                         Les alertes de commandes et retraits s'afficheront ici en direct.
                       </p>
@@ -228,10 +228,10 @@ export const Header: React.FC<HeaderProps> = ({
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs text-[#0F172A]">{notif.title}</span>
+                          <span className="font-bold text-xs text-[#201D1D]">{notif.title}</span>
                           <span className="text-[10px] text-[#94A3B8]">{notif.time}</span>
                         </div>
-                        <p className="text-[11px] text-[#64748B] leading-tight">{notif.desc}</p>
+                        <p className="text-[11px] text-[#7A808C] leading-tight">{notif.desc}</p>
                       </div>
                     ))
                   )}
@@ -244,7 +244,7 @@ export const Header: React.FC<HeaderProps> = ({
                         setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
                         setIsNotificationsOpen(false);
                       }}
-                      className="w-full py-1.5 text-center text-xs font-bold text-[#1E60F8] hover:underline cursor-pointer"
+                      className="w-full py-1.5 text-center text-xs font-bold text-[#235BF7] hover:underline cursor-pointer"
                     >
                       Marquer tout comme lu
                     </button>
@@ -260,7 +260,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-2.5 pl-1 cursor-pointer"
             title="Paramètres boutique"
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#1E60F8] to-[#60A5FA] text-white font-extrabold text-xs flex items-center justify-center ring-2 ring-[#E2E8F0]">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#235BF7] to-[#60A5FA] text-white font-extrabold text-xs flex items-center justify-center ring-2 ring-[#E2E8F0]">
               DE
             </div>
           </div>
@@ -269,7 +269,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Sub-Header Row matching Shopeers Title and Filter Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-black text-[#201D1D] tracking-tight">
           {getPageTitle()}
         </h1>
 
@@ -283,7 +283,7 @@ export const Header: React.FC<HeaderProps> = ({
                 setIsWidgetModalOpen(false);
                 setIsNotificationsOpen(false);
               }}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] transition-colors cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#201D1D] hover:bg-[#F8FAFC] transition-colors cursor-pointer whitespace-nowrap"
             >
               <Calendar className="w-3.5 h-3.5 text-[#94A3B8] shrink-0" />
               <span className="hidden sm:inline">{selectedDateRange}</span>
@@ -295,7 +295,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {isCalendarOpen && (
-              <div className="absolute left-0 sm:right-0 top-full mt-2 w-64 bg-white rounded-2xl p-2 border border-[#E5E9F0] shadow-xl z-50 animate-in fade-in slide-in-from-top-1">
+              <div className="absolute left-0 sm:right-0 top-full mt-2 w-64 bg-white rounded-2xl p-2 border border-[#ECEFF4] shadow-xl z-50 animate-in fade-in slide-in-from-top-1">
                 {[
                   'Aujourd’hui',
                   '7 derniers jours',
@@ -311,8 +311,8 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                     className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       selectedDateRange === range
-                        ? 'bg-[#EFF4FF] text-[#1E60F8]'
-                        : 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
+                        ? 'bg-[#EEF3FF] text-[#235BF7]'
+                        : 'text-[#7A808C] hover:bg-[#F8FAFC] hover:text-[#201D1D]'
                     }`}
                   >
                     {range}
@@ -331,14 +331,14 @@ export const Header: React.FC<HeaderProps> = ({
                 setIsWidgetModalOpen(false);
                 setIsNotificationsOpen(false);
               }}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] transition-colors cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#201D1D] hover:bg-[#F8FAFC] transition-colors cursor-pointer whitespace-nowrap"
             >
               <span>{selectedPeriod}</span>
               <ChevronDown className="w-3.5 h-3.5 text-[#94A3B8]" />
             </button>
 
             {isPeriodOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl p-2 border border-[#E5E9F0] shadow-xl z-50 animate-in fade-in slide-in-from-top-1">
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl p-2 border border-[#ECEFF4] shadow-xl z-50 animate-in fade-in slide-in-from-top-1">
                 {[
                   'Aujourd’hui',
                   '7 derniers jours',
@@ -354,8 +354,8 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                     className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       selectedPeriod === period
-                        ? 'bg-[#EFF4FF] text-[#1E60F8]'
-                        : 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
+                        ? 'bg-[#EEF3FF] text-[#235BF7]'
+                        : 'text-[#7A808C] hover:bg-[#F8FAFC] hover:text-[#201D1D]'
                     }`}
                   >
                     {period}
@@ -374,7 +374,7 @@ export const Header: React.FC<HeaderProps> = ({
                 setIsPeriodOpen(false);
                 setIsNotificationsOpen(false);
               }}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-colors cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs font-semibold text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F8FAFC] transition-colors cursor-pointer whitespace-nowrap"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#94A3B8]" />
               <span className="hidden sm:inline">Ajouter widget</span>
@@ -382,12 +382,12 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {isWidgetModalOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-3xl p-4 border border-[#E5E9F0] shadow-xl z-50 animate-in fade-in slide-in-from-top-1 space-y-2">
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-[28px] p-4 border border-[#ECEFF4] shadow-xl z-50 animate-in fade-in slide-in-from-top-1 space-y-2">
                 <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
-                  <span className="text-xs font-black text-[#0F172A]">Widgets Visibles</span>
+                  <span className="text-xs font-black text-[#201D1D]">Widgets Visibles</span>
                   <button
                     onClick={() => setIsWidgetModalOpen(false)}
-                    className="p-1 text-[#94A3B8] hover:text-[#0F172A]"
+                    className="p-1 text-[#94A3B8] hover:text-[#201D1D]"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -412,7 +412,7 @@ export const Header: React.FC<HeaderProps> = ({
                         type="checkbox"
                         checked={activeWidgets[w.key]}
                         onChange={() => onToggleWidget?.(w.key)}
-                        className="w-4 h-4 rounded text-[#1E60F8] accent-[#1E60F8] cursor-pointer"
+                        className="w-4 h-4 rounded text-[#235BF7] accent-[#235BF7] cursor-pointer"
                       />
                     </label>
                   ))}
@@ -424,7 +424,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Primary Action Button (Blue Shopeers style) */}
           <button
             onClick={onCreatePageClick}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl bg-[#1E60F8] hover:bg-[#164ED0] text-white text-xs font-bold transition-all shadow-[0_2px_8px_rgba(30,96,248,0.25)] cursor-pointer shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-xs font-bold transition-all shadow-[0_2px_8px_rgba(30,96,248,0.25)] cursor-pointer shrink-0 whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5 stroke-[3]" />
             <span className="hidden sm:inline">Créer une page</span>

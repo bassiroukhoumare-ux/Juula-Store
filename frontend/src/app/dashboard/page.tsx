@@ -27,6 +27,7 @@ import { api, ApiError, clearCsrfToken } from '@/lib/api';
 import { pickStoreWide } from '@/lib/store/store-fields';
 import { getStoreCode } from '@/lib/orderUtils';
 import { useToast } from '@/contexts/ToastContext';
+import { displayFont } from '@/app/fonts';
 import {
   DashboardTab,
   FunnelPageConfig,
@@ -468,18 +469,20 @@ export default function JuulaStoreApp() {
 
   if (session !== 'ready') {
     return (
-      <div className="min-h-screen bg-[#F2F4F7] flex items-center justify-center p-4">
+      <div
+        className={`${displayFont.className} min-h-screen bg-[#EDEFF3] flex items-center justify-center p-4`}
+      >
         {session === 'loading' ? (
-          <div className="flex items-center gap-3 text-sm font-bold text-[#64748B]">
-            <Loader2 className="w-5 h-5 animate-spin text-[#1E60F8]" />
+          <div className="flex items-center gap-3 text-sm font-bold text-[#7A808C]">
+            <Loader2 className="w-5 h-5 animate-spin text-[#235BF7]" />
             Chargement de votre boutique…
           </div>
         ) : (
           <div className="max-w-sm text-center space-y-3">
-            <p className="text-sm font-semibold text-[#0F172A]">{loadError}</p>
+            <p className="text-sm font-semibold text-[#201D1D]">{loadError}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 rounded-xl bg-[#1E60F8] text-white text-xs font-black cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#235BF7] text-white text-xs font-black cursor-pointer"
             >
               Réessayer
             </button>
@@ -490,14 +493,16 @@ export default function JuulaStoreApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F2F4F7] text-[#0F172A] flex flex-col font-sans">
+    <div
+      className={`${displayFont.className} min-h-screen bg-[#EDEFF3] text-[#201D1D] flex flex-col`}
+    >
       {/* ======================================================== */}
       {/* VUE 2 : VITRINE IMMERSIVE (DESKTOP & MOBILE RESPONSIVE)  */}
       {/* ======================================================== */}
       {viewMode === 'vitrine' ? (
         <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
           {/* Top Control & Return Bar */}
-          <div className="w-full bg-[#0F172A] text-white py-2.5 px-4 sm:px-8 flex items-center justify-between text-xs sticky top-0 z-50 shadow-md">
+          <div className="w-full bg-[#201D1D] text-white py-2.5 px-4 sm:px-8 flex items-center justify-between text-xs sticky top-0 z-50 shadow-md">
             <button
               onClick={() => setViewMode('dashboard')}
               className="inline-flex items-center gap-1.5 font-bold hover:text-white/80 transition-colors cursor-pointer bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl"
@@ -512,7 +517,7 @@ export default function JuulaStoreApp() {
                 onClick={() => setPreviewDevice('responsive')}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
                   previewDevice === 'responsive'
-                    ? 'bg-[#1E60F8] text-white shadow-xs'
+                    ? 'bg-[#235BF7] text-white shadow-xs'
                     : 'text-white/70 hover:text-white'
                 }`}
               >
@@ -525,7 +530,7 @@ export default function JuulaStoreApp() {
                 onClick={() => setPreviewDevice('mobile')}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
                   previewDevice === 'mobile'
-                    ? 'bg-[#1E60F8] text-white shadow-xs'
+                    ? 'bg-[#235BF7] text-white shadow-xs'
                     : 'text-white/70 hover:text-white'
                 }`}
               >
@@ -572,7 +577,7 @@ export default function JuulaStoreApp() {
         /* ======================================================== */
         /* VUE 1 : DASHBOARD MARCHAND                               */
         /* ======================================================== */
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen lg:p-3 lg:gap-3">
           {/* Sidebar */}
           <Sidebar
             activeTab={activeTab}
@@ -591,7 +596,7 @@ export default function JuulaStoreApp() {
           />
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-w-0 bg-[#F2F4F7]">
+          <div className="flex-1 flex flex-col min-w-0 bg-[#EDEFF3] lg:rounded-[32px] lg:bg-[#F6F7F9] lg:border lg:border-white lg:overflow-hidden">
             {/* Header */}
             <Header
               activeTab={activeTab}
@@ -625,7 +630,7 @@ export default function JuulaStoreApp() {
             />
 
             {/* Dynamic Content View */}
-            <main className="flex-1 p-4 sm:p-8 pb-28 lg:pb-8 max-w-7xl w-full mx-auto">
+            <main className="flex-1 p-4 sm:p-8 pb-28 lg:pb-8 max-w-7xl w-full mx-auto motion-safe:animate-[rise_600ms_cubic-bezier(.2,.75,.2,1)]">
               {isPayoutPageOpen ? (
                 <PayoutPageView
                   availableBalance={wallet.availableBalance}
