@@ -16,7 +16,7 @@ import {
   Truck,
   ArrowRight,
 } from 'lucide-react';
-import { KpiMetrics, OrderLead, FunnelPageConfig, WalletState } from '@/types/juula';
+import { KpiMetrics, OrderLead, FunnelPageItem, WalletState } from '@/types/juula';
 import { formatFCFA } from '@/lib/orderUtils';
 import { HeaderWidgetsState } from '@/components/dashboard/Header';
 import { RevenueChart } from '@/components/dashboard/RevenueChart';
@@ -25,7 +25,8 @@ import type { PeriodRange } from '@/lib/store/period';
 interface CockpitViewProps {
   kpis: KpiMetrics;
   wallet: WalletState;
-  funnelConfig: FunnelPageConfig;
+  /** All the store's products (best sellers of the period are computed from them). */
+  products: FunnelPageItem[];
   recentOrders: OrderLead[];
   onCreatePageClick: () => void;
   onOpenRecharge: () => void;
@@ -42,7 +43,7 @@ interface CockpitViewProps {
 export const CockpitView: React.FC<CockpitViewProps> = ({
   kpis: _kpis,
   wallet: _wallet,
-  funnelConfig,
+  products,
   recentOrders,
   previousOrders,
   periodRange,
@@ -195,41 +196,28 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
   const deliveryPercent =
     totalOrdersCount > 0 ? Math.round((deliveredCount / totalOrdersCount) * 100) : 0;
 
-  // Best selling products table derived from current products and sales
+  // Best-selling products of the period: every product with its own orders.
   const bestProducts = React.useMemo(() => {
-    if (recentOrders.length === 0) {
-      if (funnelConfig.productTitle) {
-        return [
-          {
-            id: funnelConfig.storeCode || '#001',
-            name: funnelConfig.productTitle,
-            image:
-              funnelConfig.mediaItems[0]?.url ||
-              'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=120&q=80',
-            sold: '0 vendu',
-            revenue: formatFCFA(0),
-            rating: '—',
-          },
-        ];
-      }
-      return [];
-    }
-    const count = recentOrders.length;
-    const rev = recentOrders.reduce((sum, o) => sum + (o.totalAmount || o.amount), 0);
-    return [
-      {
-        id: funnelConfig.storeCode || '#001',
-        name: funnelConfig.productTitle,
-        image:
-          funnelConfig.mediaItems[0]?.url ||
-          recentOrders[0]?.productImage ||
-          'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=120&q=80',
-        sold: `${count} vendu${count > 1 ? 's' : ''}`,
-        revenue: `${formatFCFA(rev)}`,
-        rating: `${deliveryPercent}%`,
-      },
-    ];
-  }, [recentOrders, funnelConfig, deliveryPercent]);
+    const rows = products.map((p) => {
+      const own = recentOrders.filter((o) => o.productId === p.id && o.status !== 'cancelled');
+      const delivered = own.filter((o) => o.status === 'delivered').length;
+      const revenue = own.reduce((sum, o) => sum + (o.totalAmount || o.amount), 0);
+      return {
+        id: p.id,
+        name: p.config.productTitle || p.internalName,
+        image: p.config.mediaItems.find((m) => m.type === 'image')?.url ?? '',
+        count: own.length,
+        revenueValue: revenue,
+        sold: `${own.length} vendu${own.length > 1 ? 's' : ''}`,
+        revenue: formatFCFA(revenue),
+        rating: own.length > 0 ? `${Math.round((delivered / own.length) * 100)}%` : '—',
+      };
+    });
+    return rows
+      .filter((r) => r.count > 0)
+      .sort((a, b) => b.revenueValue - a.revenueValue)
+      .slice(0, 5);
+  }, [products, recentOrders]);
 
   const handleGenerateAiTip = () => {
     if (recentOrders.length === 0) {
@@ -797,8 +785,8 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
 
           {bestProducts.length === 0 ? (
             <p className="py-8 text-center text-[13px] text-[#94A3B8]">
-              Aucune page de vente pour le moment. Cliquez sur « Nouvelle page » pour créer votre
-              première page.
+              Aucune vente sur cette période. Partagez le lien de vos produits pour recevoir vos
+              premières commandes.
             </p>
           ) : (
             <>

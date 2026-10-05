@@ -30,6 +30,7 @@ import { createMonerizWithdrawal, MonerizApiError } from '@/lib/server/payments/
 import { isMonerizConfigured, storeBalanceComputer } from '@/lib/server/store/payments';
 import { sendWithdrawalFailedEmail, sendWithdrawalSentEmail } from '@/lib/server/store/notify';
 import { lockUserTx } from '@/lib/server/withdrawals/lock';
+import { getPayoutAccounts } from '@/lib/server/store/payout-accounts';
 import { loadGuardConfigFromEnv, validateWithdrawalRequest } from '@/lib/server/withdrawals/guards';
 
 const MONERIZ_MIN_PAYOUT = 1000;
@@ -37,8 +38,8 @@ const MONERIZ_MIN_PAYOUT = 1000;
 const Body = z.object({
   amount: z.number().int().positive(),
   provider: z.enum(['wave', 'orange_money']),
-  phone: z.string().min(7).max(20),
-  name: z.string().trim().min(2).max(100).optional(),
+  /** Ignored: payouts only go to the number saved in Paramètres. */
+  phone: z.string().max(20).optional(),
   pin: z.string().regex(/^\d{4,6}$/),
 });
 
@@ -53,13 +54,6 @@ const MESSAGES: Record<string, string> = {
   INSUFFICIENT_BALANCE:
     'Solde disponible insuffisant. Les paiements en ligne deviennent retirables 72 h après leur réception.',
 };
-
-/** Senegal mobile numbers → E.164 (+221XXXXXXXXX). */
-function toE164(raw: string): string | null {
-  const digits = raw.replace(/[^\d]/g, '');
-  const local = digits.startsWith('221') && digits.length === 12 ? digits.slice(3) : digits;
-  return /^7\d{8}$/.test(local) ? `+221${local}` : null;
-}
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
@@ -81,9 +75,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!parsed.success)
       return fail(400, 'VALIDATION_FAILED', 'Informations de retrait invalides.');
     const { amount, provider, pin } = parsed.data;
-    const phone = toE164(parsed.data.phone);
-    if (!phone)
-      return fail(400, 'PHONE_INVALID', 'Numéro Wave / Orange Money invalide (ex : 77 123 45 67).');
+
+    // Payouts only go to the accounts saved in Paramètres, in the legal name
+    // of the merchant's ID card.
+    const accounts = await getPayoutAccounts(userId);
+    if (!accounts.legalName) {
+      return fail(
+        400,
+        'LEGAL_NAME_REQUIRED',
+        'Renseignez votre nom complet (comme sur votre pièce d’identité) dans Paramètres → Moyens de retrait.',
+      );
+    }
+    const phone = provider === 'wave' ? accounts.wavePhone : accounts.orangePhone;
+    if (!phone) {
+      return fail(
+        400,
+        'PAYOUT_ACCOUNT_MISSING',
+        `Ajoutez votre numéro ${provider === 'wave' ? 'Wave' : 'Orange Money'} dans Paramètres → Moyens de retrait.`,
+      );
+    }
+    const legalName = accounts.legalName;
 
     if (!isMonerizConfigured()) {
       return fail(
@@ -113,7 +124,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           await lockUserTx(tx, userId);
           const user = await tx.user.findUnique({
             where: { id: userId },
-            select: { withdrawalPinHash: true, name: true },
+            select: { withdrawalPinHash: true },
           });
           const guard = await validateWithdrawalRequest({
             prisma: tx,
@@ -137,7 +148,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               destination: {
                 method: provider === 'wave' ? 'WAVE' : 'ORANGE_MONEY',
                 phone,
-                accountName: parsed.data.name ?? user?.name ?? 'Marchand Juula Store',
+                accountName: legalName,
               } as Prisma.InputJsonValue,
             },
             select: { id: true, amount: true },
@@ -174,7 +185,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         currency: 'XOF',
         country: 'SN',
         paymentType: provider === 'wave' ? 'wave_money' : 'orange_money',
-        destination: { phone, name: parsed.data.name ?? 'Marchand Juula Store' },
+        destination: { phone, name: legalName },
         reason: 'Retrait des ventes Juula Store',
         idempotencyKey: `wd-${withdrawal.id}`,
       })) as { id?: unknown };

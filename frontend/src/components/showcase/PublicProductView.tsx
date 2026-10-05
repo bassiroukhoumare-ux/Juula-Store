@@ -12,6 +12,12 @@ import {
   trackViewContent,
   type TrackedProduct,
 } from '@/lib/store/tracking';
+import {
+  getVisitorId,
+  saveCheckoutDraft,
+  trackProductEvent,
+  type CheckoutDraftFields,
+} from '@/lib/store/visitor-analytics';
 import type { FunnelPageConfig, OrderLead } from '@/types/juula';
 
 interface PublicProductViewProps {
@@ -56,6 +62,19 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
     trackViewContent(product);
   }, [isPreview, pixels, product]);
 
+  // First-party analytics (views, sources, countries) — once per page load.
+  useEffect(() => {
+    if (isPreview) return;
+    trackProductEvent(config.slug, 'view');
+  }, [isPreview, config.slug]);
+
+  const handleCheckoutDraft = useCallback(
+    (fields: CheckoutDraftFields) => {
+      if (!isPreview) saveCheckoutDraft(config.slug, fields);
+    },
+    [isPreview, config.slug],
+  );
+
   const submitOrder = useCallback(
     async (order: OrderLead): Promise<SubmittedOrder> => {
       if (isPreview) {
@@ -76,6 +95,7 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
           quantity: order.quantity ?? 1,
           selectedColor: order.selectedColor,
           paymentType: order.paymentType,
+          visitorId: getVisitorId(),
         }),
       });
       const body = (await res.json().catch(() => null)) as {
@@ -184,8 +204,11 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
         submitOrder={submitOrder}
         confirmPayment={confirmPayment}
         onCheckoutOpened={({ quantity, value }) => {
-          if (!isPreview) trackInitiateCheckout(product, quantity, value);
+          if (isPreview) return;
+          trackInitiateCheckout(product, quantity, value);
+          trackProductEvent(config.slug, 'checkout_open');
         }}
+        onCheckoutDraft={handleCheckoutDraft}
       />
     </div>
   );

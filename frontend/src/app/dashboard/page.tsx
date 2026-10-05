@@ -7,6 +7,7 @@ import { Header, HeaderWidgetsState } from '@/components/dashboard/Header';
 import { CockpitView } from '@/components/dashboard/CockpitView';
 import { KanbanView } from '@/components/dashboard/KanbanView';
 import { WalletView } from '@/components/dashboard/WalletView';
+import { ProductsListView } from '@/components/dashboard/ProductsListView';
 import { WizardEditor } from '@/components/dashboard/WizardEditor';
 import { ImmersiveShowcase } from '@/components/showcase/ImmersiveShowcase';
 import { RechargeModal } from '@/components/dashboard/RechargeModal';
@@ -151,18 +152,12 @@ export default function JuulaStoreApp() {
       api<{ orders: OrderLead[] }>('/api/store/orders'),
       loadWallet(),
     ]);
-    let pages = products;
-    if (pages.length === 0) {
-      // New store: start the merchant with one draft product.
-      const created = await api<{ product: FunnelPageItem }>('/api/products', {
-        method: 'POST',
-        body: { internalName: 'Mon Premier Produit' },
-      });
-      pages = [created.product];
+    setFunnelPages(products);
+    const first = products[0];
+    if (first) {
+      setActivePageId(first.id);
+      setFunnelConfig(first.config);
     }
-    setFunnelPages(pages);
-    setActivePageId(pages[0]!.id);
-    setFunnelConfig(pages[0]!.config);
     setOrders(loadedOrders);
 
     const wanted = new URLSearchParams(window.location.search).get('commande');
@@ -296,6 +291,9 @@ export default function JuulaStoreApp() {
   const periodKpis = useMemo(() => kpisFromOrders(periodOrders, kpis), [periodOrders, kpis]);
   // Header search → Kanban filter.
   const [orderSearch, setOrderSearch] = useState('');
+  // Pages de vente: product list first; the editor opens on « Modifier ».
+  const [isEditingProduct, setIsEditingProduct] = useState(false);
+  const [createSignal, setCreateSignal] = useState(0);
   // Sales-page preview shows the store's own logo and name, like the public page.
   const previewConfig = useMemo(
     () => ({
@@ -341,7 +339,7 @@ export default function JuulaStoreApp() {
     }
   };
 
-  const handleCreateNewPage = async (internalName: string) => {
+  const handleCreateNewPage = async (internalName: string): Promise<boolean> => {
     try {
       const { product } = await api<{ product: FunnelPageItem }>('/api/products', {
         method: 'POST',
@@ -351,8 +349,10 @@ export default function JuulaStoreApp() {
       setActivePageId(product.id);
       setFunnelConfig(product.config);
       toast('Produit créé — son lien est prêt à être partagé une fois publié.', 'success');
+      return true;
     } catch (err) {
       toast(errorMessage(err, 'La création du produit a échoué.'), 'error');
+      return false;
     }
   };
 
@@ -377,7 +377,6 @@ export default function JuulaStoreApp() {
   };
 
   const handleDeletePage = (pageId: string) => {
-    if (funnelPages.length <= 1) return;
     const previous = funnelPages;
     const filtered = funnelPages.filter((p) => p.id !== pageId);
     const pending = saveTimers.current.get(pageId);
@@ -391,7 +390,10 @@ export default function JuulaStoreApp() {
       if (next) {
         setActivePageId(next.id);
         setFunnelConfig(next.config);
+      } else {
+        setActivePageId('');
       }
+      setIsEditingProduct(false);
     }
     api(`/api/products/${encodeURIComponent(pageId)}`, { method: 'DELETE' }).catch((err) => {
       setFunnelPages(previous);
@@ -584,7 +586,9 @@ export default function JuulaStoreApp() {
               onOpenStorefrontPreview={() => setViewMode('vitrine')}
               onCreatePageClick={() => {
                 setIsPayoutPageOpen(false);
+                setIsEditingProduct(false);
                 setActiveTab('wizard');
+                setCreateSignal((n) => n + 1);
               }}
               periodId={periodId}
               onSelectPeriod={setPeriodId}
@@ -626,7 +630,7 @@ export default function JuulaStoreApp() {
                     <CockpitView
                       kpis={periodKpis}
                       wallet={wallet}
-                      funnelConfig={funnelConfig}
+                      products={funnelPages}
                       recentOrders={periodOrders}
                       previousOrders={previousOrders}
                       periodRange={range}
@@ -658,28 +662,56 @@ export default function JuulaStoreApp() {
                     />
                   )}
 
-                  {activeTab === 'wizard' && (
-                    <>
-                      <ShareLinkBar
-                        slug={funnelConfig.slug}
-                        subdomain={storeProfile.subdomain}
-                        status={funnelConfig.status ?? 'draft'}
-                        productTitle={funnelConfig.productTitle}
-                        onPublish={() => handleTogglePageStatus(funnelConfig.id, 'published')}
-                      />
-                      <WizardEditor
-                        initialConfig={funnelConfig}
-                        onSaveConfig={handleSaveFunnelConfig}
-                        onOpenStorefrontPreview={() => setViewMode('vitrine')}
+                  {activeTab === 'wizard' &&
+                    (isEditingProduct && activePageId ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingProduct(false)}
+                          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E3E7EE] text-[14px] font-semibold text-[#201D1D] hover:bg-[#F6F7F9] transition-colors cursor-pointer"
+                        >
+                          <ArrowLeft className="w-4 h-4 text-[#235BF7]" />
+                          Mes produits
+                        </button>
+                        <ShareLinkBar
+                          slug={funnelConfig.slug}
+                          subdomain={storeProfile.subdomain}
+                          status={funnelConfig.status ?? 'draft'}
+                          productTitle={funnelConfig.productTitle}
+                          onPublish={() => handleTogglePageStatus(funnelConfig.id, 'published')}
+                        />
+                        <WizardEditor
+                          initialConfig={funnelConfig}
+                          onSaveConfig={handleSaveFunnelConfig}
+                          onOpenStorefrontPreview={() => setViewMode('vitrine')}
+                          pages={funnelPages}
+                          activePageId={activePageId}
+                          onSelectPage={handleSelectPage}
+                          onCreatePage={handleCreateNewPage}
+                          onUpdatePageStatus={handleTogglePageStatus}
+                          onDeletePage={handleDeletePage}
+                        />
+                      </>
+                    ) : (
+                      <ProductsListView
                         pages={funnelPages}
-                        activePageId={activePageId}
-                        onSelectPage={handleSelectPage}
-                        onCreatePage={handleCreateNewPage}
-                        onUpdatePageStatus={handleTogglePageStatus}
-                        onDeletePage={handleDeletePage}
+                        subdomain={storeProfile.subdomain}
+                        createSignal={createSignal}
+                        onCreate={async (name) => {
+                          if (await handleCreateNewPage(name)) setIsEditingProduct(true);
+                        }}
+                        onEdit={(id) => {
+                          handleSelectPage(id);
+                          setIsEditingProduct(true);
+                        }}
+                        onPreview={(id) => {
+                          handleSelectPage(id);
+                          setViewMode('vitrine');
+                        }}
+                        onSetStatus={handleTogglePageStatus}
+                        onDelete={handleDeletePage}
                       />
-                    </>
-                  )}
+                    ))}
 
                   {activeTab === 'customers' && (
                     <CustomersView orders={orders} storeName={funnelConfig.storeName} />
@@ -687,9 +719,9 @@ export default function JuulaStoreApp() {
 
                   {activeTab === 'analytics' && (
                     <AnalyticsView
-                      kpis={periodKpis}
+                      range={range}
                       orders={periodOrders}
-                      onOpenStorefrontPreview={() => setViewMode('vitrine')}
+                      onOpenSettings={() => setActiveTab('settings')}
                     />
                   )}
 
@@ -701,6 +733,7 @@ export default function JuulaStoreApp() {
                       onUpdateSecurityPin={(newPin) => void handleSetWithdrawalPin(newPin)}
                       storeProfile={storeProfile}
                       onStoreProfileSaved={handleStoreProfileSaved}
+                      onLogout={handleLogout}
                     />
                   )}
                 </>

@@ -371,6 +371,11 @@ model Store {
   orderCounter       Int          @default(0) // last allocated StoreOrder.number
   welcomeEmailSentAt DateTime? // set once when the welcome email is claimed
   plan               String       @default("FREE") // "FREE" | "PRO"
+  // Payout accounts (Paramètres → Moyens de paiement). Withdrawals only go
+  // to these numbers, in the legal name of the ID card.
+  payoutLegalName    String?
+  payoutWavePhone    String? // E.164 (+221…)
+  payoutOrangePhone  String? // E.164 (+221…)
   planExpiresAt      DateTime? // null = active if PRO, or expiration date
   aliases            StoreAlias[]
   createdAt          DateTime     @default(now())
@@ -418,8 +423,46 @@ model Product {
   updatedAt    DateTime @updatedAt
 
   orders StoreOrder[]
+  events ProductEvent[]
+  drafts CheckoutDraft[]
 
   @@index([userId, updatedAt])
+}
+
+/// First-party analytics of a public product page (no cookies: an anonymous
+/// random visitor id kept in the browser's localStorage).
+model ProductEvent {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      String // view | checkout_open
+  visitorId String
+  country   String? // ISO 3166-1 alpha-2 (Vercel edge header)
+  source    String // facebook | instagram | tiktok | whatsapp | google | youtube | snapchat | twitter | direct | <domain>
+  referrer  String? // referring host
+  createdAt DateTime @default(now())
+
+  @@index([productId, createdAt])
+  @@index([productId, type, createdAt])
+}
+
+/// Order form started but not (yet) submitted — "abandoned checkout".
+/// One row per visitor and product, updated as the customer types.
+model CheckoutDraft {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  visitorId    String
+  customerName String?
+  phone        String?
+  address      String?
+  quantity     Int      @default(1)
+  country      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([productId, visitorId])
+  @@index([productId, updatedAt])
 }
 
 model StoreOrder {

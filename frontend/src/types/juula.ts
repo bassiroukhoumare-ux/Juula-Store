@@ -20,6 +20,7 @@ export interface OrderLead {
   neighborhood: string;
   city: string;
   productName: string;
+  productId?: string | undefined;
   productImage?: string;
   amount: number;
   deliveryFee?: number;

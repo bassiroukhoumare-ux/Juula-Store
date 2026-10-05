@@ -21,6 +21,7 @@ import { computeOrderPricing } from '@/lib/store/pricing';
 import { sendNewOrderEmail } from '@/lib/server/store/notify';
 import { formatOrderId, getStoreCode } from '@/lib/orderUtils';
 import { isStorePro } from '@/lib/store/plans';
+import { clearCheckoutDraft } from '@/lib/server/store/analytics';
 
 const Body = z.object({
   customerName: z.string().trim().min(2).max(120),
@@ -34,6 +35,11 @@ const Body = z.object({
   quantity: z.number().int().min(1).max(100),
   selectedColor: z.string().trim().max(60).optional(),
   paymentType: z.enum(['cod', 'online_wave', 'online_orange']),
+  /** Anonymous analytics visitor id: clears this visitor's abandoned checkout. */
+  visitorId: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{8,64}$/)
+    .optional(),
 });
 
 export async function POST(
@@ -153,6 +159,10 @@ export async function POST(
 
     // Email the merchant once the response is sent (never blocks the customer).
     after(() => sendNewOrderEmail(order.id));
+    if (input.visitorId) {
+      const visitorId = input.visitorId;
+      after(() => clearCheckoutDraft(product.id, visitorId));
+    }
 
     return NextResponse.json(
       {

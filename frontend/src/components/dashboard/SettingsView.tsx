@@ -4,16 +4,18 @@ import React, { useState } from 'react';
 import {
   Store,
   Truck,
-  CreditCard,
   MessageCircle,
   Save,
   CheckCircle2,
   KeyRound,
   Lock,
   Mail,
+  LogOut,
 } from 'lucide-react';
 import { FunnelPageConfig } from '@/types/juula';
 import { TrackingPixelsCard } from './TrackingPixelsCard';
+import { LogoutConfirmDialog } from './LogoutConfirmDialog';
+import { PayoutAccountsCard } from '@/components/store/PayoutAccountsCard';
 import { StoreAddressCard } from '@/components/store/StoreAddressCard';
 import { CurrencyCard } from '@/components/store/CurrencyCard';
 import type { StoreProfile } from '@/components/store/OnboardingScreen';
@@ -30,6 +32,8 @@ interface SettingsViewProps {
   onUpdateSecurityPin?: (newPin: string) => void;
   storeProfile?: StoreProfile;
   onStoreProfileSaved?: (profile: StoreProfile) => void;
+  /** Phone/tablet: the sidebar (and its logout) is hidden, so offer it here. */
+  onLogout?: () => Promise<void> | void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -44,7 +48,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onUpdateSecurityPin,
   storeProfile,
   onStoreProfileSaved,
+  onLogout,
 }) => {
+  const [showLogout, setShowLogout] = useState(false);
   // Local PIN editor state
   const [isEditingPin, setIsEditingPin] = useState(false);
   const [newPin, setNewPin] = useState(['', '', '', '', '', '']);
@@ -57,8 +63,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [deliveryFree, setDeliveryFree] = useState(funnelConfig.deliveryFree ?? false);
   const [deliveryFee, setDeliveryFee] = useState(funnelConfig.deliveryFee ?? 0);
   const [deliveryNotice, setDeliveryNotice] = useState(funnelConfig.deliveryNotice || '');
-  const [waveMerchantNumber, setWaveMerchantNumber] = useState('');
-  const [orangeMerchantNumber, setOrangeMerchantNumber] = useState('');
   const [codEnabled] = useState(funnelConfig.codEnabled ?? true);
   const [mobileMoneyEnabled] = useState(funnelConfig.mobileMoneyEnabled ?? true);
   const [isSaved, setIsSaved] = useState(false);
@@ -122,6 +126,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {storeProfile && onStoreProfileSaved && (
         <CurrencyCard profile={storeProfile} onSaved={onStoreProfileSaved} />
       )}
+
+      <PayoutAccountsCard pinRequired={payoutSecurity.isPinSet} />
 
       <TrackingPixelsCard />
 
@@ -271,78 +277,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
                 placeholder="Expédition locale sous 2h à 4h à Dakar"
               />
-            </div>
-          </div>
-        </div>
-
-        {/* 3. PAYMENT GATEWAYS (WAVE & ORANGE MONEY) */}
-        <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-4">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-[#F1F5F9]">
-            <div className="w-8 h-8 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center font-bold">
-              <CreditCard className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-[15px] font-black text-[#201D1D]">
-                Moyens de Paiement & Encaissement
-              </h3>
-              <p className="text-[13px] text-[#7A808C]">
-                Configurez vos comptes récepteurs pour les retraits automatiques et paiements
-                directs.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Wave Sénégal Card */}
-            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#1AA3FF] text-white flex items-center justify-center text-xs font-black">
-                    W
-                  </div>
-                  <span className="text-[13px] font-black text-[#201D1D]">Wave Sénégal</span>
-                </div>
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                  Actif
-                </span>
-              </div>
-              <input
-                type="text"
-                value={waveMerchantNumber}
-                onChange={(e) => setWaveMerchantNumber(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E8F0] text-[13px] font-semibold text-[#201D1D]"
-                placeholder="Numéro Wave Marchand"
-              />
-              <span className="text-xs text-[#94A3B8] block">
-                Fonds déposés instantanément sur votre solde Juula.
-              </span>
-            </div>
-
-            {/* Orange Money Card */}
-            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#FF7900] text-white flex items-center justify-center text-xs font-black">
-                    OM
-                  </div>
-                  <span className="text-[13px] font-black text-[#201D1D]">
-                    Orange Money Sénégal
-                  </span>
-                </div>
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                  Actif
-                </span>
-              </div>
-              <input
-                type="text"
-                value={orangeMerchantNumber}
-                onChange={(e) => setOrangeMerchantNumber(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E8F0] text-[13px] font-semibold text-[#201D1D]"
-                placeholder="Numéro Orange Money Marchand"
-              />
-              <span className="text-xs text-[#94A3B8] block">
-                Validations instantanées par QR ou Push USSD.
-              </span>
             </div>
           </div>
         </div>
@@ -535,6 +469,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
         </div>
       </form>
+
+      {onLogout && (
+        <div className="lg:hidden">
+          <button
+            type="button"
+            onClick={() => setShowLogout(true)}
+            className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-2xl bg-white border border-[#ECEFF4] text-[15px] font-semibold text-[#DC2626] hover:bg-[#FEF2F2] cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            Se déconnecter
+          </button>
+          <LogoutConfirmDialog
+            open={showLogout}
+            onCancel={() => setShowLogout(false)}
+            onConfirm={onLogout}
+          />
+        </div>
+      )}
     </div>
   );
 };

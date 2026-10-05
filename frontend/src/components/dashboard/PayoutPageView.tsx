@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
+  Loader2,
   ArrowLeft,
   ShieldCheck,
   Lock,
@@ -17,6 +18,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { formatNumber, formatFCFA } from '@/lib/orderUtils';
 import { api, ApiError } from '@/lib/api';
+import { formatSenegalPhone } from '@/lib/store/sn-phone';
 
 interface PayoutPageViewProps {
   availableBalance: number;
@@ -45,6 +47,27 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
   const [provider, setProvider] = useState<'wave' | 'orange_money'>('wave');
   const [amount, setAmount] = useState<number>(Math.min(availableBalance, 100000));
   const [phone, setPhone] = useState('');
+  const [accounts, setAccounts] = useState<{
+    legalName: string | null;
+    wavePhone: string | null;
+    orangePhone: string | null;
+  } | null>(null);
+
+  // Saved payout accounts (Paramètres): the only allowed destinations.
+  useEffect(() => {
+    api<{
+      accounts: { legalName: string | null; wavePhone: string | null; orangePhone: string | null };
+    }>('/api/store/payout-accounts')
+      .then(({ accounts: a }) => {
+        setAccounts(a);
+        const first = a.wavePhone ? 'wave' : a.orangePhone ? 'orange_money' : null;
+        if (first) {
+          setProvider(first);
+          setPhone(formatSenegalPhone(first === 'wave' ? a.wavePhone : a.orangePhone));
+        }
+      })
+      .catch(() => setAccounts({ legalName: null, wavePhone: null, orangePhone: null }));
+  }, []);
 
   // 6-digit PIN entry state
   const [pinDigits, setPinDigits] = useState<string[]>(['', '', '', '', '', '']);
@@ -100,6 +123,13 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
       );
       return;
     }
+    if (
+      !accounts?.legalName ||
+      !(provider === 'wave' ? accounts.wavePhone : accounts.orangePhone)
+    ) {
+      setPinError('Configurez d’abord vos moyens de retrait (Paramètres → Moyens de retrait).');
+      return;
+    }
     if (!payoutSecurity.isPinSet) {
       setPinError('Créez d’abord votre code PIN de retrait (Paramètres → Sécurité).');
       return;
@@ -119,7 +149,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
       '/api/payments/moneriz/withdraw',
       {
         method: 'POST',
-        body: { amount, provider, phone, pin: enteredPin },
+        body: { amount, provider, pin: enteredPin },
       },
     )
       .then((data) => {
@@ -345,89 +375,88 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 </div>
               </div>
 
-              {/* 2. Destination Provider & Phone */}
-              <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-5">
+              {/* 2. Destination: saved payout accounts only */}
+              <div className="p-5 sm:p-6 rounded-[28px] bg-white border border-[#ECEFF4] space-y-4">
                 <div>
-                  <h3 className="text-[15px] font-black text-[#201D1D]">
-                    Destination du Virement Mobile Money
-                  </h3>
+                  <h3 className="text-[15px] font-black text-[#201D1D]">Recevoir l’argent sur</h3>
                   <p className="text-[13px] text-[#7A808C]">
-                    Sélectionnez le réseau et entrez le numéro récepteur de votre compte.
+                    {accounts?.legalName
+                      ? `Au nom de ${accounts.legalName}`
+                      : 'Vos numéros enregistrés dans Paramètres → Moyens de retrait.'}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Wave Option */}
-                  <button
-                    type="button"
-                    onClick={() => setProvider('wave')}
-                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3.5 ${
-                      provider === 'wave'
-                        ? 'border-[#235BF7] bg-[#EEF3FF] ring-2 ring-[#235BF7]/30 shadow-xs'
-                        : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
-                    }`}
-                  >
-                    <div className="w-11 h-11 rounded-2xl bg-[#1AA3FF] text-white font-black text-lg flex items-center justify-center flex-shrink-0 shadow-xs">
-                      W
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[15px] font-black text-[#201D1D]">Wave Sénégal</span>
-                        <span className="text-[11px] font-black uppercase text-[#10B981] bg-[#ECFDF5] px-1.5 py-0.5 rounded-md">
-                          0% Frais
-                        </span>
-                      </div>
-                      <span className="text-[13px] text-[#7A808C]">
-                        Transfert instantané &lt; 30s
-                      </span>
-                    </div>
-                  </button>
-
-                  {/* Orange Money Option */}
-                  <button
-                    type="button"
-                    onClick={() => setProvider('orange_money')}
-                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3.5 ${
-                      provider === 'orange_money'
-                        ? 'border-[#FF7900] bg-[#FFF5EB] ring-2 ring-[#FF7900]/30 shadow-xs'
-                        : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
-                    }`}
-                  >
-                    <div className="w-11 h-11 rounded-2xl bg-[#FF7900] text-white font-black text-[15px] flex items-center justify-center flex-shrink-0 shadow-xs">
-                      OM
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[15px] font-black text-[#201D1D]">Orange Money</span>
-                        <span className="text-[11px] font-black uppercase text-[#FF7900] bg-[#FFF5EB] px-1.5 py-0.5 rounded-md">
-                          Instantané
-                        </span>
-                      </div>
-                      <span className="text-[13px] text-[#7A808C]">
-                        Dépôt direct vers votre compte OM
-                      </span>
-                    </div>
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[13px] font-black uppercase tracking-wider text-[#201D1D] block">
-                    Numéro de réception {provider === 'wave' ? 'Wave' : 'Orange Money'} *
-                  </label>
-                  <div className="flex items-center">
-                    <span className="px-3.5 py-3.5 rounded-l-2xl bg-[#F1F5F9] border border-r-0 border-[#CBD5E1] text-[13px] font-black text-[#201D1D]">
-                      +221
-                    </span>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-r-2xl bg-[#F8FAFC] border border-[#CBD5E1] text-[15px] font-black text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white focus:ring-2 focus:ring-[#235BF7]/10"
-                      placeholder="77 412 89 30"
-                      required
-                    />
+                {accounts === null ? (
+                  <div className="py-6 flex justify-center">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#235BF7]" />
                   </div>
-                </div>
+                ) : !accounts.legalName || (!accounts.wavePhone && !accounts.orangePhone) ? (
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
+                    <p className="text-[14px] font-semibold text-amber-800">
+                      {!accounts.legalName
+                        ? 'Renseignez votre nom complet (comme sur votre pièce d’identité) et votre numéro Wave ou Orange Money avant de retirer.'
+                        : 'Ajoutez un numéro Wave ou Orange Money avant de retirer.'}
+                    </p>
+                    {onGoToSettings && (
+                      <button
+                        type="button"
+                        onClick={onGoToSettings}
+                        className="px-4 py-2 rounded-xl bg-[#201D1D] text-white text-[13px] font-bold cursor-pointer"
+                      >
+                        Configurer mes moyens de retrait
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(
+                      [
+                        {
+                          id: 'wave',
+                          label: 'Wave',
+                          logo: '/brands/wave.png',
+                          number: accounts.wavePhone,
+                        },
+                        {
+                          id: 'orange_money',
+                          label: 'Orange Money',
+                          logo: '/brands/orange-money.png',
+                          number: accounts.orangePhone,
+                        },
+                      ] as const
+                    )
+                      .filter((m) => m.number)
+                      .map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => {
+                            setProvider(m.id);
+                            setPhone(formatSenegalPhone(m.number));
+                          }}
+                          className={`p-4 rounded-2xl border-2 text-left transition-colors cursor-pointer flex items-center gap-3 ${
+                            provider === m.id
+                              ? 'border-[#235BF7] bg-[#F7F9FF]'
+                              : 'border-[#E3E7EE] bg-white hover:bg-[#F6F7F9]'
+                          }`}
+                        >
+                          <img
+                            src={m.logo}
+                            alt=""
+                            className="w-11 h-11 rounded-xl object-contain bg-white border border-[#ECEFF4] p-1 shrink-0"
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-[15px] font-black text-[#201D1D]">
+                              {m.label}
+                            </span>
+                            <span className="block text-[14px] text-[#7A808C] tabular-nums">
+                              +221 {formatSenegalPhone(m.number)}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                )}
               </div>
 
               {/* 3. CODE PIN OBLIGATOIRE À 6 CHIFFRES */}

@@ -81,6 +81,13 @@ interface ImmersiveShowcaseProps {
   confirmPayment?: (orderId: string) => Promise<boolean>;
   /** Fired when the customer opens the order form (pixel InitiateCheckout). */
   onCheckoutOpened?: (info: { quantity: number; value: number }) => void;
+  /** Public mode: the order form is being filled in (abandoned-checkout capture). */
+  onCheckoutDraft?: (draft: {
+    customerName: string;
+    phone: string;
+    address: string;
+    quantity: number;
+  }) => void;
   isInsideMockup?: boolean;
 }
 
@@ -90,6 +97,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   submitOrder,
   confirmPayment,
   onCheckoutOpened,
+  onCheckoutDraft,
   isInsideMockup = false,
 }) => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
@@ -175,11 +183,38 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   // Checkout Form fields
   const [customerName, setCustomerName] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
-  const [neighborhood, setNeighborhood] = useState('Almadies');
+  const [neighborhood, setNeighborhood] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<OrderLead | null>(null);
+
+  // Abandoned-checkout capture: report what the customer typed, debounced,
+  // until the order is placed.
+  useEffect(() => {
+    if (!onCheckoutDraft || !isCheckoutPageOpen || orderSuccess) return;
+    if (!customerName.trim() && !whatsappNumber.trim()) return;
+    const timer = setTimeout(
+      () =>
+        onCheckoutDraft({
+          customerName,
+          phone: whatsappNumber,
+          address: [neighborhood, deliveryAddress].filter(Boolean).join(' — '),
+          quantity,
+        }),
+      1500,
+    );
+    return () => clearTimeout(timer);
+  }, [
+    onCheckoutDraft,
+    isCheckoutPageOpen,
+    orderSuccess,
+    customerName,
+    whatsappNumber,
+    neighborhood,
+    deliveryAddress,
+    quantity,
+  ]);
 
   const deliveryFee =
     config.deliveryPricingType === 'fixed'
@@ -407,7 +442,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
       const finalAddressDesc = deliveryAddress
         ? deliveryAddress
-        : `[Note vocale de ${recordingSeconds}s enregistrée] ${neighborhood}, Dakar`;
+        : `[Note vocale de ${recordingSeconds}s enregistrée] ${neighborhood}`;
 
       const newOrder: OrderLead = {
         id: generatedId,
@@ -554,13 +589,6 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   // ========================================================
   // PAGE DÉSACTIVÉE PAR LE MARCHAND (LIEN COUPÉ)
   if (config.status === 'inactive') {
-    const cleanPhone = (config.whatsappSupportNumber || '').replace(/[^0-9+]/g, '');
-    const whatsappUrl = cleanPhone
-      ? `https://wa.me/${cleanPhone.replace('+', '')}?text=${encodeURIComponent(
-          `Bonjour ${config.storeName || 'Ma Boutique'} ! J'aimerais me renseigner sur vos produits disponibles.`,
-        )}`
-      : '#';
-
     return (
       <div
         className={`w-full bg-[#F6F7F9] text-[#201D1D] flex items-center justify-center p-6 text-center select-none ${
@@ -580,20 +608,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             </h2>
             <p className="text-xs text-[#7A808C] leading-relaxed">
               La boutique <span className="font-bold text-[#201D1D]">{config.storeName}</span> a
-              temporairement suspendu l'accès à ce tunnel de vente. Pour toute question, vous pouvez
-              contacter directement le support client sur WhatsApp.
+              temporairement suspendu cette offre. Revenez un peu plus tard.
             </p>
           </div>
-
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#201D1D] hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
-          >
-            <WhatsAppIcon className="w-4 h-4 text-emerald-400" />
-            <span>Contacter le support boutique sur WhatsApp</span>
-          </a>
         </div>
       </div>
     );
@@ -717,18 +734,6 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               </div>
 
               <div className="space-y-2.5 pt-2">
-                <a
-                  href={`https://wa.me/${config.whatsappSupportNumber.replace(/\D/g, '')}?text=${encodeURIComponent(
-                    `Bonjour, je viens de passer la commande #${orderSuccess.id} pour ${orderSuccess.productName}. Mon adresse : ${orderSuccess.deliveryAddress || orderSuccess.neighborhood}.`,
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3.5 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
-                >
-                  <WhatsAppIcon className="w-5 h-5" />
-                  <span>Suivre ma livraison sur WhatsApp</span>
-                </a>
-
                 <button
                   type="button"
                   onClick={() => {
@@ -1126,30 +1131,25 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     </span>
                   </div>
 
-                  {/* Quartier Dakar */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#201D1D] flex items-center gap-1">
+                  {/* Adresse saisie par le client */}
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="checkout-address"
+                      className="text-xs font-bold text-[#201D1D] flex items-center gap-1"
+                    >
                       <MapPin className="w-3.5 h-3.5 text-[#235BF7]" />
-                      Quartier de livraison *
+                      Votre adresse (quartier, ville) *
                     </label>
-                    <div className="flex flex-wrap gap-1.5 pb-1">
-                      {['Almadies', 'Mermoz', 'Plateau', 'Point E', 'Yoff', 'Sacré-Cœur'].map(
-                        (q) => (
-                          <button
-                            key={q}
-                            type="button"
-                            onClick={() => setNeighborhood(q)}
-                            className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
-                              neighborhood.includes(q)
-                                ? 'bg-[#235BF7] text-white border-[#235BF7]'
-                                : 'bg-[#F6F7F9] text-[#3F4654] border-[#E3E7EE] hover:bg-white'
-                            }`}
-                          >
-                            {q}
-                          </button>
-                        ),
-                      )}
-                    </div>
+                    <input
+                      id="checkout-address"
+                      type="text"
+                      required
+                      value={neighborhood}
+                      onChange={(e) => setNeighborhood(e.target.value)}
+                      placeholder="Ex : Sacré-Cœur 3, Dakar"
+                      autoComplete="street-address"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-semibold text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white transition-all"
+                    />
                   </div>
 
                   {/* Choix Mode Adresse : Texte vs Note Vocale */}
@@ -1367,20 +1367,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               {storeDisplayName}
             </span>
           </div>
-          <div className="flex justify-end">
-            {config.whatsappSupportNumber && (
-              <a
-                href={`https://wa.me/${config.whatsappSupportNumber.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Contacter la boutique sur WhatsApp"
-                className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366]/20 transition-colors text-[13px] font-bold"
-              >
-                <WhatsAppIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Assistance</span>
-              </a>
-            )}
-          </div>
+          <span aria-hidden="true" />
         </div>
       </header>
 
@@ -1998,35 +1985,6 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* ======================================================== */}
-            {/* ASSISTANCE WHATSAPP AVEC ICÔNE OFFICIELLE (AUDIO 4)       */}
-            {/* ======================================================== */}
-            <div className="p-3.5 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#25D366] text-white flex items-center justify-center shadow-xs">
-                  <WhatsAppIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-[#201D1D] block">
-                    Besoin d'un conseil avant de commander ?
-                  </span>
-                  <span className="text-[11px] text-[#3F4654] font-medium">
-                    Notre équipe vous répond sur WhatsApp
-                  </span>
-                </div>
-              </div>
-
-              <a
-                href={`https://wa.me/${config.whatsappSupportNumber.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white text-xs font-bold flex items-center gap-1.5 flex-shrink-0 shadow-xs transition-colors cursor-pointer"
-              >
-                <WhatsAppIcon className="w-3.5 h-3.5" />
-                <span>Discuter</span>
-              </a>
             </div>
           </div>
         </div>

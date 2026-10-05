@@ -29,6 +29,7 @@ export function toOrderLead(order: StoreOrder): OrderLead {
     neighborhood: order.neighborhood ?? '',
     city: order.city ?? '',
     productName: order.productName,
+    ...(order.productId ? { productId: order.productId } : {}),
     ...(order.productImage ? { productImage: order.productImage } : {}),
     amount: order.amount,
     deliveryFee: order.deliveryFee,
