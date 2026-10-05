@@ -45,7 +45,7 @@ import {
   OrderLead,
   WalletState,
 } from '@/types/juula';
-import { ArrowLeft, Sparkles, Smartphone, Monitor, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 
 const SAVE_DEBOUNCE_MS = 800;
 const ORDERS_REFRESH_MS = 60_000;
@@ -92,7 +92,6 @@ export default function JuulaStoreApp() {
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('cockpit');
   const [viewMode, setViewMode] = useState<'dashboard' | 'vitrine'>('dashboard');
-  const [previewDevice, setPreviewDevice] = useState<'responsive' | 'mobile'>('responsive');
   const [orders, setOrdersState] = useState<OrderLead[]>([]);
   const [kpis, setKpis] = useState<KpiMetrics>(initialKpis);
   const [wallet, setWallet] = useState<WalletState>(initialWallet);
@@ -208,7 +207,7 @@ export default function JuulaStoreApp() {
                 },
               );
               if (verified.status === 'active') {
-                toast('🎉 Félicitations ! Votre Plan Juula Pro est désormais actif.', 'success');
+                toast('Félicitations ! Votre Plan Juula Pro est désormais actif.', 'success');
               }
             } catch {
               // Webhook or background verify handles it
@@ -306,15 +305,16 @@ export default function JuulaStoreApp() {
     }),
     [funnelConfig, storeProfile.logoUrl, storeProfile.name],
   );
-  const [activeWidgets, setActiveWidgets] = useState<HeaderWidgetsState>({
+  // Cockpit blocks (the AI assistant is hidden for now).
+  const activeWidgets: HeaderWidgetsState = {
     kpiCards: true,
     profitChart: true,
     segmentation: true,
     activeDays: true,
     deliveryRate: true,
-    aiAssistant: true,
+    aiAssistant: false,
     bestProducts: true,
-  });
+  };
 
   const [isRechargeOpen, setIsRechargeOpen] = useState(false);
   const [isPayoutPageOpen, setIsPayoutPageOpen] = useState(false);
@@ -531,78 +531,19 @@ export default function JuulaStoreApp() {
       {/* VUE 2 : VITRINE IMMERSIVE (DESKTOP & MOBILE RESPONSIVE)  */}
       {/* ======================================================== */}
       {viewMode === 'vitrine' ? (
-        <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
-          {/* Top Control & Return Bar */}
-          <div className="w-full bg-[#201D1D] text-white py-2.5 px-4 sm:px-8 flex items-center justify-between text-xs sticky top-0 z-50 shadow-md">
-            <button
-              onClick={() => setViewMode('dashboard')}
-              className="inline-flex items-center gap-1.5 font-bold hover:text-white/80 transition-colors cursor-pointer bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Retour au Dashboard Marchand</span>
-            </button>
+        <div className="min-h-screen bg-[#F6F7F9]">
+          <ImmersiveShowcase config={previewConfig} isInsideMockup={false} />
 
-            {/* Mode Switcher : Plein Écran Responsive vs Simulateur Mobile */}
-            <div className="flex items-center gap-1 bg-white/10 p-1 rounded-xl">
-              <button
-                onClick={() => setPreviewDevice('responsive')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
-                  previewDevice === 'responsive'
-                    ? 'bg-[#235BF7] text-white shadow-xs'
-                    : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <Monitor className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Plein Écran (PC / Responsive)</span>
-                <span className="sm:hidden">PC</span>
-              </button>
-
-              <button
-                onClick={() => setPreviewDevice('mobile')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
-                  previewDevice === 'mobile'
-                    ? 'bg-[#235BF7] text-white shadow-xs'
-                    : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Simulateur Mobile</span>
-                <span className="sm:hidden">Mobile</span>
-              </button>
-            </div>
-
-            <span className="hidden md:flex items-center gap-1.5 text-amber-300 font-bold bg-amber-400/10 px-2.5 py-1 rounded-xl">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Aperçu Client Final</span>
-            </span>
-          </div>
-
-          {/* Container according to chosen mode */}
-          <div className="flex-1 flex justify-center p-0">
-            {previewDevice === 'mobile' ? (
-              <div className="py-6 px-4 w-full flex justify-center bg-slate-950 min-h-[calc(100vh-50px)]">
-                {/* Modern Smartphone Mockup Frame */}
-                <div className="w-[390px] max-w-full h-[820px] max-h-[calc(100vh-80px)] bg-[#F8FAFC] rounded-[3.2rem] border-[10px] border-neutral-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] overflow-hidden relative flex flex-col ring-1 ring-white/10">
-                  {/* Dynamic Island Notch */}
-                  <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-50 flex items-center justify-end pr-2 pointer-events-none shadow-sm">
-                    <div className="w-2.5 h-2.5 rounded-full bg-neutral-900 border border-neutral-700" />
-                  </div>
-
-                  {/* Scrollable Mobile Screen Content */}
-                  <div className="flex-1 overflow-y-auto scrollbar-thin">
-                    <ImmersiveShowcase config={previewConfig} isInsideMockup={true} />
-                  </div>
-
-                  {/* iOS Style Home Indicator Bar */}
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-black/40 rounded-full z-50 pointer-events-none" />
-                </div>
-              </div>
-            ) : (
-              <div className="w-full">
-                <ImmersiveShowcase config={previewConfig} isInsideMockup={false} />
-              </div>
-            )}
-          </div>
+          {/* Return button: small, in the empty left slot of the store header */}
+          <button
+            type="button"
+            onClick={() => setViewMode('dashboard')}
+            aria-label="Retour au tableau de bord"
+            className="fixed top-3 sm:top-4 left-3 sm:left-6 z-50 inline-flex items-center justify-center gap-2 w-10 sm:w-auto sm:px-4 h-10 rounded-full bg-white border border-[#E3E7EE] text-[#201D1D] text-[14px] font-semibold hover:bg-[#F6F7F9] transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#235BF7]" />
+            <span className="hidden sm:inline">Retour au tableau de bord</span>
+          </button>
         </div>
       ) : (
         /* ======================================================== */
@@ -662,13 +603,6 @@ export default function JuulaStoreApp() {
                 setIsPayoutPageOpen(false);
                 setActiveTab('kanban');
               }}
-              activeWidgets={activeWidgets}
-              onToggleWidget={(key) =>
-                setActiveWidgets((prev) => ({
-                  ...prev,
-                  [key]: !prev[key],
-                }))
-              }
             />
 
             {/* Dynamic Content View */}
@@ -737,10 +671,6 @@ export default function JuulaStoreApp() {
                         initialConfig={funnelConfig}
                         onSaveConfig={handleSaveFunnelConfig}
                         onOpenStorefrontPreview={() => setViewMode('vitrine')}
-                        onOpenMobileSimulator={() => {
-                          setViewMode('vitrine');
-                          setPreviewDevice('mobile');
-                        }}
                         pages={funnelPages}
                         activePageId={activePageId}
                         onSelectPage={handleSelectPage}

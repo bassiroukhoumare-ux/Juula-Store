@@ -75,7 +75,7 @@ export const ShareLinkBar: React.FC<ShareLinkBarProps> = ({
               </span>
             )}
           </p>
-          <p className="text-[13px] font-mono font-semibold text-[#201D1D] truncate" title={url}>
+          <p className="text-[13px] tabular-nums font-semibold text-[#201D1D] truncate" title={url}>
             {origin || subdomain ? url : `/p/${slug}`}
           </p>
           {!isPublished && (

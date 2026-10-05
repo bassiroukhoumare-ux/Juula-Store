@@ -732,7 +732,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 >
                   <div className="flex items-center justify-between text-[13px]">
                     <span className="font-bold text-[#201D1D]">{ch.name}</span>
-                    <span className="font-mono font-black text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-md">
+                    <span className="tabular-nums font-black text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-md">
                       {ch.roi}
                     </span>
                   </div>

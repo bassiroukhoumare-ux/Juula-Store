@@ -11,7 +11,7 @@ import {
   BrainCircuit,
   Lightbulb,
   Bot,
-  Star,
+  Plus,
   Maximize2,
   Truck,
   ArrowRight,
@@ -183,14 +183,12 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
 
   // Dynamic segmentation
   const codCount = recentOrders.filter((o) => o.paymentType === 'cod').length;
-  const waveCount = recentOrders.filter((o) => o.paymentType === 'online_wave').length;
-  const orangeCount = recentOrders.filter((o) => o.paymentType === 'online_orange').length;
+  const mobileMoneyCount = recentOrders.filter((o) => o.paymentType !== 'cod').length;
   const totalOrdersCount = recentOrders.length;
   const uniqueCustomersCount = new Set(recentOrders.map((o) => o.phone || o.customerName)).size;
   const codPercent = totalOrdersCount > 0 ? Math.round((codCount / totalOrdersCount) * 100) : 0;
-  const wavePercent = totalOrdersCount > 0 ? Math.round((waveCount / totalOrdersCount) * 100) : 0;
-  const orangePercent =
-    totalOrdersCount > 0 ? Math.round((orangeCount / totalOrdersCount) * 100) : 0;
+  const mobileMoneyPercent =
+    totalOrdersCount > 0 ? Math.round((mobileMoneyCount / totalOrdersCount) * 100) : 0;
 
   // Dynamic delivery rate
   const deliveredCount = recentOrders.filter((o) => o.status === 'delivered').length;
@@ -210,7 +208,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
               'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=120&q=80',
             sold: '0 vendu',
             revenue: formatFCFA(0),
-            rating: 'Nouveau',
+            rating: '—',
           },
         ];
       }
@@ -228,10 +226,10 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
           'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=120&q=80',
         sold: `${count} vendu${count > 1 ? 's' : ''}`,
         revenue: `${formatFCFA(rev)}`,
-        rating: '5.0',
+        rating: `${deliveryPercent}%`,
       },
     ];
-  }, [recentOrders, funnelConfig]);
+  }, [recentOrders, funnelConfig, deliveryPercent]);
 
   const handleGenerateAiTip = () => {
     if (recentOrders.length === 0) {
@@ -476,7 +474,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                           </span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono font-black text-[#201D1D]">{codCount}</span>
+                          <span className="tabular-nums font-black text-[#201D1D]">{codCount}</span>
                           <span className="text-xs font-black bg-[#EEF3FF] text-[#235BF7] px-2 py-0.5 rounded-md">
                             {codPercent}%
                           </span>
@@ -490,52 +488,28 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Segment 2 : Wave Sénégal */}
+                    {/* Segment 2 : Mobile Money (paiement en ligne) */}
                     <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-1 text-[13px]">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2.5 h-2.5 rounded-md bg-[#10B981] shadow-xs shrink-0" />
                           <span className="font-bold text-[#201D1D] truncate">
-                            <span className="hidden sm:inline">Paiements en Ligne </span>Wave
-                            Sénégal
+                            <span className="hidden sm:inline">Paiements </span>Mobile Money
                           </span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono font-black text-[#201D1D]">{waveCount}</span>
+                          <span className="font-black text-[#201D1D] tabular-nums">
+                            {mobileMoneyCount}
+                          </span>
                           <span className="text-xs font-black bg-[#ECFDF5] text-[#059669] px-2 py-0.5 rounded-md">
-                            {wavePercent}%
+                            {mobileMoneyPercent}%
                           </span>
                         </div>
                       </div>
                       <div className="w-full bg-[#E2E8F0] h-2 sm:h-2.5 rounded-full overflow-hidden">
                         <div
                           className="bg-[#10B981] h-full rounded-full transition-all duration-700"
-                          style={{ width: `${wavePercent}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Segment 3 : Orange Money */}
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-1 text-[13px]">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="w-2.5 h-2.5 rounded-md bg-[#FF7900] shadow-xs shrink-0" />
-                          <span className="font-bold text-[#201D1D] truncate">
-                            <span className="hidden sm:inline">Paiements en Ligne </span>Orange
-                            Money
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono font-black text-[#201D1D]">{orangeCount}</span>
-                          <span className="text-xs font-black bg-[#FFF5EB] text-[#FF7900] px-2 py-0.5 rounded-md">
-                            {orangePercent}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-[#E2E8F0] h-2 sm:h-2.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[#FF7900] h-full rounded-full transition-all duration-700"
-                          style={{ width: `${orangePercent}%` }}
+                          style={{ width: `${mobileMoneyPercent}%` }}
                         />
                       </div>
                     </div>
@@ -687,8 +661,8 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                     </svg>
 
                     {/* Centered stat inside arc dome */}
-                    <div className="absolute top-7 sm:top-8 inset-x-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
-                      <span className="text-4xl sm:text-5xl font-black text-[#201D1D] tracking-tight leading-none drop-shadow-2xs">
+                    <div className="absolute bottom-1 inset-x-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
+                      <span className="text-4xl font-black text-[#201D1D] tracking-tight leading-none">
                         {deliveryPercent}%
                       </span>
                       <span className="text-xs font-extrabold uppercase tracking-widest text-[#94A3B8] mt-1.5">
@@ -700,10 +674,6 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                   {/* Clean status pill & target comparison below arc */}
                   <div className="space-y-3">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] text-[13px] font-bold shadow-2xs">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                      </span>
                       <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
                       <span>
                         {totalOrdersCount === 0
@@ -808,77 +778,94 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
       {/* 3. BOTTOM SECTION: BEST SELLING PRODUCTS TABLE (SHOPEERS) */}
       {/* ======================================================== */}
       {activeWidgets.bestProducts && (
-        <div className="bg-white rounded-[28px] p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
-            <div>
-              <h3 className="text-[15px] font-extrabold text-[#201D1D]">
-                Meilleurs Tunnels & Produits de Vente
-              </h3>
-              <p className="text-[13px] text-[#7A808C]">
-                Classement par volume de commandes encaissées
-              </p>
+        <div className="bg-white rounded-[28px] p-4 sm:p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
+          <div className="flex items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#F1F5F9]">
+            <div className="min-w-0">
+              <h3 className="text-[15px] font-extrabold text-[#201D1D]">Meilleurs produits</h3>
+              <p className="text-[13px] text-[#7A808C]">Classement par commandes reçues</p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={onCreatePageClick}
-                className="px-3 py-1.5 rounded-xl bg-[#235BF7] text-white text-[13px] font-bold hover:bg-[#1B4AD6] transition-colors"
-              >
-                + Nouveau Tunnel
-              </button>
-              <button className="text-[#94A3B8] hover:text-[#201D1D]">
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onCreatePageClick}
+              className="shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#235BF7] text-white text-[13px] font-bold hover:bg-[#1B4AD6] transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" strokeWidth={2.5} />
+              Nouvelle page
+            </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-[13px]">
-              <thead>
-                <tr className="border-b border-[#F1F5F9] text-[#94A3B8] font-bold uppercase text-xs tracking-wider">
-                  <th className="pb-3 px-3">ID</th>
-                  <th className="pb-3 px-3">Nom du Produit</th>
-                  <th className="pb-3 px-3">Unités Vendues</th>
-                  <th className="pb-3 px-3">Chiffre d'Affaires</th>
-                  <th className="pb-3 px-3">Note / Avis</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F8FAFC]">
-                {bestProducts.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-[#94A3B8]">
-                      Aucun tunnel ou produit configuré. Cliquez sur "+ Nouveau Tunnel" pour créer
-                      votre première page de vente.
-                    </td>
-                  </tr>
-                ) : (
-                  bestProducts.map((product) => (
-                    <tr key={product.id} className="hover:bg-[#F8FAFC] transition-colors">
-                      <td className="py-3 px-3 font-mono font-bold text-[#7A808C]">{product.id}</td>
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-10 h-10 rounded-xl object-cover bg-slate-100 flex-shrink-0"
-                          />
-                          <span className="font-bold text-[#201D1D]">{product.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-3 font-semibold text-[#7A808C]">{product.sold}</td>
-                      <td className="py-3 px-3 font-black text-[#059669]">{product.revenue}</td>
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-1 font-bold text-amber-500">
-                          <Star className="w-3.5 h-3.5 fill-current" />
-                          <span>{product.rating}</span>
-                        </div>
-                      </td>
+          {bestProducts.length === 0 ? (
+            <p className="py-8 text-center text-[13px] text-[#94A3B8]">
+              Aucune page de vente pour le moment. Cliquez sur « Nouvelle page » pour créer votre
+              première page.
+            </p>
+          ) : (
+            <>
+              {/* Phone: one card per product */}
+              <div className="space-y-2.5 sm:hidden">
+                {bestProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center gap-3 p-3 rounded-2xl border border-[#ECEFF4]"
+                  >
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-[14px] text-[#201D1D] truncate">
+                        {product.name}
+                      </p>
+                      <p className="text-[13px] text-[#7A808C]">
+                        {product.sold} · {product.rating} livrées
+                      </p>
+                      <p className="font-black text-[15px] text-[#059669]">{product.revenue}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tablet / desktop: table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-[13px]">
+                  <thead>
+                    <tr className="border-b border-[#F1F5F9] text-[#94A3B8] font-bold uppercase text-xs tracking-wider">
+                      <th className="pb-3 px-3">Produit</th>
+                      <th className="pb-3 px-3">Unités vendues</th>
+                      <th className="pb-3 px-3">Chiffre d’affaires</th>
+                      <th className="pb-3 px-3">Taux de livraison</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody className="divide-y divide-[#F8FAFC]">
+                    {bestProducts.map((product) => (
+                      <tr key={product.id} className="hover:bg-[#F8FAFC] transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-10 h-10 rounded-xl object-cover bg-slate-100 flex-shrink-0"
+                            />
+                            <span className="font-bold text-[#201D1D]">{product.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 font-semibold text-[#7A808C]">{product.sold}</td>
+                        <td className="py-3 px-3 font-black text-[#059669]">{product.revenue}</td>
+                        <td className="py-3 px-3">
+                          <span className="inline-flex items-center gap-1.5 font-bold text-[#201D1D]">
+                            <Truck className="w-3.5 h-3.5 text-[#235BF7]" />
+                            {product.rating}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

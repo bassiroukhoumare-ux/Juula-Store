@@ -15,6 +15,7 @@ import {
   ArrowDownLeft,
   MapPin,
   Clock,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { WalletState, OrderLead, InflowRecord, PayoutRecord } from '@/types/juula';
@@ -117,8 +118,8 @@ export const WalletView: React.FC<WalletViewProps> = ({
             Portefeuille & Retraits Marchand
           </h2>
           <p className="text-[13px] sm:text-[15px] text-[#7A808C] max-w-xl">
-            Suivi des recettes, encaissements Wave / Orange Money / Espèces & virements marchands
-            vers vos comptes.
+            Suivi des recettes, encaissements Mobile Money / Espèces & virements marchands vers vos
+            comptes.
           </p>
         </div>
 
@@ -137,12 +138,12 @@ export const WalletView: React.FC<WalletViewProps> = ({
       {/* ======================================================== */}
       {/* 2. LES 4 CARTES FINANCIÈRES CLÉS (DEMANDE UTILISATEUR)   */}
       {/* ======================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* CARTE 1 : SOLDE DU JOUR / PÉRIODE AVEC FILTRES ET SYNCHRO MOIS */}
-        <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#235BF7] flex flex-col justify-between space-y-3">
+        <div className="min-w-0 bg-white rounded-[22px] sm:rounded-[28px] p-4 sm:p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#235BF7] flex flex-col justify-between space-y-3">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[13px] font-bold uppercase tracking-wider text-[#7A808C] truncate">
+              <span className="text-xs sm:text-[13px] font-bold uppercase tracking-wider text-[#7A808C] leading-snug">
                 {periodData.label}
               </span>
               <div className="w-7 h-7 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
@@ -174,7 +175,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
             </div>
 
             <div className="flex items-baseline gap-1.5 mt-3">
-              <span className="text-2xl lg:text-3xl font-black text-[#201D1D] tracking-tight">
+              <span className="text-lg sm:text-2xl xl:text-[28px] leading-tight font-black text-[#201D1D] tracking-tight break-words">
                 {formatFCFA(periodData.amount)}
               </span>
             </div>
@@ -187,8 +188,8 @@ export const WalletView: React.FC<WalletViewProps> = ({
 
           {/* Synchronized Month Balance Tracker */}
           <div className="pt-2.5 border-t border-[#F1F5F9] mt-2 space-y-1">
-            <div className="flex items-center justify-between text-[13px]">
-              <span className="text-[#7A808C] font-semibold">Cumul ce mois (Octobre) :</span>
+            <div className="flex flex-wrap items-center justify-between gap-x-2 text-xs sm:text-[13px]">
+              <span className="text-[#7A808C] font-semibold">Cumul du mois</span>
               <span className="font-extrabold text-[#201D1D]">{formatFCFA(monthTotal)}</span>
             </div>
             <p className="text-xs text-[#94A3B8] leading-tight">
@@ -198,10 +199,10 @@ export const WalletView: React.FC<WalletViewProps> = ({
         </div>
 
         {/* CARTE 2 : SOLDE EN LIGNE DISPONIBLE (RETIRABLE IMMÉDIATEMENT) */}
-        <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#10B981] flex flex-col justify-between space-y-3">
+        <div className="min-w-0 bg-white rounded-[22px] sm:rounded-[28px] p-4 sm:p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#10B981] flex flex-col justify-between space-y-3">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-[13px] font-bold uppercase tracking-wider text-[#7A808C]">
+              <span className="text-xs sm:text-[13px] font-bold uppercase tracking-wider text-[#7A808C] leading-snug">
                 Solde En Ligne Disponible
               </span>
               <div className="w-7 h-7 rounded-xl bg-[#ECFDF5] text-[#10B981] flex items-center justify-center shrink-0">
@@ -210,12 +211,12 @@ export const WalletView: React.FC<WalletViewProps> = ({
             </div>
 
             <div className="flex items-baseline gap-1.5 mt-2">
-              <span className="text-2xl lg:text-3xl font-black text-[#201D1D] tracking-tight">
+              <span className="text-lg sm:text-2xl xl:text-[28px] leading-tight font-black text-[#201D1D] tracking-tight break-words">
                 {formatFCFA(wallet.availableBalance)}
               </span>
             </div>
 
-            <p className="text-[13px] text-[#7A808C] mt-1.5 leading-relaxed">
+            <p className="text-xs sm:text-[13px] text-[#7A808C] mt-1.5 leading-relaxed">
               Paiements en ligne retirables {wallet.payoutHoldHours ?? 72} h après leur réception.
             </p>
             {(wallet.pendingOnlineAmount ?? 0) > 0 && (
@@ -248,15 +249,16 @@ export const WalletView: React.FC<WalletViewProps> = ({
             icon={<ArrowUpRight className="w-3.5 h-3.5" />}
             className="cursor-pointer"
           >
-            Transférer vers Mobile Money
+            <span className="sm:hidden">Retirer</span>
+            <span className="hidden sm:inline">Transférer vers Mobile Money</span>
           </Button>
         </div>
 
         {/* CARTE 3 : TOTAL ENCAISSÉ EN ESPÈCES (CASH ON DELIVERY - LIVRAISONS CONFIRMÉES) */}
-        <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#0EA5E9] flex flex-col justify-between space-y-3">
+        <div className="min-w-0 bg-white rounded-[22px] sm:rounded-[28px] p-4 sm:p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#0EA5E9] flex flex-col justify-between space-y-3">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-[13px] font-bold uppercase tracking-wider text-[#7A808C]">
+              <span className="text-xs sm:text-[13px] font-bold uppercase tracking-wider text-[#7A808C] leading-snug">
                 Encaissé en Espèces (COD)
               </span>
               <div className="w-7 h-7 rounded-xl bg-[#EFF6FF] text-[#0EA5E9] flex items-center justify-center shrink-0">
@@ -265,27 +267,27 @@ export const WalletView: React.FC<WalletViewProps> = ({
             </div>
 
             <div className="flex items-baseline gap-1.5 mt-2">
-              <span className="text-2xl lg:text-3xl font-black text-[#201D1D] tracking-tight">
+              <span className="text-lg sm:text-2xl xl:text-[28px] leading-tight font-black text-[#201D1D] tracking-tight break-words">
                 {formatFCFA(effectiveCodCollected)}
               </span>
             </div>
 
-            <p className="text-[13px] text-[#7A808C] mt-1.5 leading-relaxed">
+            <p className="text-xs sm:text-[13px] text-[#7A808C] mt-1.5 leading-relaxed">
               Argent remis en main propre par les coursiers après livraison à Dakar.
             </p>
           </div>
 
           <div className="flex items-center gap-1.5 text-[13px] text-[#0284C7] font-bold bg-[#F0F9FF] p-2 rounded-xl border border-[#BAE6FD]">
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-[#0284C7]" />
-            <span className="truncate">Livraisons confirmées & encaissées</span>
+            <span className="leading-snug">Livraisons confirmées</span>
           </div>
         </div>
 
         {/* CARTE 4 : TOTAL DES RETRAITS EFFECTUÉS (SORTIES DE FONDS MARCHAND) */}
-        <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#6366F1] flex flex-col justify-between space-y-3">
+        <div className="min-w-0 bg-white rounded-[22px] sm:rounded-[28px] p-4 sm:p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] border-t-4 border-t-[#6366F1] flex flex-col justify-between space-y-3">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-[13px] font-bold uppercase tracking-wider text-[#7A808C]">
+              <span className="text-xs sm:text-[13px] font-bold uppercase tracking-wider text-[#7A808C] leading-snug">
                 Total Retraits Effectués
               </span>
               <div className="w-7 h-7 rounded-xl bg-[#EEF2FF] text-[#6366F1] flex items-center justify-center shrink-0">
@@ -294,20 +296,20 @@ export const WalletView: React.FC<WalletViewProps> = ({
             </div>
 
             <div className="flex items-baseline gap-1.5 mt-2">
-              <span className="text-2xl lg:text-3xl font-black text-[#201D1D] tracking-tight">
+              <span className="text-lg sm:text-2xl xl:text-[28px] leading-tight font-black text-[#201D1D] tracking-tight break-words">
                 {formatFCFA(wallet.totalWithdrawn)}
               </span>
             </div>
 
-            <p className="text-[13px] text-[#7A808C] mt-1.5 leading-relaxed">
-              Cumul total viré sur vos comptes marchands Wave / Orange Money.
+            <p className="text-xs sm:text-[13px] text-[#7A808C] mt-1.5 leading-relaxed">
+              Cumul total viré sur vos comptes Mobile Money.
             </p>
           </div>
 
           <div className="flex items-center gap-1.5 text-[13px] text-[#059669] font-bold bg-[#ECFDF5] p-2 rounded-xl border border-[#A7F3D0]">
             <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-[#10B981]" />
-            <span className="truncate">
-              {wallet.payoutHistory.length} virements réalisés • 0 incident
+            <span className="leading-snug">
+              {wallet.payoutHistory.length} virement{wallet.payoutHistory.length > 1 ? 's' : ''}
             </span>
           </div>
         </div>
@@ -317,7 +319,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
       {/* 3. HISTORIQUE CLAIREMENT SÉPARÉ EN 2 SECTIONS DISTINCTES */}
       {/* (DEMANDE DE L'UTILISATEUR : BIEN SÉPARER RETRAITS & VERSEMENTS)*/}
       {/* ======================================================== */}
-      <div className="bg-white rounded-[28px] p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-5">
+      <div className="bg-white rounded-[28px] p-4 sm:p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-5">
         {/* En-tête avec Navigation par Onglets Distincts */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#F1F5F9]">
           <div>
@@ -330,18 +332,19 @@ export const WalletView: React.FC<WalletViewProps> = ({
           </div>
 
           {/* Sélecteur d'Onglets Principal (Entrées vs Sorties) */}
-          <div className="flex items-center gap-1.5 bg-[#F1F5F9] p-1.5 rounded-2xl border border-[#E2E8F0] shrink-0">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 bg-[#F1F5F9] p-1.5 rounded-2xl border border-[#E2E8F0] w-full sm:w-auto shrink-0">
             <button
               type="button"
               onClick={() => setHistoryTab('inflows')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-2 px-3 sm:px-3.5 py-2 rounded-xl text-[13px] font-bold whitespace-nowrap transition-all cursor-pointer ${
                 historyTab === 'inflows'
                   ? 'bg-white text-[#235BF7] shadow-xs'
                   : 'text-[#7A808C] hover:text-[#201D1D]'
               }`}
             >
               <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Versements & Encaissements</span>
+              <span className="sm:hidden">Encaissements</span>
+              <span className="hidden sm:inline">Versements & Encaissements</span>
               <span
                 className={`text-xs font-black px-1.5 py-0.5 rounded-full ${
                   historyTab === 'inflows'
@@ -356,14 +359,15 @@ export const WalletView: React.FC<WalletViewProps> = ({
             <button
               type="button"
               onClick={() => setHistoryTab('outflows')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-2 px-3 sm:px-3.5 py-2 rounded-xl text-[13px] font-bold whitespace-nowrap transition-all cursor-pointer ${
                 historyTab === 'outflows'
                   ? 'bg-white text-[#235BF7] shadow-xs'
                   : 'text-[#7A808C] hover:text-[#201D1D]'
               }`}
             >
               <ArrowUpRight className="w-3.5 h-3.5 text-[#235BF7]" />
-              <span>Retraits Marchand</span>
+              <span className="sm:hidden">Retraits</span>
+              <span className="hidden sm:inline">Retraits marchand</span>
               <span
                 className={`text-xs font-black px-1.5 py-0.5 rounded-full ${
                   historyTab === 'outflows'
@@ -384,11 +388,11 @@ export const WalletView: React.FC<WalletViewProps> = ({
           <div className="space-y-4 animate-in fade-in duration-150">
             {/* Filtres par source d'encaissement */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[13px] font-bold text-[#7A808C] flex items-center gap-1">
                   <Filter className="w-3 h-3" /> Filtrer :
                 </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setInflowFilter('all')}
@@ -409,7 +413,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         : 'bg-[#F8FAFC] border border-[#E2E8F0] text-[#7A808C] hover:bg-white'
                     }`}
                   >
-                    En Ligne Wave / Orange
+                    Mobile Money
                   </button>
                   <button
                     type="button"
@@ -420,7 +424,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                         : 'bg-[#F8FAFC] border border-[#E2E8F0] text-[#7A808C] hover:bg-white'
                     }`}
                   >
-                    Espèces Livraisons (COD)
+                    Espèces
                   </button>
                 </div>
               </div>
@@ -434,7 +438,39 @@ export const WalletView: React.FC<WalletViewProps> = ({
             </div>
 
             {/* Table des Encaissements */}
-            <div className="overflow-x-auto rounded-2xl border border-[#F1F5F9]">
+            {/* Phone: one card per receipt */}
+            <div className="space-y-2.5 sm:hidden">
+              {filteredInflows.length === 0 ? (
+                <p className="py-8 text-center text-[13px] text-[#94A3B8]">
+                  Aucun encaissement trouvé pour ce filtre.
+                </p>
+              ) : (
+                filteredInflows.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3.5 rounded-2xl border border-[#ECEFF4] space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-[13px] text-[#235BF7] tabular-nums truncate">
+                        {item.orderId}
+                      </span>
+                      <span className="font-black text-[15px] text-emerald-600 whitespace-nowrap">
+                        +{formatFCFA(item.amount)}
+                      </span>
+                    </div>
+                    <p className="font-bold text-[14px] text-[#201D1D] truncate">
+                      {item.customerName}
+                    </p>
+                    <div className="flex items-center justify-between gap-2 text-[13px] text-[#7A808C]">
+                      <span>{item.source === 'cod_cash' ? 'Espèces' : 'Mobile Money'}</span>
+                      <span>{item.date}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="hidden sm:block overflow-x-auto rounded-2xl border border-[#F1F5F9]">
               <table className="w-full text-left text-[13px]">
                 <thead>
                   <tr className="border-b border-[#F1F5F9] bg-[#F8FAFC] text-[#7A808C] font-bold uppercase text-xs tracking-wider">
@@ -456,7 +492,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   ) : (
                     filteredInflows.map((item) => (
                       <tr key={item.id} className="hover:bg-[#F8FAFC] transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-bold text-[#235BF7] whitespace-nowrap">
+                        <td className="py-3.5 px-4 tabular-nums font-bold text-[#235BF7] whitespace-nowrap">
                           {item.orderId}
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
@@ -484,7 +520,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                           {item.source === 'cod_cash' && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-bold bg-[#ECFDF5] text-[#059669]">
                               <Banknote className="w-3 h-3" />
-                              Espèces Livraison (COD)
+                              Espèces
                             </span>
                           )}
                         </td>
@@ -514,10 +550,10 @@ export const WalletView: React.FC<WalletViewProps> = ({
         {/* ======================================================== */}
         {historyTab === 'outflows' && (
           <div className="space-y-4 animate-in fade-in duration-150">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Virements automatiques via API Wave & Orange Money
+                Virements automatiques vers Mobile Money
               </span>
 
               <Button
@@ -532,7 +568,54 @@ export const WalletView: React.FC<WalletViewProps> = ({
               </Button>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-[#F1F5F9]">
+            {/* Phone: one card per payout */}
+            <div className="space-y-2.5 sm:hidden">
+              {wallet.payoutHistory.length === 0 ? (
+                <p className="py-8 text-center text-[13px] text-[#94A3B8]">
+                  Aucun retrait effectué pour le moment.
+                </p>
+              ) : (
+                wallet.payoutHistory.map((payout) => (
+                  <button
+                    key={payout.id}
+                    type="button"
+                    onClick={() => setSelectedReceipt(payout)}
+                    className="w-full text-left p-3.5 rounded-2xl border border-[#ECEFF4] space-y-1.5 cursor-pointer hover:bg-[#F8FAFC]"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-[13px] text-[#201D1D] tabular-nums truncate">
+                        {payout.reference}
+                      </span>
+                      <span className="font-black text-[15px] text-[#201D1D] whitespace-nowrap">
+                        {formatFCFA(payout.amount)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 text-[13px] text-[#7A808C]">
+                      <span>
+                        {payout.provider === 'wave' ? 'Wave' : 'Orange Money'} · {payout.date}
+                      </span>
+                      <span
+                        className={`font-bold ${
+                          payout.status === 'completed'
+                            ? 'text-[#059669]'
+                            : payout.status === 'failed'
+                              ? 'text-red-700'
+                              : 'text-amber-700'
+                        }`}
+                      >
+                        {payout.status === 'completed'
+                          ? 'Effectué'
+                          : payout.status === 'failed'
+                            ? 'Échoué'
+                            : 'En cours'}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+
+            <div className="hidden sm:block overflow-x-auto rounded-2xl border border-[#F1F5F9]">
               <table className="w-full text-left text-[13px]">
                 <thead>
                   <tr className="border-b border-[#F1F5F9] bg-[#F8FAFC] text-[#7A808C] font-bold uppercase text-xs tracking-wider">
@@ -555,7 +638,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
                   ) : (
                     wallet.payoutHistory.map((payout) => (
                       <tr key={payout.id} className="hover:bg-[#F8FAFC] transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-bold text-[#201D1D] whitespace-nowrap">
+                        <td className="py-3.5 px-4 tabular-nums font-bold text-[#201D1D] whitespace-nowrap">
                           {payout.reference}
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
@@ -640,9 +723,10 @@ export const WalletView: React.FC<WalletViewProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedReceipt(null)}
+                aria-label="Fermer"
                 className="p-1 rounded-full text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -661,7 +745,7 @@ export const WalletView: React.FC<WalletViewProps> = ({
             <div className="space-y-2 text-[13px]">
               <div className="flex justify-between py-1.5 border-b border-[#F1F5F9]">
                 <span className="text-[#7A808C]">Référence transaction :</span>
-                <span className="font-mono font-bold text-[#201D1D]">
+                <span className="tabular-nums font-bold text-[#201D1D]">
                   {selectedReceipt.reference}
                 </span>
               </div>

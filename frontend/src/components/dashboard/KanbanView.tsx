@@ -239,7 +239,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                 : 'bg-white border-[#E2E8F0] text-[#7A808C] hover:bg-[#F8FAFC]'
             }`}
           >
-            <span className="text-xs uppercase font-bold tracking-wider truncate">COD Espèces</span>
+            <span className="text-xs uppercase font-bold tracking-wider truncate">Espèces</span>
             <span
               className={`text-[13px] font-black px-2 py-0.5 rounded-full ${
                 paymentFilter === 'cod' ? 'bg-[#201D1D] text-white' : 'bg-[#F1F5F9] text-[#334155]'
@@ -399,7 +399,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                     />
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-md">
+                        <span className="tabular-nums text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-md">
                           {order.id}
                         </span>
                         <span className="text-[13px] text-[#94A3B8]">{order.createdAt}</span>
@@ -514,7 +514,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                     {order.paymentType === 'cod' && (
                       <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#059669] bg-[#ECFDF5] px-2 py-1 rounded-lg">
                         <Banknote className="w-3 h-3" />
-                        <span>COD Espèces</span>
+                        <span>Espèces</span>
                       </span>
                     )}
                   </div>
@@ -595,7 +595,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
                     return (
                       <tr key={order.id} className="hover:bg-[#F8FAFC]/80 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-bold text-[#235BF7] whitespace-nowrap">
+                        <td className="py-3.5 px-4 tabular-nums font-bold text-[#235BF7] whitespace-nowrap">
                           {order.id}
                           <span className="block font-sans font-normal text-xs text-[#94A3B8]">
                             {order.createdAt}
@@ -815,7 +815,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] px-1.5 py-0.5 rounded">
+                        <span className="tabular-nums text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] px-1.5 py-0.5 rounded">
                           {order.id}
                         </span>
                         {isPaidOnline && (

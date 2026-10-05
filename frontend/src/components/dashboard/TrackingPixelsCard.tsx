@@ -70,7 +70,7 @@ export const TrackingPixelsCard: React.FC = () => {
   };
 
   const inputClass = (invalid: boolean) =>
-    `w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border text-[13px] font-mono font-semibold text-[#201D1D] focus:outline-none focus:bg-white ${
+    `w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border text-[13px] tabular-nums font-semibold text-[#201D1D] focus:outline-none focus:bg-white ${
       invalid ? 'border-red-400 focus:border-red-500' : 'border-[#E2E8F0] focus:border-[#235BF7]'
     }`;
 

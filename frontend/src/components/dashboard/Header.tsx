@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
-  CalendarDays,
   Check,
   ChevronDown,
   CircleDollarSign,
@@ -50,8 +49,6 @@ interface HeaderProps {
   storeName?: string | null | undefined;
   onOpenOrder: (reference: string) => void;
   onSearch: (query: string) => void;
-  activeWidgets?: HeaderWidgetsState;
-  onToggleWidget?: (widgetKey: keyof HeaderWidgetsState) => void;
 }
 
 const TITLES: Record<DashboardTab, string> = {
@@ -101,18 +98,8 @@ export const Header: React.FC<HeaderProps> = ({
   storeName,
   onOpenOrder,
   onSearch,
-  activeWidgets = {
-    kpiCards: true,
-    profitChart: true,
-    segmentation: true,
-    activeDays: true,
-    deliveryRate: true,
-    aiAssistant: true,
-    bestProducts: true,
-  },
-  onToggleWidget,
 }) => {
-  const [open, setOpen] = useState<null | 'notifications' | 'period' | 'widgets'>(null);
+  const [open, setOpen] = useState<null | 'notifications' | 'period'>(null);
   const [seenAt, setSeenAt] = useState(0);
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -263,7 +250,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {open === 'notifications' && (
-              <div className="absolute right-0 top-full mt-2 w-[min(92vw,400px)] bg-white rounded-[24px] border border-[#ECEFF4] shadow-[0_30px_60px_-24px_rgba(32,29,29,0.35)] z-50 overflow-hidden motion-safe:animate-[rise_220ms_ease]">
+              <div className="fixed inset-x-3 top-[76px] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[400px] bg-white rounded-[24px] border border-[#ECEFF4] shadow-[0_30px_60px_-24px_rgba(32,29,29,0.35)] z-50 overflow-hidden motion-safe:animate-[rise_220ms_ease]">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F3F7]">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-[15px] text-[#201D1D]">Notifications</span>
@@ -283,7 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
                 </div>
 
-                <div className="max-h-[360px] overflow-y-auto">
+                <div className="max-h-[min(60vh,420px)] overflow-y-auto overscroll-contain">
                   {notifications.length === 0 ? (
                     <div className="py-12 px-6 text-center">
                       <span className="mx-auto w-12 h-12 rounded-2xl bg-[#F6F7F9] text-[#9AA0AB] flex items-center justify-center">
@@ -363,24 +350,42 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Row 2: title + filters */}
+      {/* Row 2: title + actions (Créer une page, Filtrer) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-2xl sm:text-[28px] font-extrabold text-[#201D1D] tracking-[-0.02em]">
           {TITLES[activeTab]}
         </h1>
 
-        <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 -mx-1 px-1">
-          {/* Period (one control: shows the real dates) */}
-          <div className="relative shrink-0">
-            <button type="button" onClick={() => toggle('period')} className={PILL}>
-              <CalendarDays className="w-4 h-4 text-[#235BF7]" />
-              <span className="hidden md:inline text-[#7A808C] font-medium">{dateRangeLabel}</span>
-              <span className="hidden md:inline text-[#D5DAE3]">·</span>
-              <span>{periodLabel}</span>
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+          <button
+            type="button"
+            onClick={onCreatePageClick}
+            className="sm:order-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[14px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Créer une page
+          </button>
+
+          {/* Filtrer: period of the KPIs, chart and analytics */}
+          <div className="relative sm:order-1">
+            <button
+              type="button"
+              onClick={() => toggle('period')}
+              aria-expanded={open === 'period'}
+              className={`${PILL} w-full justify-center`}
+            >
+              <SlidersHorizontal className="w-4 h-4 text-[#235BF7]" />
+              <span className="sm:hidden">Filtrer</span>
+              <span className="hidden sm:inline text-[#7A808C] font-medium">{dateRangeLabel}</span>
+              <span className="hidden sm:inline text-[#D5DAE3]">·</span>
+              <span className="hidden sm:inline">{periodLabel}</span>
               <ChevronDown className="w-4 h-4 text-[#9AA0AB]" />
             </button>
             {open === 'period' && (
-              <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-60 bg-white rounded-2xl p-2 border border-[#ECEFF4] shadow-[0_24px_48px_-24px_rgba(32,29,29,0.35)] z-50 motion-safe:animate-[rise_200ms_ease]">
+              <div className="absolute right-0 top-full mt-2 w-60 bg-white rounded-2xl p-2 border border-[#ECEFF4] shadow-[0_24px_48px_-24px_rgba(32,29,29,0.35)] z-50 motion-safe:animate-[rise_200ms_ease]">
+                <p className="px-3 pt-1 pb-2 text-[13px] font-semibold text-[#9AA0AB]">
+                  {dateRangeLabel}
+                </p>
                 {PERIODS.map((p) => (
                   <button
                     key={p.id}
@@ -402,52 +407,6 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
           </div>
-
-          {/* Widgets */}
-          {activeTab === 'cockpit' && (
-            <div className="relative shrink-0">
-              <button type="button" onClick={() => toggle('widgets')} className={PILL}>
-                <SlidersHorizontal className="w-4 h-4 text-[#9AA0AB]" />
-                <span>Widgets</span>
-              </button>
-              {open === 'widgets' && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-[22px] p-3 border border-[#ECEFF4] shadow-[0_24px_48px_-24px_rgba(32,29,29,0.35)] z-50 motion-safe:animate-[rise_200ms_ease]">
-                  <p className="px-2 pb-2 text-sm font-semibold text-[#7A808C]">Blocs affichés</p>
-                  {[
-                    { key: 'kpiCards' as const, label: 'Indicateurs clés' },
-                    { key: 'profitChart' as const, label: 'Chiffre d’affaires' },
-                    { key: 'segmentation' as const, label: 'Répartition des paiements' },
-                    { key: 'activeDays' as const, label: 'Journées les plus actives' },
-                    { key: 'deliveryRate' as const, label: 'Taux de livraison' },
-                    { key: 'aiAssistant' as const, label: 'Assistant Juula' },
-                    { key: 'bestProducts' as const, label: 'Produits les plus vendus' },
-                  ].map((w) => (
-                    <label
-                      key={w.key}
-                      className="flex items-center justify-between px-2 py-2.5 rounded-xl hover:bg-[#F6F7F9] cursor-pointer"
-                    >
-                      <span className="text-[14px] font-medium text-[#3F4654]">{w.label}</span>
-                      <input
-                        type="checkbox"
-                        checked={activeWidgets[w.key]}
-                        onChange={() => onToggleWidget?.(w.key)}
-                        className="w-4 h-4 accent-[#235BF7] cursor-pointer"
-                      />
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={onCreatePageClick}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[14px] font-semibold shadow-[0_10px_20px_-10px_rgba(35,91,247,0.8)] transition-colors cursor-pointer shrink-0 whitespace-nowrap"
-          >
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Créer une page
-          </button>
         </div>
       </div>
     </header>

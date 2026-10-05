@@ -152,7 +152,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   maxLength={6}
                   value={storeCode}
                   onChange={(e) => setStoreCode(e.target.value.toUpperCase())}
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] font-mono font-bold text-[#235BF7] uppercase focus:outline-none focus:border-[#235BF7] focus:bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] tabular-nums font-bold text-[#235BF7] uppercase focus:outline-none focus:border-[#235BF7] focus:bg-white"
                   placeholder="BDE"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#94A3B8]">
@@ -366,7 +366,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              <span className="text-[13px] font-mono font-bold text-[#059669] bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#A7F3D0]">
+              <span className="text-[13px] tabular-nums font-bold text-[#059669] bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#A7F3D0]">
                 {payoutSecurity.isPinSet
                   ? `Code Actif : ${payoutSecurity.maskedPin}`
                   : 'Non défini'}
@@ -517,7 +517,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 En cas d'oubli de votre code PIN, un email de réinitialisation sécurisé sera envoyé
                 à cette adresse :
               </p>
-              <div className="p-2.5 rounded-xl bg-white border border-[#CBD5E1] font-mono font-bold text-[#201D1D]">
+              <div className="p-2.5 rounded-xl bg-white border border-[#CBD5E1] tabular-nums font-bold text-[#201D1D]">
                 {payoutSecurity.recoveryEmail}
               </div>
             </div>

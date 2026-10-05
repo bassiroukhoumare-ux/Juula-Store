@@ -141,7 +141,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         <div className="flex items-center justify-between text-[13px]">
           <div className="flex items-center gap-1.5 min-w-0">
             <GripVertical className="w-3 h-3 text-[#94A3B8] opacity-50 group-hover:opacity-100 group-hover:text-[#235BF7] transition-colors shrink-0" />
-            <span className="font-mono font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-md text-[13px] shrink-0">
+            <span className="tabular-nums font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded-md text-[13px] shrink-0">
               {order.id}
             </span>
             <span className="text-[13px] text-[#94A3B8] truncate">{order.createdAt}</span>
@@ -394,7 +394,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
             {/* Header Modal */}
             <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
               <div>
-                <span className="font-mono text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-md">
+                <span className="tabular-nums text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-md">
                   {order.id}
                 </span>
                 <h3 className="text-base font-black text-[#201D1D] mt-1">{order.customerName}</h3>
@@ -440,7 +440,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
 
               <div className="flex items-center justify-between text-[#7A808C] text-[13px] pt-1.5 border-t border-[#E2E8F0]">
                 <span>Téléphone client :</span>
-                <span className="font-bold text-[#201D1D] font-mono">{order.phone}</span>
+                <span className="font-bold text-[#201D1D] tabular-nums">{order.phone}</span>
               </div>
               <div className="flex items-center justify-between text-[#7A808C] text-[13px]">
                 <span>Règlement :</span>

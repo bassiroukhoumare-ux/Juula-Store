@@ -227,7 +227,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
           </div>
 
           {/* Receipt Card */}
-          <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-left text-[13px] space-y-2.5 max-w-md mx-auto font-mono">
+          <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-left text-[13px] space-y-2.5 max-w-md mx-auto tabular-nums">
             <div className="flex justify-between pb-2 border-b border-[#E2E8F0]">
               <span className="text-[#7A808C]">Référence Juula</span>
               <span className="font-bold text-[#201D1D]">{receiptTxnId}</span>
@@ -580,7 +580,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     Statut du Code PIN
                   </span>
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-emerald-600 font-black text-[15px] tracking-widest">
+                    <span className="tabular-nums text-emerald-600 font-black text-[15px] tracking-widest">
                       {payoutSecurity.maskedPin}
                     </span>
                     <span className="inline-flex items-center gap-1 text-xs font-extrabold bg-[#ECFDF5] text-[#059669] px-2 py-0.5 rounded-full border border-[#A7F3D0]">
@@ -596,7 +596,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                   votre adresse vérifiée :
                 </p>
 
-                <div className="flex items-center gap-2 font-mono text-[13px] text-[#201D1D] bg-[#F8FAFC] border border-[#E2E8F0] p-2.5 rounded-xl">
+                <div className="flex items-center gap-2 tabular-nums text-[13px] text-[#201D1D] bg-[#F8FAFC] border border-[#E2E8F0] p-2.5 rounded-xl">
                   <Mail className="w-3.5 h-3.5 text-[#235BF7] shrink-0" />
                   <span className="truncate">{payoutSecurity.recoveryEmail}</span>
                 </div>
@@ -643,7 +643,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     <span className="text-xs uppercase font-bold text-[#7A808C]">
                       Clé Publique (Live) :
                     </span>
-                    <span className="font-mono text-xs text-[#201D1D] font-bold truncate max-w-[190px]">
+                    <span className="tabular-nums text-xs text-[#201D1D] font-bold truncate max-w-[190px]">
                       izp_live_pk_uc6uCy7ELZ...
                     </span>
                   </div>
@@ -651,7 +651,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     <span className="text-xs uppercase font-bold text-[#7A808C]">
                       Clé Privée Serveur :
                     </span>
-                    <span className="font-mono text-xs text-emerald-700 font-bold">
+                    <span className="tabular-nums text-xs text-emerald-700 font-bold">
                       izp_live_sk_••••••••••••QBGk
                     </span>
                   </div>
@@ -696,7 +696,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                     Conformément à la sécurité bancaire Juula, un lien unique à usage unique a été
                     expédié à l'adresse du propriétaire de la boutique :
                   </p>
-                  <p className="text-[13px] font-mono font-bold text-[#201D1D] bg-[#F8FAFC] py-1.5 px-3 rounded-lg border border-[#E2E8F0] inline-block">
+                  <p className="text-[13px] tabular-nums font-bold text-[#201D1D] bg-[#F8FAFC] py-1.5 px-3 rounded-lg border border-[#E2E8F0] inline-block">
                     {payoutSecurity.recoveryEmail}
                   </p>
                 </div>
@@ -744,8 +744,9 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                   <div className="text-[#7A808C]">
                     À : <strong className="text-[#201D1D]">{payoutSecurity.recoveryEmail}</strong>
                   </div>
-                  <div className="font-bold text-[#201D1D] pt-1 text-[15px]">
-                    🔒 Réinitialisation de votre code PIN de retrait Juula Store
+                  <div className="font-bold text-[#201D1D] pt-1 text-[15px] flex items-center gap-1.5">
+                    <Lock className="w-4 h-4 text-[#235BF7] shrink-0" />
+                    Réinitialisation de votre code PIN de retrait Juula Store
                   </div>
                 </div>
 
