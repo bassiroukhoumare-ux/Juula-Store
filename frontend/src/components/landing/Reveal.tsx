@@ -22,28 +22,53 @@ const HIDDEN: Record<NonNullable<RevealProps['from']>, string> = {
  * Fades/slides its children in the first time they enter the viewport.
  * Respects prefers-reduced-motion (shown immediately, no movement).
  */
-export const Reveal: React.FC<RevealProps> = ({ children, className = '', delay = 0, from = 'up' }) => {
+export const Reveal: React.FC<RevealProps> = ({
+  children,
+  className = '',
+  delay = 0,
+  from = 'up',
+}) => {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setShown(true);
+    const show = () => setShown(true);
+    if (
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      !('IntersectionObserver' in window)
+    ) {
+      show();
       return;
     }
+    // Already on screen (or scrolled past) at mount: reveal right away.
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.95) {
+      const t = setTimeout(show, 30);
+      return () => clearTimeout(t);
+    }
+    let observerAlive = false;
     const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setShown(true);
+      (entries) => {
+        observerAlive = true; // fires once right after observe(), even off-screen
+        if (entries.some((e) => e.isIntersecting)) {
+          show();
           io.disconnect();
         }
       },
-      { rootMargin: '0px 0px -8% 0px', threshold: 0.12 },
+      { rootMargin: '0px 0px -6% 0px', threshold: 0.05 },
     );
     io.observe(el);
-    return () => io.disconnect();
+    // Safety net: if the observer never reports (odd browsers / webviews),
+    // never leave content hidden.
+    const safety = setTimeout(() => {
+      if (!observerAlive) show();
+    }, 2500);
+    return () => {
+      io.disconnect();
+      clearTimeout(safety);
+    };
   }, []);
 
   return (
