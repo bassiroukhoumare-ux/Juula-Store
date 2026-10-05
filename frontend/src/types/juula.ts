@@ -177,7 +177,12 @@ export interface FunnelPageConfig {
   deliveryPricingType?: 'free' | 'fixed';
   fixedDeliveryFee?: number;
   showUrgencyBadge: boolean;
+  /** Urgency message on the sales page (empty → default viewers message). */
   urgencyText: string;
+  /** Shows the urgency message (on unless explicitly turned off). */
+  urgencyEnabled?: boolean | undefined;
+  /** Injected at render time from the merchant's store (never stored). */
+  storeLogoUrl?: string | null | undefined;
   deliveryNotice: string;
   benefits: string[];
   ctaButtonText: string;

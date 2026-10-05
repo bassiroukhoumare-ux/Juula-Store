@@ -4,6 +4,7 @@ import { displayFont } from '@/app/fonts';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Check,
+  Eye,
   Truck,
   ShieldCheck,
   Star,
@@ -27,9 +28,6 @@ import {
   Play,
   RotateCcw,
   Trash2,
-  Camera,
-  Film,
-  Headphones,
   CheckCheck,
   Plus,
   Minus,
@@ -46,6 +44,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { formatOrderId, formatFCFA } from '@/lib/orderUtils';
 import { formatMoney, getDisplayCurrency } from '@/lib/money';
+import { DEFAULT_URGENCY_TEXT } from '@/lib/store/urgency';
 import { MonerizCheckoutModal } from '@/components/payments/MonerizCheckoutModal';
 
 // SVG Officiel WhatsApp
@@ -147,9 +146,6 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   // Proof Items (Images, Videos, WhatsApp Voice Notes)
-  const [activeProofFilter, setActiveProofFilter] = useState<'all' | 'audio' | 'video' | 'image'>(
-    'all',
-  );
   const [playingProofAudioId, setPlayingProofAudioId] = useState<string | null>(null);
   const [selectedProofModalItem, setSelectedProofModalItem] = useState<ProofItem | null>(null);
 
@@ -159,10 +155,22 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   const allProofItems: ProofItem[] =
     config.proofItems && config.proofItems.length > 0 ? config.proofItems : [];
 
-  const filteredProofItems =
-    activeProofFilter === 'all'
-      ? allProofItems
-      : allProofItems.filter((item) => item.type === activeProofFilter);
+  // Store header + urgency block
+  const storeDisplayName = config.storeName || 'Ma Boutique';
+  const storeInitials =
+    storeDisplayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join('') || 'JS';
+  const showUrgency = config.urgencyEnabled !== false;
+  const hasStockBadge = config.stockQuantity !== undefined && config.showStockBadge !== false;
+  const stockBarPercent = Math.min(90, Math.max(8, (config.stockQuantity ?? 0) * 2));
+  const reviewAverage =
+    reviewsList.length > 0
+      ? reviewsList.reduce((sum, r) => sum + r.rating, 0) / reviewsList.length
+      : 0;
 
   // Checkout Form fields
   const [customerName, setCustomerName] = useState('');
@@ -1336,43 +1344,45 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
       />
 
       {/* ======================================================== */}
-      {/* DESKTOP TOP BRAND BAR (Visible on wide screens)          */}
+      {/* STORE HEADER: merchant logo + store name, centered       */}
       {/* ======================================================== */}
-      {!isInsideMockup && (
-        <header className="hidden lg:flex items-center justify-between px-8 py-3.5 bg-white border-b border-[#E3E7EE] sticky top-0 z-30 shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#235BF7] text-white flex items-center justify-center font-black text-sm shadow-xs">
-              {(config.storeCode || 'JS').slice(0, 2)}
-            </div>
-            <div>
-              <span className="font-extrabold text-sm text-[#201D1D] tracking-tight block">
-                {config.storeName || 'Ma Boutique'}
+      <header
+        className={`${isInsideMockup ? '' : 'sticky top-0'} z-30 bg-white/95 backdrop-blur-md border-b border-[#ECEFF4]`}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-[72px] grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <span aria-hidden="true" />
+          <div className="flex items-center justify-center gap-2.5 min-w-0">
+            {config.storeLogoUrl ? (
+              <img
+                src={config.storeLogoUrl}
+                alt={`Logo ${storeDisplayName}`}
+                className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-cover border border-[#ECEFF4] bg-white shrink-0"
+              />
+            ) : (
+              <span className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-[#235BF7] text-white flex items-center justify-center font-extrabold text-sm shrink-0">
+                {storeInitials}
               </span>
-              <span className="text-[10px] text-[#7A808C] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Vendeur vérifié à Dakar &bull; Expédition express
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1.5 font-bold">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Zéro risque : essayage avant paiement
+            )}
+            <span className="text-base sm:text-lg font-extrabold tracking-tight text-[#201D1D] truncate max-w-[48vw] sm:max-w-xs">
+              {storeDisplayName}
             </span>
-
-            <a
-              href={`https://wa.me/${config.whatsappSupportNumber.replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366]/20 transition-colors font-bold"
-            >
-              <WhatsAppIcon className="w-4 h-4" />
-              Assistance WhatsApp
-            </a>
           </div>
-        </header>
-      )}
+          <div className="flex justify-end">
+            {config.whatsappSupportNumber && (
+              <a
+                href={`https://wa.me/${config.whatsappSupportNumber.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Contacter la boutique sur WhatsApp"
+                className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366]/20 transition-colors text-[13px] font-bold"
+              >
+                <WhatsAppIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Assistance</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </header>
 
       {/* ======================================================== */}
       {/* MAIN CONTAINER (Mobile Vertical / Desktop 2-Column Grid) */}
@@ -1520,15 +1530,11 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
           <div
             className={`${isInsideMockup ? 'w-full px-4 pt-1 pb-24 space-y-4' : 'lg:col-span-6 px-5 lg:px-0 pt-3 lg:pt-0 pb-28 lg:pb-12 space-y-5 -mt-4 lg:mt-0'} relative z-10`}
           >
-            {/* 1. Header Badges: Stock Garanti & Nom Boutique */}
-            <div className="flex items-center justify-between">
+            {/* 1. Guarantee badge */}
+            <div className="flex items-center">
               <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600" />
                 <span>{config.guaranteeBadge || 'Stock Garanti à Dakar'}</span>
-              </span>
-
-              <span className="text-[11px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-1 rounded-full">
-                {config.storeName || 'Ma Boutique'}
               </span>
             </div>
 
@@ -1551,33 +1557,38 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               </div>
             </div>
 
-            {/* 3. Carte "Zéro risque d'achat" */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E3E7EE] shadow-xs flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#235BF7] text-white flex items-center justify-center flex-shrink-0 shadow-xs">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div className="text-xs leading-snug">
-                <span className="font-extrabold text-[#201D1D] block text-sm">
-                  Zéro risque d'achat
-                </span>
-                <span className="text-[#7A808C]">
-                  Essayez votre article devant le coursier avant de régler en espèces ou Wave.
-                </span>
-              </div>
-            </div>
-
-            {/* Stock Urgency Alert (si configuré) */}
-            {config.stockQuantity !== undefined && config.showStockBadge !== false && (
-              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-300 text-amber-900 flex items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping shrink-0" />
-                  <span className="text-xs font-black">
-                    ⚡ Plus que {config.stockQuantity} pièces disponibles en stock à Dakar !
-                  </span>
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full shrink-0">
-                  Forte demande
-                </span>
+            {/* 3. Urgency: live interest + limited stock (no blinking) */}
+            {(showUrgency || hasStockBadge) && (
+              <div className="rounded-2xl bg-[#FFF7ED] border border-[#FED7AA] p-4 space-y-3">
+                {showUrgency && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-white border border-[#FED7AA] text-[#EA580C] flex items-center justify-center shrink-0">
+                      <Eye className="w-[18px] h-[18px]" />
+                    </div>
+                    <p className="text-sm font-bold text-[#9A3412] leading-snug">
+                      {config.urgencyText?.trim() || DEFAULT_URGENCY_TEXT}
+                    </p>
+                  </div>
+                )}
+                {hasStockBadge && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 text-[13px] text-[#9A3412]">
+                      <span>
+                        Plus que <strong>{config.stockQuantity}</strong> pièce
+                        {(config.stockQuantity ?? 0) > 1 ? 's' : ''} en stock
+                      </span>
+                      <span className="text-[11px] font-bold uppercase tracking-wide">
+                        Forte demande
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white border border-[#FED7AA] overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[#EA580C]"
+                        style={{ width: `${stockBarPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1639,25 +1650,21 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   <button
                     type="button"
                     onClick={() => handleOpenCheckout('cod')}
-                    className="w-full py-4 px-4 rounded-2xl bg-[#201D1D] hover:bg-black active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
+                    className="w-full py-4 px-4 rounded-2xl bg-[#201D1D] hover:bg-black active:scale-[0.98] text-white font-black text-[15px] tracking-tight flex items-center justify-center gap-2.5 transition-all cursor-pointer"
                   >
                     <Banknote className="w-4 h-4 text-[#10B981]" />
                     <span>Payer à la livraison</span>
                   </button>
                 )}
 
-                {/* Bouton 2 : Payer en ligne */}
+                {/* Bouton 2 : Payer maintenant (Wave / Orange Money / carte) */}
                 <button
                   type="button"
                   onClick={() => handleOpenCheckout('wave')}
-                  className="w-full py-4 px-4 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-sm tracking-tight flex items-center justify-center gap-2.5 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
+                  className="w-full py-4 px-4 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-[15px] tracking-tight flex items-center justify-center gap-2.5 transition-all cursor-pointer"
                 >
                   <CreditCard className="w-4 h-4 text-white" />
-                  <span>
-                    {config.codEnabled === false
-                      ? 'Payer en ligne (Wave / Orange Money)'
-                      : 'Payer en ligne'}
-                  </span>
+                  <span>Payer maintenant</span>
                 </button>
               </div>
 
@@ -1678,15 +1685,34 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {/* ======================================================== */}
             {/* 5. EXPÉDITION LOCALE (APRÈS LES BOUTONS)                  */}
             {/* ======================================================== */}
-            <div className="p-4 rounded-2xl bg-white border border-[#E3E7EE] shadow-xs space-y-1.5">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#201D1D]">
-                <Truck className="w-4 h-4 text-[#235BF7]" />
-                <span>{config.deliveryNotice || 'Expédition locale sous 2h à 4h à Dakar'}</span>
+            <div className="rounded-2xl bg-white border border-[#ECEFF4] divide-y divide-[#F1F3F6]">
+              <div className="p-4 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
+                  <Truck className="w-[18px] h-[18px]" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-sm font-bold text-[#201D1D]">
+                    {config.deliveryNotice || 'Expédition locale sous 2h à 4h à Dakar'}
+                  </p>
+                  <p className="text-[13px] text-[#7A808C] leading-relaxed">
+                    Notre service logistique vous contacte immédiatement sur WhatsApp pour
+                    coordonner l'heure exacte et l'adresse de livraison.
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-[#7A808C] leading-relaxed">
-                Notre service logistique vous contacte immédiatement sur WhatsApp pour coordonner
-                l'heure exacte et l'adresse de livraison.
-              </p>
+              <div className="p-4 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-[18px] h-[18px]" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-sm font-bold text-[#201D1D]">
+                    Zéro risque : satisfait ou remboursé
+                  </p>
+                  <p className="text-[13px] text-[#7A808C] leading-relaxed">
+                    Essayez votre article devant le livreur avant de régler en espèces ou Wave.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* ======================================================== */}
@@ -1720,219 +1746,176 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {/* 7. PREUVES CLIENTS REÇUES : PHOTOS, VIDÉOS & VOCAUX      */}
             {/* (NOUVELLE ICÔNE + 3 TYPES DE PREUVES REÇUES - AUDIO 3)   */}
             {/* ======================================================== */}
-            <div className="pt-2 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#201D1D] flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-[#235BF7]/10 text-[#235BF7] flex items-center justify-center">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                    </div>
-                    <span>Preuves Clients & Témoignages Authentiques</span>
+            {allProofItems.length > 0 && (
+              <div className="pt-2 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-base font-extrabold text-[#201D1D] flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center">
+                      <ShieldCheck className="w-4 h-4" />
+                    </span>
+                    <span>Preuves clients</span>
                   </h3>
+
+                  {allProofItems.length > 1 && (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => scrollSlider('left')}
+                        aria-label="Précédent"
+                        className="w-9 h-9 rounded-full bg-white border border-[#E3E7EE] flex items-center justify-center text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => scrollSlider('right')}
+                        aria-label="Suivant"
+                        className="w-9 h-9 rounded-full bg-white border border-[#E3E7EE] flex items-center justify-center text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => scrollSlider('left')}
-                    className="w-7 h-7 rounded-full bg-white border border-[#E3E7EE] flex items-center justify-center text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => scrollSlider('right')}
-                    className="w-7 h-7 rounded-full bg-white border border-[#E3E7EE] flex items-center justify-center text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Filtres par type de preuves : Tous / Vocaux / Vidéos / Photos */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-bold">
-                <button
-                  type="button"
-                  onClick={() => setActiveProofFilter('all')}
-                  className={`px-3 py-1 rounded-xl transition-all cursor-pointer ${
-                    activeProofFilter === 'all'
-                      ? 'bg-[#235BF7] text-white shadow-xs'
-                      : 'bg-white border border-[#E3E7EE] text-[#7A808C] hover:bg-[#F1F3F6]'
-                  }`}
+                {/* Slider Carrousel de droite à gauche */}
+                <div
+                  ref={sliderRef}
+                  className="flex gap-3 overflow-x-auto pb-2 pt-1 scroll-smooth snap-x snap-mandatory no-scrollbar"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                  Tous ({allProofItems.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveProofFilter('audio')}
-                  className={`px-3 py-1 rounded-xl flex items-center gap-1 transition-all cursor-pointer ${
-                    activeProofFilter === 'audio'
-                      ? 'bg-[#235BF7] text-white shadow-xs'
-                      : 'bg-white border border-[#E3E7EE] text-[#7A808C] hover:bg-[#F1F3F6]'
-                  }`}
-                >
-                  <Headphones className="w-3 h-3" />
-                  <span>Vocaux WhatsApp</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveProofFilter('video')}
-                  className={`px-3 py-1 rounded-xl flex items-center gap-1 transition-all cursor-pointer ${
-                    activeProofFilter === 'video'
-                      ? 'bg-[#235BF7] text-white shadow-xs'
-                      : 'bg-white border border-[#E3E7EE] text-[#7A808C] hover:bg-[#F1F3F6]'
-                  }`}
-                >
-                  <Film className="w-3 h-3" />
-                  <span>Vidéos Déballage</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveProofFilter('image')}
-                  className={`px-3 py-1 rounded-xl flex items-center gap-1 transition-all cursor-pointer ${
-                    activeProofFilter === 'image'
-                      ? 'bg-[#235BF7] text-white shadow-xs'
-                      : 'bg-white border border-[#E3E7EE] text-[#7A808C] hover:bg-[#F1F3F6]'
-                  }`}
-                >
-                  <Camera className="w-3 h-3" />
-                  <span>Photos Colis</span>
-                </button>
-              </div>
-
-              {/* Slider Carrousel de droite à gauche */}
-              <div
-                ref={sliderRef}
-                className="flex gap-3 overflow-x-auto pb-2 pt-1 scroll-smooth snap-x snap-mandatory no-scrollbar"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {filteredProofItems.map((item) => (
-                  <div key={item.id} className="snap-start flex-shrink-0">
-                    {/* TYPE 1: NOTE VOCALE WHATSAPP */}
-                    {item.type === 'audio' && (
-                      <div className="w-64 h-64 rounded-2xl bg-gradient-to-br from-[#201D1D] to-[#2A2626] p-4 text-white flex flex-col justify-between border border-neutral-800 shadow-sm relative overflow-hidden group">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-xs">
-                              <WhatsAppIcon className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <span className="text-xs font-bold block leading-tight">
-                                {item.authorName}
-                              </span>
-                              <span className="text-[10px] text-[#25D366] font-medium flex items-center gap-1">
-                                <CheckCheck className="w-3 h-3" /> {item.city}
-                              </span>
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full text-white/80">
-                            Vocal
-                          </span>
-                        </div>
-
-                        {/* Player waveform */}
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleProofAudio(item)}
-                              className="w-10 h-10 rounded-full bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center justify-center shadow-md cursor-pointer transition-transform active:scale-95 flex-shrink-0"
-                            >
-                              {playingProofAudioId === item.id ? (
-                                <Pause className="w-4 h-4 fill-current" />
-                              ) : (
-                                <Play className="w-4 h-4 fill-current ml-0.5" />
-                              )}
-                            </button>
-
-                            <div className="flex-1 space-y-1">
-                              {/* Audio wave bars animation */}
-                              <div className="flex items-center gap-0.5 h-6">
-                                {[
-                                  14, 22, 10, 24, 18, 26, 12, 20, 24, 16, 22, 12, 18, 24, 14, 20,
-                                  16, 22, 10,
-                                ].map((h, idx) => (
-                                  <span
-                                    key={idx}
-                                    style={{ height: `${h}px` }}
-                                    className={`w-1 rounded-full transition-all duration-200 ${
-                                      playingProofAudioId === item.id
-                                        ? 'bg-[#25D366] animate-pulse'
-                                        : 'bg-white/30'
-                                    }`}
-                                  />
-                                ))}
+                  {allProofItems.map((item) => (
+                    <div key={item.id} className="snap-start flex-shrink-0">
+                      {/* TYPE 1: NOTE VOCALE WHATSAPP */}
+                      {item.type === 'audio' && (
+                        <div className="w-64 h-64 rounded-2xl bg-gradient-to-br from-[#201D1D] to-[#2A2626] p-4 text-white flex flex-col justify-between border border-neutral-800 shadow-sm relative overflow-hidden group">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-xs">
+                                <WhatsAppIcon className="w-4 h-4" />
                               </div>
-                              <div className="flex justify-between text-[10px] text-white/60">
-                                <span>
-                                  {playingProofAudioId === item.id ? 'Lecture...' : 'Message audio'}
+                              <div>
+                                <span className="text-xs font-bold block leading-tight">
+                                  {item.authorName}
                                 </span>
-                                <span>{item.duration || '0:38'}</span>
+                                <span className="text-[10px] text-[#25D366] font-medium flex items-center gap-1">
+                                  <CheckCheck className="w-3 h-3" /> {item.city}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full text-white/80">
+                              Vocal
+                            </span>
+                          </div>
+
+                          {/* Player waveform */}
+                          <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleProofAudio(item)}
+                                className="w-10 h-10 rounded-full bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center justify-center shadow-md cursor-pointer transition-transform active:scale-95 flex-shrink-0"
+                              >
+                                {playingProofAudioId === item.id ? (
+                                  <Pause className="w-4 h-4 fill-current" />
+                                ) : (
+                                  <Play className="w-4 h-4 fill-current ml-0.5" />
+                                )}
+                              </button>
+
+                              <div className="flex-1 space-y-1">
+                                {/* Audio wave bars animation */}
+                                <div className="flex items-center gap-0.5 h-6">
+                                  {[
+                                    14, 22, 10, 24, 18, 26, 12, 20, 24, 16, 22, 12, 18, 24, 14, 20,
+                                    16, 22, 10,
+                                  ].map((h, idx) => (
+                                    <span
+                                      key={idx}
+                                      style={{ height: `${h}px` }}
+                                      className={`w-1 rounded-full transition-all duration-200 ${
+                                        playingProofAudioId === item.id
+                                          ? 'bg-[#25D366] animate-pulse'
+                                          : 'bg-white/30'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <div className="flex justify-between text-[10px] text-white/60">
+                                  <span>
+                                    {playingProofAudioId === item.id
+                                      ? 'Lecture...'
+                                      : 'Message audio'}
+                                  </span>
+                                  <span>{item.duration || '0:38'}</span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="text-[11px] text-white/80 italic bg-black/20 p-2 rounded-xl">
-                          "{item.title}"
-                        </div>
-                      </div>
-                    )}
-
-                    {/* TYPE 2: VIDÉO DÉBALLAGE */}
-                    {item.type === 'video' && (
-                      <div
-                        onClick={() => setSelectedProofModalItem(item)}
-                        className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E3E7EE] shadow-xs hover:shadow-md transition-all"
-                      >
-                        <img
-                          src={item.thumbnailUrl || images[0]?.url || undefined}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <div className="w-12 h-12 rounded-full bg-white/90 text-[#235BF7] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                            <Play className="w-5 h-5 fill-current ml-0.5" />
+                          <div className="text-[11px] text-white/80 italic bg-black/20 p-2 rounded-xl">
+                            "{item.title}"
                           </div>
                         </div>
-                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2.5 text-white">
-                          <span className="text-[10px] font-bold block truncate">{item.title}</span>
-                          <span className="text-[9px] text-white/70">
-                            {item.authorName} &bull; {item.city} ({item.duration || '0:18'})
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* TYPE 3: PHOTO REÇUE / CAPTURE */}
-                    {item.type === 'image' && (
-                      <div
-                        onClick={() => setSelectedProofModalItem(item)}
-                        className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E3E7EE] shadow-xs hover:shadow-md transition-all"
-                      >
-                        <img
-                          src={item.url || undefined}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-2.5 text-white">
-                          <span className="text-[10px] font-bold flex items-center gap-1">
-                            <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
-                            {item.authorName}
-                          </span>
-                          <span className="text-[9px] text-white/80">
-                            {item.title} &bull; {item.city}
-                          </span>
+                      {/* TYPE 2: VIDÉO DÉBALLAGE */}
+                      {item.type === 'video' && (
+                        <div
+                          onClick={() => setSelectedProofModalItem(item)}
+                          className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E3E7EE] shadow-xs hover:shadow-md transition-all"
+                        >
+                          <img
+                            src={item.thumbnailUrl || images[0]?.url || undefined}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-white/90 text-[#235BF7] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                              <Play className="w-5 h-5 fill-current ml-0.5" />
+                            </div>
+                          </div>
+                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2.5 text-white">
+                            <span className="text-[10px] font-bold block truncate">
+                              {item.title}
+                            </span>
+                            <span className="text-[9px] text-white/70">
+                              {item.authorName} &bull; {item.city} ({item.duration || '0:18'})
+                            </span>
+                          </div>
                         </div>
-                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 backdrop-blur-xs flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Maximize2 className="w-3 h-3" />
+                      )}
+
+                      {/* TYPE 3: PHOTO REÇUE / CAPTURE */}
+                      {item.type === 'image' && (
+                        <div
+                          onClick={() => setSelectedProofModalItem(item)}
+                          className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E3E7EE] shadow-xs hover:shadow-md transition-all"
+                        >
+                          <img
+                            src={item.url || undefined}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-2.5 text-white">
+                            <span className="text-[10px] font-bold flex items-center gap-1">
+                              <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                              {item.authorName}
+                            </span>
+                            <span className="text-[9px] text-white/80">
+                              {item.title} &bull; {item.city}
+                            </span>
+                          </div>
+                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 backdrop-blur-xs flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Maximize2 className="w-3 h-3" />
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* ======================================================== */}
             {/* 8. SECTION AVIS CLIENTS & BOUTON "LAISSER UN AVIS"        */}
@@ -1940,18 +1923,28 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             <div className="pt-2 space-y-3.5 border-t border-[#E3E7EE]">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-[#201D1D]">
-                    Avis Clients ({reviewsList.length})
+                  <h3 className="text-base font-extrabold text-[#201D1D]">
+                    Avis clients ({reviewsList.length})
                   </h3>
-                  <div className="flex items-center gap-1.5 text-amber-500 mt-0.5">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-3 h-3 fill-current" />
-                      ))}
+                  {reviewsList.length > 0 ? (
+                    <div className="flex items-center gap-1.5 text-amber-500 mt-0.5">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3.5 h-3.5 ${i < Math.round(reviewAverage) ? 'fill-current' : 'text-[#D5DAE2]'}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[13px] font-bold text-[#201D1D]">
+                        {reviewAverage.toFixed(1).replace('.', ',')}/5
+                      </span>
                     </div>
-                    <span className="text-xs font-bold text-[#201D1D]">5.0/5</span>
-                    <span className="text-[11px] text-[#7A808C]">100% de recommandations</span>
-                  </div>
+                  ) : (
+                    <p className="text-[13px] text-[#7A808C] mt-0.5">
+                      Soyez le premier à donner votre avis.
+                    </p>
+                  )}
                 </div>
 
                 {/* Bouton demandé : "Laisser un avis sur cette page" */}
@@ -2061,12 +2054,10 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
             <button
               onClick={() => handleOpenCheckout('wave')}
-              className="py-3 px-2 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
+              className="py-3 px-2 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 transition-all cursor-pointer"
             >
               <CreditCard className="w-4 h-4 text-white" />
-              <span className="truncate">
-                {config.codEnabled === false ? 'Payer en ligne (Wave / Orange)' : 'Payer en ligne'}
-              </span>
+              <span className="truncate">Payer maintenant</span>
             </button>
           </div>
         </div>
@@ -2089,12 +2080,10 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
             <button
               onClick={() => handleOpenCheckout('wave')}
-              className="py-3.5 px-3 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(30,96,248,0.35)] transition-all cursor-pointer"
+              className="py-3.5 px-3 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <CreditCard className="w-4 h-4 text-white" />
-              <span>
-                {config.codEnabled === false ? 'Payer en ligne (Wave / Orange)' : 'Payer en ligne'}
-              </span>
+              <span>Payer maintenant</span>
             </button>
           </div>
         </div>

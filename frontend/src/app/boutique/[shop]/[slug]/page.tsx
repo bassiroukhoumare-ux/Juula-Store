@@ -2,7 +2,7 @@
 // (rewritten here by middleware). Only published products of that store.
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { productConfig } from '@/lib/server/store/products';
+import { productConfig, withStoreBranding } from '@/lib/server/store/products';
 import {
   loadProductBySlug,
   loadStoreBySubdomain,
@@ -50,7 +50,7 @@ export default async function StoreProductPage({ params, searchParams }: PagePro
   const { store, product } = await load(shop, slug, toSearch(await searchParams));
   return (
     <PublicProductView
-      config={productConfig(product)}
+      config={withStoreBranding(productConfig(product), store)}
       pixels={pixelsOf(store)}
       isPreview={false}
       displayCurrency={store.displayCurrency}

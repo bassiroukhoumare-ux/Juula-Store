@@ -1,5 +1,6 @@
 'use client';
 
+import { DEFAULT_URGENCY_TEXT } from '@/lib/store/urgency';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Upload,
@@ -1375,7 +1376,34 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                         onSaveConfig(updated);
                       }}
                       label="Afficher le badge de stock limité"
-                      description="Affiche '⚡ Plus que X pièces en stock' sur la page produit"
+                      description="Affiche « Plus que X pièces en stock » sur la page produit"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Message d'urgence"
+                    value={config.urgencyText ?? ''}
+                    onChange={(e) => {
+                      const updated = { ...config, urgencyText: e.target.value };
+                      setConfig(updated);
+                      onSaveConfig(updated);
+                    }}
+                    placeholder={DEFAULT_URGENCY_TEXT}
+                    helperText="Laissez vide pour utiliser le message par défaut."
+                  />
+
+                  <div className="flex flex-col justify-center">
+                    <Switch
+                      checked={config.urgencyEnabled !== false}
+                      onChange={(val) => {
+                        const updated = { ...config, urgencyEnabled: val };
+                        setConfig(updated);
+                        onSaveConfig(updated);
+                      }}
+                      label="Afficher le message d'urgence"
+                      description="Pousse le client à commander maintenant (ex : personnes qui regardent ce produit)."
                     />
                   </div>
                 </div>

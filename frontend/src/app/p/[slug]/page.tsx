@@ -4,7 +4,7 @@
 // stay viewable here by their owner only, as a preview.
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { productConfig } from '@/lib/server/store/products';
+import { productConfig, withStoreBranding } from '@/lib/server/store/products';
 import { loadProductBySlug, pixelsOf, productMetadata } from '@/lib/server/store/public';
 import { PublicProductView } from '@/components/showcase/PublicProductView';
 import { storeProductUrl } from '@/lib/store/subdomain';
@@ -41,7 +41,7 @@ export default async function PublicProductPage({ params, searchParams }: PagePr
     );
   }
 
-  const config = productConfig(found.product);
+  const config = withStoreBranding(productConfig(found.product), found.store);
   if (!isPro) {
     config.codEnabled = false;
   }

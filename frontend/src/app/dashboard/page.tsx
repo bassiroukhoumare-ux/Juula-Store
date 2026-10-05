@@ -297,6 +297,15 @@ export default function JuulaStoreApp() {
   const periodKpis = useMemo(() => kpisFromOrders(periodOrders, kpis), [periodOrders, kpis]);
   // Header search → Kanban filter.
   const [orderSearch, setOrderSearch] = useState('');
+  // Sales-page preview shows the store's own logo and name, like the public page.
+  const previewConfig = useMemo(
+    () => ({
+      ...funnelConfig,
+      storeLogoUrl: storeProfile.logoUrl,
+      ...(storeProfile.name ? { storeName: storeProfile.name } : {}),
+    }),
+    [funnelConfig, storeProfile.logoUrl, storeProfile.name],
+  );
   const [activeWidgets, setActiveWidgets] = useState<HeaderWidgetsState>({
     kpiCards: true,
     profitChart: true,
@@ -581,7 +590,7 @@ export default function JuulaStoreApp() {
 
                   {/* Scrollable Mobile Screen Content */}
                   <div className="flex-1 overflow-y-auto scrollbar-thin">
-                    <ImmersiveShowcase config={funnelConfig} isInsideMockup={true} />
+                    <ImmersiveShowcase config={previewConfig} isInsideMockup={true} />
                   </div>
 
                   {/* iOS Style Home Indicator Bar */}
@@ -590,7 +599,7 @@ export default function JuulaStoreApp() {
               </div>
             ) : (
               <div className="w-full">
-                <ImmersiveShowcase config={funnelConfig} isInsideMockup={false} />
+                <ImmersiveShowcase config={previewConfig} isInsideMockup={false} />
               </div>
             )}
           </div>

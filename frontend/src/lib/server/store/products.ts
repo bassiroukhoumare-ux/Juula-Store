@@ -103,6 +103,19 @@ export function productConfig(product: Product): FunnelPageConfig {
   };
 }
 
+/** Adds the store's logo and name to a product config for the public page. */
+export function withStoreBranding(
+  config: FunnelPageConfig,
+  store: { name: string | null; logoUrl: string | null } | null | undefined,
+): FunnelPageConfig {
+  if (!store) return config;
+  return {
+    ...config,
+    storeLogoUrl: store.logoUrl,
+    ...(store.name ? { storeName: store.name } : {}),
+  };
+}
+
 const dateFmt = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
   month: 'short',
