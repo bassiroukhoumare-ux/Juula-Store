@@ -3,12 +3,13 @@
 // keeping the query string (payment return). Drafts / deactivated products
 // stay viewable here by their owner only, as a preview.
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { productConfig, withStoreBranding } from '@/lib/server/store/products';
 import { loadProductBySlug, pixelsOf, productMetadata } from '@/lib/server/store/public';
 import { PublicProductView } from '@/components/showcase/PublicProductView';
 import { storeProductUrl } from '@/lib/store/subdomain';
-import { isStorePro } from '@/lib/store/plans';
+import { isStoreLive, withCheckoutOptions } from '@/lib/server/store/storefront';
+import { ComingSoon } from '@/components/storefront/ComingSoon';
 
 // Edits must show up on the shared link immediately.
 export const dynamic = 'force-dynamic';
@@ -28,11 +29,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PublicProductPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const found = await loadProductBySlug(slug);
-  if (!found) notFound();
+  if (!found) return <ComingSoon />;
+  // Pages are online only while the store has an active subscription
+  // (the owner keeps a private preview).
+  if (!found.isPreview && !isStoreLive(found.store)) {
+    return <ComingSoon storeName={found.store?.name} />;
+  }
 
-  const isPro = isStorePro(found.store);
-
-  if (!found.isPreview && isPro && found.store?.subdomain) {
+  // Every store has its own address: <shop>.juula.store/<slug>.
+  if (!found.isPreview && found.store?.subdomain) {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(await searchParams)) if (typeof v === 'string') q.set(k, v);
     const search = q.toString();
@@ -41,10 +46,10 @@ export default async function PublicProductPage({ params, searchParams }: PagePr
     );
   }
 
-  const config = withStoreBranding(productConfig(found.product), found.store);
-  if (!isPro) {
-    config.codEnabled = false;
-  }
+  const config = withCheckoutOptions(
+    withStoreBranding(productConfig(found.product), found.store),
+    found.store,
+  );
 
   return (
     <PublicProductView

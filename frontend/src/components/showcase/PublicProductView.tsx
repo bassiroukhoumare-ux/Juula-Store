@@ -95,6 +95,7 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
           quantity: order.quantity ?? 1,
           selectedColor: order.selectedColor,
           paymentType: order.paymentType,
+          directMethodId: order.directMethodId,
           visitorId: getVisitorId(),
         }),
       });
@@ -112,7 +113,8 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
       };
       // Cash on delivery: the order is the conversion. Online: wait until
       // the server has confirmed the payment (see confirmPayment).
-      if (order.paymentType === 'cod') trackPurchase(product, purchase);
+      if (order.paymentType === 'cod' || order.paymentType === 'direct')
+        trackPurchase(product, purchase);
       else pendingPurchases.current.set(body.order.id, purchase);
       return body.order;
     },

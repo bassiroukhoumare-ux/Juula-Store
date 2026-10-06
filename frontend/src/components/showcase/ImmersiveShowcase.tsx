@@ -3,8 +3,10 @@
 import { displayFont } from '@/app/fonts';
 import React, { useState, useRef, useEffect } from 'react';
 import {
+  ShoppingCart,
   Check,
   Eye,
+  Smartphone,
   Truck,
   ShieldCheck,
   Star,
@@ -14,7 +16,6 @@ import {
   VolumeX,
   X,
   ArrowRight,
-  CreditCard,
   Banknote,
   MapPin,
   User,
@@ -22,7 +23,6 @@ import {
   Send,
   Maximize2,
   Lock,
-  Phone,
   Mic,
   Pause,
   Play,
@@ -104,9 +104,25 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   const [isMuted, setIsMuted] = useState(true);
   const [isCheckoutPageOpen, setIsCheckoutPageOpen] = useState(false);
   const [quantity, setQuantity] = useState<number>(1);
-  const [paymentChoice, setPaymentChoice] = useState<'cod' | 'wave' | 'orange'>(
-    config.codEnabled === false ? 'wave' : 'cod',
-  );
+  // What the merchant offers (injected on public pages from the store).
+  const codOn = config.codEnabled !== false;
+  const onlineOn = config.onlinePaymentsEnabled !== false && config.mobileMoneyEnabled !== false;
+  const directMethods = config.directPaymentMethods ?? [];
+  const waNumber = config.whatsappOrderNumber ?? null;
+  const defaultChoice = codOn
+    ? 'cod'
+    : onlineOn
+      ? 'online'
+      : directMethods[0]
+        ? `direct:${directMethods[0].id}`
+        : 'cod';
+  // 'cod' | 'online' (Mobile Money via JuulaPay) | `direct:<methodId>`
+  const [paymentChoice, setPaymentChoice] = useState<string>(defaultChoice);
+  // « Commander maintenant » (order form + payment) or « Commander sur WhatsApp ».
+  const [checkoutMode, setCheckoutMode] = useState<'order' | 'whatsapp'>('order');
+  const chosenDirect = paymentChoice.startsWith('direct:')
+    ? directMethods.find((m) => `direct:${m.id}` === paymentChoice)
+    : undefined;
   const [selectedColor, setSelectedColor] = useState<string>(
     config.availableColors && config.availableColors.length > 0
       ? config.availableColors[0]?.name || ''
@@ -412,9 +428,9 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
     }
   };
 
-  const handleOpenCheckout = (choice: 'cod' | 'wave') => {
-    const effectiveChoice = config.codEnabled === false && choice === 'cod' ? 'wave' : choice;
-    setPaymentChoice(effectiveChoice);
+  const handleOpenCheckout = (mode: 'order' | 'whatsapp') => {
+    setCheckoutMode(mode);
+    setPaymentChoice(defaultChoice);
     setOrderSuccess(null);
     setSubmitError(null);
     setIsCheckoutPageOpen(true);
@@ -436,7 +452,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
     setIsSubmitting(true);
     setTimeout(() => {
-      const isOnline = paymentChoice === 'wave' || paymentChoice === 'orange';
+      const viaWhatsApp = checkoutMode === 'whatsapp';
+      const isOnline = !viaWhatsApp && paymentChoice === 'online';
       const orderSeq = Math.floor(10 + Math.random() * 900);
       const generatedId = formatOrderId(config.storeCode || 'BDE', orderSeq);
 
@@ -463,16 +480,25 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
         currency: config.currency,
         status: 'new',
         createdAt: "À l'instant",
-        paymentType:
-          paymentChoice === 'wave'
-            ? 'online_wave'
-            : paymentChoice === 'orange'
-              ? 'online_orange'
+        paymentType: viaWhatsApp
+          ? 'whatsapp'
+          : chosenDirect
+            ? 'direct'
+            : isOnline
+              ? 'online_momo'
               : 'cod',
-        paymentStatus: isOnline ? 'paid' : 'pending_cod',
-        deliveryNotes: isOnline
-          ? `Payé en ligne via ${paymentChoice === 'wave' ? 'Wave' : 'Orange Money'}`
-          : 'Paiement en espèces prévu à la livraison',
+        paymentStatus:
+          chosenDirect && !viaWhatsApp ? 'pending_direct' : isOnline ? 'paid' : 'pending_cod',
+        ...(chosenDirect && !viaWhatsApp
+          ? { paymentMethodName: chosenDirect.name, directMethodId: chosenDirect.id }
+          : {}),
+        deliveryNotes: viaWhatsApp
+          ? 'Commande passée sur WhatsApp'
+          : chosenDirect
+            ? `Paiement direct via ${chosenDirect.name}`
+            : isOnline
+              ? 'Payé en ligne par Mobile Money'
+              : 'Paiement en espèces prévu à la livraison',
         selectedColor: selectedColor || (config.availableColors?.[0]?.name ?? undefined),
       };
 
@@ -527,9 +553,28 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               amount: saved.amount,
               deliveryFee: saved.deliveryFee,
               totalAmount: saved.totalAmount,
-              paymentStatus: isOnline ? 'pending_online' : 'pending_cod',
+              paymentStatus:
+                chosenDirect && !viaWhatsApp
+                  ? 'pending_direct'
+                  : isOnline
+                    ? 'pending_online'
+                    : 'pending_cod',
             };
-            if (isOnline) {
+            if (viaWhatsApp && waNumber) {
+              setIsSubmitting(false);
+              setOrderSuccess(persisted);
+              const recap = [
+                `Bonjour ${config.storeName || ''}, je viens de commander (réf. ${persisted.id}) :`,
+                `• ${config.productTitle} ×${quantity}`,
+                selectedColor ? `• Couleur : ${selectedColor}` : '',
+                `• Total : ${formatMoney(persisted.totalAmount ?? totalAmount, 'XOF')}`,
+                `• Nom : ${customerName}`,
+                `• Adresse : ${[neighborhood, deliveryAddress].filter(Boolean).join(' — ')}`,
+              ]
+                .filter(Boolean)
+                .join('\n');
+              window.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(recap)}`;
+            } else if (isOnline) {
               startOnlinePayment(persisted, saved.id);
             } else {
               setIsSubmitting(false);
@@ -722,16 +767,56 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="text-[#7A808C]">Mode de règlement :</span>
                   <span className="font-bold text-emerald-700">
-                    {orderSuccess.paymentType === 'cod'
-                      ? 'Paiement en espèces à la livraison (COD)'
-                      : orderSuccess.paymentStatus === 'pending_online'
-                        ? 'Paiement en ligne — confirmation en cours'
-                        : orderSuccess.paymentType === 'online_orange'
-                          ? 'Payé en ligne via Orange Money'
-                          : 'Payé en ligne via Wave'}
+                    {orderSuccess.paymentType === 'whatsapp'
+                      ? 'Commande envoyée sur WhatsApp'
+                      : orderSuccess.paymentType === 'cod'
+                        ? 'Paiement en espèces à la livraison (COD)'
+                        : orderSuccess.paymentType === 'direct'
+                          ? `Paiement direct via ${orderSuccess.paymentMethodName ?? 'le vendeur'}`
+                          : orderSuccess.paymentStatus === 'pending_online'
+                            ? 'Paiement en ligne — confirmation en cours'
+                            : 'Payé en ligne par Mobile Money'}
                   </span>
                 </div>
               </div>
+
+              {orderSuccess.paymentType === 'direct' &&
+                (() => {
+                  const method = directMethods.find(
+                    (m) => m.name === orderSuccess.paymentMethodName,
+                  );
+                  if (!method) return null;
+                  return (
+                    <div className="p-4 rounded-2xl bg-[#F6F7F9] border border-[#E3E7EE] text-left space-y-3">
+                      <p className="text-sm font-bold text-[#201D1D]">
+                        Réglez maintenant{' '}
+                        {formatFCFA(orderSuccess.totalAmount || orderSuccess.amount)} via{' '}
+                        {method.name}
+                      </p>
+                      {method.qrUrl && (
+                        <img
+                          src={method.qrUrl}
+                          alt={`QR code ${method.name}`}
+                          className="w-44 h-44 mx-auto rounded-xl bg-white border border-[#E3E7EE] object-contain p-2"
+                        />
+                      )}
+                      {method.url && (
+                        <a
+                          href={method.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-3 px-4 rounded-2xl bg-[#201D1D] hover:bg-black text-white font-bold text-sm flex items-center justify-center gap-2"
+                        >
+                          Ouvrir le lien de paiement {method.name}
+                        </a>
+                      )}
+                      <p className="text-xs text-[#7A808C]">
+                        Indiquez la référence {orderSuccess.id} dans votre paiement. Le vendeur
+                        confirme la réception puis prépare votre livraison.
+                      </p>
+                    </div>
+                  );
+                })()}
 
               <div className="space-y-2.5 pt-2">
                 <button
@@ -1031,65 +1116,74 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 </div>
 
                 <form onSubmit={handleSubmitOrder} className="space-y-4">
-                  {/* Mode de règlement */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#201D1D] block">
-                      Mode de règlement souhaité
-                    </label>
-                    <div
-                      className={
-                        config.codEnabled === false
-                          ? 'grid grid-cols-2 gap-2'
-                          : 'grid grid-cols-3 gap-2'
-                      }
-                    >
-                      {config.codEnabled !== false && (
-                        <button
-                          type="button"
-                          onClick={() => setPaymentChoice('cod')}
-                          className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
-                            paymentChoice === 'cod'
-                              ? 'border-[#201D1D] bg-[#201D1D] text-white shadow-xs'
-                              : 'border-[#E3E7EE] bg-[#F6F7F9] text-[#3F4654] hover:bg-white'
-                          }`}
-                        >
-                          <Banknote className="w-4 h-4 mx-auto mb-1" />
-                          <span className="text-[11px] font-bold block leading-tight">
-                            À la livraison
-                          </span>
-                          <span className="text-[9px] opacity-75 block">Espèces</span>
-                        </button>
+                  {/* Mode de règlement (« Commander maintenant » only) */}
+                  {checkoutMode === 'order' && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#201D1D] block">
+                        Comment souhaitez-vous payer ?
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {codOn && (
+                          <button
+                            type="button"
+                            onClick={() => setPaymentChoice('cod')}
+                            className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+                              paymentChoice === 'cod'
+                                ? 'border-[#201D1D] bg-[#201D1D] text-white'
+                                : 'border-[#E3E7EE] bg-[#F6F7F9] text-[#3F4654] hover:bg-white'
+                            }`}
+                          >
+                            <Banknote className="w-4 h-4 mx-auto mb-1" />
+                            <span className="text-[13px] font-bold block leading-tight">
+                              Paiement à la livraison
+                            </span>
+                            <span className="text-[11px] opacity-75 block">Espèces</span>
+                          </button>
+                        )}
+                        {onlineOn && (
+                          <button
+                            type="button"
+                            onClick={() => setPaymentChoice('online')}
+                            className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+                              paymentChoice === 'online'
+                                ? 'border-[#235BF7] bg-[#235BF7] text-white'
+                                : 'border-[#E3E7EE] bg-[#F6F7F9] text-[#3F4654] hover:bg-white'
+                            }`}
+                          >
+                            <Smartphone className="w-4 h-4 mx-auto mb-1" />
+                            <span className="text-[13px] font-bold block leading-tight">
+                              Payer par Mobile Money
+                            </span>
+                            <span className="text-[11px] opacity-75 block">
+                              Wave, Orange Money, carte
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                      {directMethods.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                          {directMethods.map((m) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => setPaymentChoice(`direct:${m.id}`)}
+                              className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                                paymentChoice === `direct:${m.id}`
+                                  ? 'border-[#201D1D] bg-[#201D1D] text-white'
+                                  : 'border-[#E3E7EE] bg-[#F6F7F9] text-[#3F4654] hover:bg-white'
+                              }`}
+                            >
+                              <Smartphone className="w-4 h-4 mx-auto mb-1" />
+                              <span className="text-[11px] font-bold block leading-tight truncate">
+                                {m.name}
+                              </span>
+                              <span className="text-[9px] opacity-75 block">Paiement direct</span>
+                            </button>
+                          ))}
+                        </div>
                       )}
-
-                      <button
-                        type="button"
-                        onClick={() => setPaymentChoice('wave')}
-                        className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
-                          paymentChoice === 'wave'
-                            ? 'border-[#235BF7] bg-[#235BF7] text-white shadow-xs'
-                            : 'border-[#E3E7EE] bg-[#F6F7F9] text-[#3F4654] hover:bg-white'
-                        }`}
-                      >
-                        <CreditCard className="w-4 h-4 mx-auto mb-1" />
-                        <span className="text-[11px] font-bold block leading-tight">Wave</span>
-                        <span className="text-[9px] opacity-75 block">En ligne</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setPaymentChoice('orange')}
-                        className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
-                          paymentChoice === 'orange'
-                            ? 'border-[#EA580C] bg-[#EA580C] text-white shadow-xs'
-                            : 'border-[#E3E7EE] bg-[#F6F7F9] text-[#3F4654] hover:bg-white'
-                        }`}
-                      >
-                        <Phone className="w-4 h-4 mx-auto mb-1" />
-                        <span className="text-[11px] font-bold block leading-tight">Orange</span>
-                        <span className="text-[9px] opacity-75 block">En ligne</span>
-                      </button>
                     </div>
-                  </div>
+                  )}
 
                   {/* Nom complet */}
                   <div className="space-y-1">
@@ -1308,9 +1402,11 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       iconRight={<ArrowRight className="w-4 h-4" />}
                       className="!py-4 text-sm font-black shadow-md cursor-pointer"
                     >
-                      {paymentChoice === 'cod'
-                        ? `Valider la commande (${formatFCFA(totalAmount)})`
-                        : `Payer avec ${paymentChoice === 'wave' ? 'Wave' : 'Orange'} (${formatFCFA(totalAmount)})`}
+                      {checkoutMode === 'whatsapp'
+                        ? `Commander sur WhatsApp (${formatFCFA(totalAmount)})`
+                        : paymentChoice === 'online'
+                          ? `Payer par Mobile Money (${formatFCFA(totalAmount)})`
+                          : `Valider la commande (${formatFCFA(totalAmount)})`}
                     </Button>
                     {getDisplayCurrency() !== 'XOF' && (
                       <p className="text-center text-xs text-[#7A808C]">
@@ -1626,33 +1722,28 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {/* ======================================================== */}
             <div className="p-3 rounded-2xl bg-[#F1F3F6]/80 border border-[#E3E7EE] space-y-2.5">
               <div
-                className={
-                  config.codEnabled === false
-                    ? 'grid grid-cols-1 gap-2.5'
-                    : 'grid grid-cols-1 sm:grid-cols-2 gap-2.5'
-                }
+                className={`grid gap-2.5 ${waNumber ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}
               >
-                {/* Bouton 1 : Payer à la livraison */}
-                {config.codEnabled !== false && (
-                  <button
-                    type="button"
-                    onClick={() => handleOpenCheckout('cod')}
-                    className="w-full py-4 px-4 rounded-2xl bg-[#201D1D] hover:bg-black active:scale-[0.98] text-white font-black text-[15px] tracking-tight flex items-center justify-center gap-2.5 transition-all cursor-pointer"
-                  >
-                    <Banknote className="w-4 h-4 text-[#10B981]" />
-                    <span>Payer à la livraison</span>
-                  </button>
-                )}
-
-                {/* Bouton 2 : Payer maintenant (Wave / Orange Money / carte) */}
+                {/* Bouton 1 : Commander maintenant (livraison ou paiement en ligne) */}
                 <button
                   type="button"
-                  onClick={() => handleOpenCheckout('wave')}
+                  onClick={() => handleOpenCheckout('order')}
                   className="w-full py-4 px-4 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-[15px] tracking-tight flex items-center justify-center gap-2.5 transition-all cursor-pointer"
                 >
-                  <CreditCard className="w-4 h-4 text-white" />
-                  <span>Payer maintenant</span>
+                  <ShoppingCart className="w-4 h-4 text-white" />
+                  <span>Commander maintenant</span>
                 </button>
+                {/* Bouton 2 : Commander sur WhatsApp */}
+                {waNumber && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCheckout('whatsapp')}
+                    className="w-full py-4 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20BA5A] active:scale-[0.98] text-white font-black text-[15px] tracking-tight flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+                  >
+                    <WhatsAppIcon className="w-4 h-4" />
+                    <span>Commander sur WhatsApp</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center justify-between px-2 text-[11px] text-[#7A808C]">
@@ -1996,53 +2087,51 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
       {isInsideMockup ? (
         <div className="sticky bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md p-3 border-t border-[#E3E7EE] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex items-center justify-center">
           <div
-            className={`w-full max-w-sm mx-auto grid gap-2 ${
-              config.codEnabled === false ? 'grid-cols-1' : 'grid-cols-2'
-            }`}
+            className={`w-full max-w-sm mx-auto grid gap-2 ${waNumber ? 'grid-cols-2' : 'grid-cols-1'}`}
           >
-            {config.codEnabled !== false && (
+            <button
+              type="button"
+              onClick={() => handleOpenCheckout('order')}
+              className="py-3.5 px-3 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <ShoppingCart className="w-4 h-4 text-white" />
+              <span className="truncate">Commander maintenant</span>
+            </button>
+            {waNumber && (
               <button
-                onClick={() => handleOpenCheckout('cod')}
-                className="py-3 px-2 rounded-2xl bg-[#201D1D] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer border border-neutral-800"
+                type="button"
+                onClick={() => handleOpenCheckout('whatsapp')}
+                className="py-3.5 px-3 rounded-2xl bg-[#25D366] hover:bg-[#20BA5A] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <Banknote className="w-4 h-4 text-[#10B981]" />
-                <span className="truncate">Payer à la livraison</span>
+                <WhatsAppIcon className="w-4 h-4" />
+                <span className="truncate">WhatsApp</span>
               </button>
             )}
-
-            <button
-              onClick={() => handleOpenCheckout('wave')}
-              className="py-3 px-2 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-            >
-              <CreditCard className="w-4 h-4 text-white" />
-              <span className="truncate">Payer maintenant</span>
-            </button>
           </div>
         </div>
       ) : (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md p-3.5 border-t border-[#E3E7EE] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex items-center justify-center">
           <div
-            className={`w-full max-w-md mx-auto grid gap-2.5 ${
-              config.codEnabled === false ? 'grid-cols-1' : 'grid-cols-2'
-            }`}
+            className={`w-full max-w-md mx-auto grid gap-2.5 ${waNumber ? 'grid-cols-2' : 'grid-cols-1'}`}
           >
-            {config.codEnabled !== false && (
-              <button
-                onClick={() => handleOpenCheckout('cod')}
-                className="py-3.5 px-3 rounded-2xl bg-[#201D1D] hover:bg-black active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer border border-neutral-800"
-              >
-                <Banknote className="w-4 h-4 text-[#10B981]" />
-                <span>Payer à la livraison</span>
-              </button>
-            )}
-
             <button
-              onClick={() => handleOpenCheckout('wave')}
+              type="button"
+              onClick={() => handleOpenCheckout('order')}
               className="py-3.5 px-3 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
-              <CreditCard className="w-4 h-4 text-white" />
-              <span>Payer maintenant</span>
+              <ShoppingCart className="w-4 h-4 text-white" />
+              <span className="truncate">Commander maintenant</span>
             </button>
+            {waNumber && (
+              <button
+                type="button"
+                onClick={() => handleOpenCheckout('whatsapp')}
+                className="py-3.5 px-3 rounded-2xl bg-[#25D366] hover:bg-[#20BA5A] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <WhatsAppIcon className="w-4 h-4" />
+                <span className="truncate">WhatsApp</span>
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -73,21 +73,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       where: { userId },
       select: { name: true, whatsapp: true, plan: true, planExpiresAt: true },
     });
-    const isPro =
-      store?.plan === 'PRO' && (!store.planExpiresAt || store.planExpiresAt > new Date());
-
+    // Every plan can create products (boutique + sales pages); the Free plan
+    // differs by payment options and commission, not by catalogue size.
     const count = await prisma.product.count({ where: { userId } });
-    if (!isPro && count >= 1) {
-      return NextResponse.json(
-        {
-          error: 'PRODUCT_LIMIT_REACHED',
-          message:
-            'Le Plan Gratuit est limité à 1 produit actif. Passez au Plan Juula Pro pour publier des produits illimités.',
-          upgradeRequired: true,
-        },
-        { status: 403, headers: { 'x-request-id': ctx.requestId } },
-      );
-    }
     if (count >= MAX_PRODUCTS_PER_MERCHANT) {
       return NextResponse.json(
         { error: 'PRODUCT_LIMIT_REACHED', message: 'Nombre maximum de produits atteint' },

@@ -92,8 +92,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         {
           error: 'PRO_REQUIRED',
-          message:
-            'Les pixels de conversion Facebook et TikTok sont réservés au Plan Juula Pro. Passez au Plan Pro pour tracker vos campagnes.',
+          message: 'Les pixels Facebook et TikTok nécessitent un abonnement actif.',
         },
         { status: 403, headers: { 'x-request-id': ctx.requestId } },
       );

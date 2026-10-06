@@ -1,5 +1,6 @@
 // Juula Store — Business Model & Pricing Plans
-// Plan Gratuit (0 FCFA/mois) vs Plan Juula Pro (6 000 FCFA/mois)
+// Création gratuite ; abonnement 3 900 FCFA/mois pour être en ligne ;
+// paiement en ligne JuulaPay optionnel, 7,5 % par paiement.
 
 export type StorePlanType = 'FREE' | 'PRO';
 
@@ -7,7 +8,7 @@ export interface StorePlanConfig {
   id: StorePlanType;
   name: string;
   tagline: string;
-  priceMonthly: number; // 0 or 6000
+  priceMonthly: number; // 0 or 3900
   currency: string;
   popular?: boolean;
   maxActiveProducts: number;
@@ -23,11 +24,11 @@ export interface StorePlanConfig {
 export const JUULA_PLANS: Record<StorePlanType, StorePlanConfig> = {
   FREE: {
     id: 'FREE',
-    name: 'Plan Gratuit',
-    tagline: 'Pour tester et lancer votre boutique sans abonnement fixe',
+    name: 'Création',
+    tagline: 'Préparez votre boutique et vos pages produits, sans payer',
     priceMonthly: 0,
     currency: 'FCFA',
-    maxActiveProducts: 1,
+    maxActiveProducts: Infinity,
     codEnabled: false,
     juulaCommissionPercent: 2.5,
     telecomGatewayPercent: 5.0,
@@ -35,43 +36,38 @@ export const JUULA_PLANS: Record<StorePlanType, StorePlanConfig> = {
     pixelsAllowed: false,
     customSubdomainAllowed: false,
     features: [
-      '1 produit actif maximum',
-      'Paiements en ligne uniquement (Wave & Orange Money)',
-      '7,5% de frais totaux (5% opérateurs télécoms + 2,5% Juula)',
-      'Lien boutique standard (juula.store/p/…)',
-      'Paiement à la livraison désactivé',
-      'Pixels Facebook & TikTok inactifs',
-      'Cockpit de gestion & alertes WhatsApp',
+      'Boutique et pages produits illimitées',
+      'Bannières, sections, témoignages et couleurs',
+      'Aperçu de votre boutique avant publication',
+      'Visible par vos clients une fois l’abonnement activé',
     ],
   },
   PRO: {
     id: 'PRO',
-    name: 'Plan Juula Pro',
-    tagline:
-      'Pour les e-commerçants qui veulent scaler avec paiement à la livraison et pixels pubs',
-    priceMonthly: 6000,
+    name: 'Abonnement Juula',
+    tagline: 'Votre boutique et vos pages produits en ligne',
+    priceMonthly: 3900,
     currency: 'FCFA',
     popular: true,
     maxActiveProducts: Infinity,
     codEnabled: true,
-    juulaCommissionPercent: 0,
+    juulaCommissionPercent: 2.5,
     telecomGatewayPercent: 5.0,
-    totalOnlineFeePercent: 5.0,
+    totalOnlineFeePercent: 7.5,
     pixelsAllowed: true,
     customSubdomainAllowed: true,
     features: [
-      'Produits & pages de vente illimités',
-      'Paiement à la livraison (Espèces) débloqué',
-      '0% de commission Juula (seuls les 5% de frais télécoms sont prélevés)',
-      '0% de commission sur les paiements en espèces',
-      'Pixels Facebook & TikTok débloqués pour vos pubs',
-      'Sous-domaine personnalisé (boutique.juula.store)',
-      'Badge marchand vérifié & support VIP 7j/7',
+      'Boutique et pages produits en ligne',
+      'Lien personnalisé : maboutique.juula.store',
+      'Paiement à la livraison et « Commander sur WhatsApp »',
+      'Liens de paiement directs (Wave Business, Orange Money…)',
+      'Pixels Facebook & TikTok, statistiques et notifications',
+      'Option : paiement en ligne Mobile Money JuulaPay (7,5 % par paiement)',
     ],
   },
 };
 
-export const PRO_PLAN_PRICE_FCFA = 6000;
+export const PRO_PLAN_PRICE_FCFA = 3900;
 
 export function isStorePro(
   store: { plan?: string | null; planExpiresAt?: Date | string | null } | null | undefined,

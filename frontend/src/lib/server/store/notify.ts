@@ -372,12 +372,23 @@ export function welcomeEmail(name: string | null): RenderedEmail {
 
 const PAYMENT_LABEL: Record<string, string> = {
   cod: 'Paiement à la livraison',
+  online_momo: 'Mobile Money — paiement en ligne',
   online_wave: 'Wave — paiement en ligne',
   online_orange: 'Orange Money — paiement en ligne',
+  whatsapp: 'Commande sur WhatsApp — paiement à convenir',
+  direct: 'Paiement direct — à vérifier',
 };
 
+function paymentLabel(order: StoreOrder): string {
+  if (order.paymentType === 'direct' && order.paymentMethodName) {
+    return `Paiement direct (${order.paymentMethodName}) — à vérifier`;
+  }
+  return PAYMENT_LABEL[order.paymentType] ?? order.paymentType;
+}
+
 export function newOrderEmail(order: StoreOrder): RenderedEmail {
-  const isCod = order.paymentType === 'cod';
+  const isCod = order.paymentType === 'cod' || order.paymentType === 'whatsapp';
+  const isDirect = order.paymentType === 'direct';
   const paid = order.paymentStatus === 'paid';
   const sections: EmailSection[] = [
     {
@@ -415,9 +426,11 @@ export function newOrderEmail(order: StoreOrder): RenderedEmail {
       label: 'Nouvelle commande',
       badge: isCod
         ? { text: 'À confirmer avec le client', tone: 'amber' }
-        : paid
-          ? { text: 'Payée en ligne', tone: 'green' }
-          : { text: 'Paiement en ligne en cours', tone: 'blue' },
+        : isDirect
+          ? { text: 'Paiement à vérifier', tone: 'amber' }
+          : paid
+            ? { text: 'Payée en ligne', tone: 'green' }
+            : { text: 'Paiement en ligne en cours', tone: 'blue' },
       title: `Nouvelle commande de ${fcfa(order.totalAmount)}`,
       intro: `<strong style="color:${C.ink};">${escapeHtml(order.customerName)}</strong> vient de commander sur votre page. Confirmez rapidement avec votre client sur WhatsApp pour sécuriser la livraison.`,
       sections,
@@ -427,14 +440,14 @@ export function newOrderEmail(order: StoreOrder): RenderedEmail {
           { label: 'Livraison', value: order.deliveryFee ? fcfa(order.deliveryFee) : 'Offerte' },
           {
             label: 'Mode de paiement',
-            value: escapeHtml(PAYMENT_LABEL[order.paymentType] ?? order.paymentType),
+            value: escapeHtml(paymentLabel(order)),
           },
         ],
         total: { label: 'Total', value: fcfa(order.totalAmount) },
       },
       cta: { label: 'Voir la commande', url: orderUrl(order.reference) },
     }),
-    text: `Nouvelle commande ${order.reference}\nProduit : ${order.productName} (×${order.quantity})\nClient : ${order.customerName} — ${order.phone}\nAdresse : ${order.deliveryAddress ?? '—'}\nTotal : ${fcfa(order.totalAmount)} (${PAYMENT_LABEL[order.paymentType] ?? order.paymentType})\n\nVoir la commande : ${orderUrl(order.reference)}`,
+    text: `Nouvelle commande ${order.reference}\nProduit : ${order.productName} (×${order.quantity})\nClient : ${order.customerName} — ${order.phone}\nAdresse : ${order.deliveryAddress ?? '—'}\nTotal : ${fcfa(order.totalAmount)} (${paymentLabel(order)})\n\nVoir la commande : ${orderUrl(order.reference)}`,
   };
 }
 
@@ -795,32 +808,31 @@ export async function sendProSubscriptionActivatedEmail(
     <div style="background-color: ${C.bg}; font-family: ${FONT}; padding: 32px 16px;">
       <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid ${C.line}; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
         <div style="background: linear-gradient(135deg, #0F172A, #1E3A8A); padding: 32px 24px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.5px;">Bienvenue dans Juula Pro 🚀</h1>
-          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 8px 0 0 0;">Votre boutique ${escapeHtml(storeLabel)} est prête à scaler.</p>
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.5px;">Votre abonnement est actif</h1>
+          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 8px 0 0 0;">${escapeHtml(storeLabel)} peut maintenant être en ligne.</p>
         </div>
         <div style="padding: 28px 24px; color: ${C.text}; font-size: 14px; line-height: 1.6;">
           <p style="margin-top: 0;">${greeting}</p>
-          <p>Nous vous confirmons l'activation immédiate de votre abonnement <strong>Plan Juula Pro</strong> (6 000 FCFA/mois).</p>
+          <p>Nous vous confirmons l'activation de votre <strong>abonnement Juula</strong> (3 900 FCFA/mois).</p>
           
           <div style="background: ${C.blueSoft}; border-left: 4px solid ${C.blue}; padding: 14px 16px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0; color: ${C.blue}; font-weight: bold; font-size: 13px;">Tous vos avantages sont désormais débloqués :</p>
+            <p style="margin: 0; color: ${C.blue}; font-weight: bold; font-size: 13px;">Ce que comprend votre abonnement :</p>
             <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 13px; color: #1E293B;">
-              <li><strong>Produits & pages de vente illimités</strong></li>
-              <li><strong>Paiement à la livraison (Espèces) débloqué</strong></li>
-              <li><strong>0% de commission Juula</strong> (0 F sur le cash, seuls 5% télécom sur Wave/OM)</li>
-              <li><strong>Pixels de conversion Facebook & TikTok actifs</strong></li>
-              <li><strong>Sous-domaine personnalisé</strong></li>
-              <li><strong>Support VIP prioritaire 7j/7</strong></li>
+              <li><strong>Votre boutique et vos pages produits en ligne</strong></li>
+              <li><strong>Paiement à la livraison et bouton « Commander sur WhatsApp »</strong></li>
+              <li><strong>Liens de paiement directs</strong> (Wave Business, Orange Money…)</li>
+              <li><strong>Pixels Facebook & TikTok</strong></li>
+              <li>Option : paiement en ligne Mobile Money JuulaPay (7,5 % par paiement)</li>
             </ul>
           </div>
 
           <p style="font-size: 13px; color: ${C.muted};">
-            Abonnement actif jusqu'au : <strong>${expiryFmt}</strong>.
+            Abonnement actif jusqu'au : <strong>${expiryFmt}</strong>. Sans renouvellement, vos pages passent hors ligne à cette date.
           </p>
 
           <div style="text-align: center; margin: 28px 0 10px 0;">
             <a href="${DASHBOARD_URL}" style="display: inline-block; background-color: ${C.blue}; color: #ffffff; text-decoration: none; font-weight: bold; padding: 14px 28px; border-radius: 12px; font-size: 14px;">
-              Accéder à mon Cockpit Juula Pro
+              Ouvrir mon tableau de bord
             </a>
           </div>
         </div>
@@ -832,26 +844,20 @@ export async function sendProSubscriptionActivatedEmail(
   `;
 
   const text = `
-Bienvenue dans Juula Pro !
+Votre abonnement est actif
 
 ${greeting}
-Votre abonnement Plan Juula Pro est désormais actif pour votre boutique ${storeLabel}.
-Tous vos avantages sont débloqués :
-- Produits et pages de vente illimités
-- Paiement à la livraison débloqué
-- 0% de commission Juula
+Votre abonnement Juula est actif pour ${storeLabel}.
+Ce que comprend votre abonnement :
+- Votre boutique et vos pages produits en ligne
+- Paiement à la livraison et bouton « Commander sur WhatsApp »
+- Liens de paiement directs
 - Pixels Facebook & TikTok
-- Sous-domaine personnalisé
+- Option : paiement en ligne Mobile Money JuulaPay (7,5 % par paiement)
 
 Valable jusqu'au : ${expiryFmt}
-Accéder au cockpit : ${DASHBOARD_URL}
+Tableau de bord : ${DASHBOARD_URL}
   `.trim();
 
-  await send(
-    user.email,
-    'Bienvenue dans Juula Pro 🚀 Votre abonnement est actif',
-    html,
-    text,
-    'pro_activated',
-  );
+  await send(user.email, 'Votre abonnement Juula est actif', html, text, 'pro_activated');
 }

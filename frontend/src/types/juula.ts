@@ -1,15 +1,31 @@
+import type { DirectPaymentMethod } from '@/lib/store/storefront-types';
+
 export type DashboardTab =
   | 'cockpit'
   | 'kanban'
   | 'wallet'
+  | 'products'
+  | 'storefront'
+  | 'notifications'
   | 'wizard'
   | 'customers'
   | 'analytics'
   | 'settings';
 
 export type OrderStatus = 'new' | 'confirmed' | 'delivered' | 'cancelled';
-export type PaymentType = 'cod' | 'online_wave' | 'online_orange';
-export type PaymentStatus = 'paid' | 'pending_cod' | 'pending_online';
+export type PaymentType =
+  | 'cod'
+  | 'online_momo'
+  | 'online_wave'
+  | 'online_orange'
+  | 'direct'
+  | 'whatsapp';
+export type PaymentStatus =
+  | 'paid'
+  | 'pending_cod'
+  | 'pending_online'
+  | 'pending_direct'
+  | 'paid_direct';
 
 export interface OrderLead {
   id: string;
@@ -38,6 +54,23 @@ export interface OrderLead {
   selectedColor?: string | undefined;
   paymentType: PaymentType;
   paymentStatus: PaymentStatus;
+  /** paymentType 'direct': merchant's method name (e.g. « Wave Business »). */
+  paymentMethodName?: string | undefined;
+  /** Public checkout only: id of the merchant's direct payment link. */
+  directMethodId?: string | undefined;
+  /** Shop cart orders: one line per product. */
+  items?: OrderItem[] | undefined;
+}
+
+export interface OrderItem {
+  productId: string;
+  slug: string;
+  name: string;
+  image: string | null;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  color: string | null;
 }
 
 export interface KpiMetrics {
@@ -184,6 +217,18 @@ export interface FunnelPageConfig {
   urgencyEnabled?: boolean | undefined;
   /** Injected at render time from the merchant's store (never stored). */
   storeLogoUrl?: string | null | undefined;
+  /** Injected at render time (Pro): merchant's own payment links / QR codes. */
+  directPaymentMethods?: DirectPaymentMethod[] | undefined;
+  /** Injected at render time: JuulaPay online payment offered by the store. */
+  onlinePaymentsEnabled?: boolean | undefined;
+  /** Injected at render time (Pro, option on): wa.me digits for « Commander sur WhatsApp ». */
+  whatsappOrderNumber?: string | null | undefined;
+  /** Shop: category shown on the storefront (e.g. « Mode »). */
+  category?: string | undefined;
+  /** Shop: listed in the storefront catalogue (default true). */
+  showInStore?: boolean | undefined;
+  /** Shop: highlighted in « La sélection du moment ». */
+  featured?: boolean | undefined;
   deliveryNotice: string;
   benefits: string[];
   ctaButtonText: string;

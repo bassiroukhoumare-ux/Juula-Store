@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -8,6 +8,14 @@ const inter = Inter({
   variable: '--font-inter',
   display: 'swap',
 });
+
+// viewport-fit=cover: lets fixed bars use env(safe-area-inset-*) on iPhone.
+// Pinch-zoom stays allowed (accessibility); field zoom is handled in CSS.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   title: 'Juula Store — Boutique en ligne, paiement à la livraison & Mobile Money',

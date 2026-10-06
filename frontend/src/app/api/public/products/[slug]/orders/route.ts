@@ -20,7 +20,8 @@ import { nextOrderNumber, publicOrderRateLimit } from '@/lib/server/store/orders
 import { computeOrderPricing } from '@/lib/store/pricing';
 import { sendNewOrderEmail } from '@/lib/server/store/notify';
 import { formatOrderId, getStoreCode } from '@/lib/orderUtils';
-import { isStorePro } from '@/lib/store/plans';
+import { decidePayment } from '@/lib/server/store/checkout';
+import { isStoreLive } from '@/lib/server/store/storefront';
 import { clearCheckoutDraft } from '@/lib/server/store/analytics';
 
 const Body = z.object({
@@ -34,7 +35,9 @@ const Body = z.object({
   hasVoiceNote: z.boolean().optional(),
   quantity: z.number().int().min(1).max(100),
   selectedColor: z.string().trim().max(60).optional(),
-  paymentType: z.enum(['cod', 'online_wave', 'online_orange']),
+  paymentType: z.enum(['cod', 'online_momo', 'online_wave', 'online_orange', 'direct', 'whatsapp']),
+  /** paymentType 'direct': id of the merchant's payment link. */
+  directMethodId: z.string().max(40).optional(),
   /** Anonymous analytics visitor id: clears this visitor's abandoned checkout. */
   visitorId: z
     .string()
@@ -89,24 +92,26 @@ export async function POST(
       );
     }
 
-    const isPro = isStorePro(product.user?.store);
-    const isOnline = input.paymentType !== 'cod';
-
-    if (!isOnline && !isPro) {
+    const store = product.user?.store ?? null;
+    if (!isStoreLive(store)) {
       return NextResponse.json(
-        {
-          error: 'COD_REQUIRES_PRO',
-          message:
-            'Le paiement à la livraison est réservé aux boutiques Juula Pro. Veuillez régler votre commande en ligne par Wave ou Orange Money.',
-        },
-        { status: 400, headers },
+        { error: 'STORE_OFFLINE', message: 'Cette boutique n’est pas en ligne pour le moment.' },
+        { status: 404, headers },
+      );
+    }
+    const payment = decidePayment(store, input.paymentType, input.directMethodId);
+    if (!payment.ok) {
+      return NextResponse.json(
+        { error: payment.error, message: payment.message },
+        { status: payment.status, headers },
       );
     }
 
     const config = productConfig(product);
+    const isOnline = input.paymentType.startsWith('online_');
     if (
       (isOnline && config.mobileMoneyEnabled === false) ||
-      (!isOnline && config.codEnabled === false)
+      (input.paymentType === 'cod' && config.codEnabled === false)
     ) {
       return NextResponse.json(
         { error: 'PAYMENT_METHOD_DISABLED', message: 'Moyen de paiement indisponible' },
@@ -148,11 +153,10 @@ export async function POST(
           neighborhood: input.neighborhood ?? null,
           city: 'Dakar',
           deliveryAddress: address,
-          deliveryNotes: isOnline
-            ? `Paiement en ligne (${input.paymentType === 'online_wave' ? 'Wave' : 'Orange Money'}) — à vérifier`
-            : 'Paiement en espèces à la livraison',
+          deliveryNotes: payment.deliveryNotes,
           paymentType: input.paymentType,
-          paymentStatus: isOnline ? 'pending_online' : 'pending_cod',
+          paymentStatus: payment.paymentStatus,
+          paymentMethodName: payment.paymentMethodName,
         },
       });
     });

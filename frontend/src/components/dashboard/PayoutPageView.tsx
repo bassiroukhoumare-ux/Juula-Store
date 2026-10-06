@@ -1,8 +1,8 @@
 'use client';
 
+import { Skeleton } from '@/components/ui/Skeleton';
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  Loader2,
   ArrowLeft,
   ShieldCheck,
   Lock,
@@ -12,7 +12,6 @@ import {
   Mail,
   ExternalLink,
   ChevronRight,
-  Clock,
   KeyRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -242,7 +241,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
 
           <div className="space-y-2">
             <span className="text-[13px] font-black uppercase tracking-wider text-[#059669] bg-[#ECFDF5] px-3 py-1 rounded-full border border-[#A7F3D0]">
-              Virement envoyé à Moneriz
+              Virement envoyé
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-[#201D1D]">
               {formatFCFA(amount)} en cours de transfert
@@ -387,8 +386,13 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 </div>
 
                 {accounts === null ? (
-                  <div className="py-6 flex justify-center">
-                    <Loader2 className="w-5 h-5 animate-spin text-[#235BF7]" />
+                  <div
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                    role="status"
+                    aria-label="Chargement"
+                  >
+                    <Skeleton className="h-[76px] rounded-2xl" />
+                    <Skeleton className="h-[76px] rounded-2xl" />
                   </div>
                 ) : !accounts.legalName || (!accounts.wavePhone && !accounts.orangePhone) ? (
                   <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
@@ -641,62 +645,6 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                   <ExternalLink className="w-3.5 h-3.5" />
                 </button>
               )}
-            </div>
-
-            {/* Passerelle Moneriz (Production Live) */}
-            <div className="p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-2xl bg-[#EEF3FF] border border-[#BFDBFE] flex items-center justify-center text-[#235BF7] font-black text-[15px] shrink-0">
-                    M
-                  </div>
-                  <div>
-                    <h4 className="text-[13px] font-black uppercase tracking-wider text-[#201D1D]">
-                      Passerelle Moneriz
-                    </h4>
-                    <span className="text-xs text-[#7A808C]">
-                      Paiements & Retraits Multi-Opérateurs
-                    </span>
-                  </div>
-                </div>
-
-                <span className="inline-flex items-center gap-1.5 text-xs font-extrabold bg-[#ECFDF5] text-[#059669] px-2.5 py-1 rounded-full border border-[#A7F3D0]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  Mode Live Actif
-                </span>
-              </div>
-
-              <div className="space-y-3 text-[13px]">
-                <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs uppercase font-bold text-[#7A808C]">
-                      Clé Publique (Live) :
-                    </span>
-                    <span className="tabular-nums text-xs text-[#201D1D] font-bold truncate max-w-[190px]">
-                      izp_live_pk_uc6uCy7ELZ...
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pt-1 border-t border-[#E2E8F0]">
-                    <span className="text-xs uppercase font-bold text-[#7A808C]">
-                      Clé Privée Serveur :
-                    </span>
-                    <span className="tabular-nums text-xs text-emerald-700 font-bold">
-                      izp_live_sk_••••••••••••QBGk
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-[#EEF3FF]/60 border border-[#BFDBFE] space-y-1">
-                  <div className="flex items-center gap-1.5 text-[13px] font-bold text-[#235BF7]">
-                    <Clock className="w-3.5 h-3.5 shrink-0" />
-                    <span>Règlement des ventes (24h - 72h)</span>
-                  </div>
-                  <p className="text-[13px] text-[#7A808C] leading-relaxed">
-                    Chaque encaissement en ligne via Wave, Orange Money ou Carte est sécurisé par
-                    Moneriz et transféré sur votre solde disponible pour retrait sous 24h à 72h.
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </div>

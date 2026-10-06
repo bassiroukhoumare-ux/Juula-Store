@@ -1,7 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, PhoneCall, Volume2, MapPin, Package, ChevronDown } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowLeft,
+  ChevronDown,
+  Folder,
+  FolderOpen,
+  MapPin,
+  Package,
+  PhoneCall,
+  Search,
+  Volume2,
+} from 'lucide-react';
 import { OrderLead, OrderStatus } from '@/types/juula';
 import { Input } from '@/components/ui/Input';
 import { formatFCFA } from '@/lib/orderUtils';
@@ -20,12 +30,15 @@ interface KanbanViewProps {
   focusOrderId?: string | null;
   /** Search typed in the dashboard header. */
   searchQuery?: string;
+  /** Direct payment (merchant's own link): mark the money as received. */
+  onConfirmDirectPayment?: (reference: string) => void;
 }
 
 export const KanbanView: React.FC<KanbanViewProps> = ({
   orders,
   onOrdersChange,
   focusOrderId = null,
+  onConfirmDirectPayment,
   searchQuery: externalSearch = '',
 }) => {
   const [searchQuery, setSearchQuery] = useState(externalSearch);
@@ -33,15 +46,21 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'online' | 'cod'>('all');
   const [mobileStatusTab, setMobileStatusTab] = useState<'all' | OrderStatus>('all');
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
+  // Day folders: today's orders stay in the main list; each finished day
+  // becomes a folder (« 4 octobre 2026 ») that opens on that day's orders.
+  const [openDay, setOpenDay] = useState<string | null>(null);
 
   const handleMoveStatus = (orderId: string, nextStatus: OrderStatus) => {
     const updated = orders.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o));
     onOrdersChange(updated);
   };
 
-  // Deep link: expand the order (mobile list) and bring it into view.
+  // Deep link: expand the order (opening its day folder) and bring it into view.
   useEffect(() => {
     if (!focusOrderId) return;
+    const target = orders.find((o) => o.id === focusOrderId);
+    const key = target ? dayKeyOf(target) : todayKey();
+    setOpenDay(key === todayKey() ? null : key);
     setExpandedOrders((prev) => ({ ...prev, [focusOrderId]: true }));
     const t = setTimeout(() => {
       document
@@ -82,7 +101,33 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   ).length;
   const codOrdersCount = orders.filter((o) => o.paymentType === 'cod').length;
 
-  const mobileOrders = filteredOrders.filter((o) =>
+  const searching = searchQuery.trim().length > 0;
+  const today = todayKey();
+  // Searching looks into every day; otherwise the open folder, or today.
+  const scopedOrders = searching
+    ? filteredOrders
+    : filteredOrders.filter((o) => dayKeyOf(o) === (openDay ?? today));
+  const dayFolders = useMemo(() => {
+    const map = new Map<string, OrderLead[]>();
+    for (const o of filteredOrders) {
+      const key = dayKeyOf(o);
+      if (key === today) continue;
+      map.set(key, [...(map.get(key) ?? []), o]);
+    }
+    return [...map.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([key, list]) => ({
+        key,
+        label: dayLabel(key),
+        count: list.length,
+        newCount: list.filter((o) => o.status === 'new').length,
+        total: list
+          .filter((o) => o.status !== 'cancelled')
+          .reduce((sum, o) => sum + (o.totalAmount || o.amount), 0),
+      }));
+  }, [filteredOrders, today]);
+
+  const mobileOrders = scopedOrders.filter((o) =>
     mobileStatusTab === 'all' ? true : o.status === mobileStatusTab,
   );
 
@@ -193,29 +238,50 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
       {/* 3. LISTE DES COMMANDES (MÊME AFFICHAGE MOBILE / ORDINATEUR) */}
       {/* ======================================================== */}
       <div className="space-y-3">
+        {/* Current scope: today, an opened day folder, or search results */}
+        {openDay && !searching ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-white border border-[#ECEFF4]">
+            <button
+              type="button"
+              onClick={() => setOpenDay(null)}
+              className="inline-flex items-center gap-2 h-10 px-3 rounded-xl text-[14px] font-semibold text-[#235BF7] hover:bg-[#EEF3FF] cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" /> Toutes les journées
+            </button>
+            <span className="flex items-center gap-2 text-[15px] font-bold text-[#201D1D] pr-2">
+              <FolderOpen className="w-4 h-4 text-[#235BF7]" />
+              {dayLabel(openDay)}
+            </span>
+          </div>
+        ) : (
+          <h3 className="text-[15px] font-extrabold text-[#201D1D] px-1">
+            {searching ? 'Résultats de la recherche' : `Aujourd’hui · ${dayLabel(today)}`}
+          </h3>
+        )}
+
         {/* Filtre par statut */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {[
-            { id: 'all' as const, label: 'Toutes', count: filteredOrders.length },
+            { id: 'all' as const, label: 'Toutes', count: scopedOrders.length },
             {
               id: 'new' as const,
               label: 'Nouvelles',
-              count: filteredOrders.filter((o) => o.status === 'new').length,
+              count: scopedOrders.filter((o) => o.status === 'new').length,
             },
             {
               id: 'confirmed' as const,
               label: 'En route',
-              count: filteredOrders.filter((o) => o.status === 'confirmed').length,
+              count: scopedOrders.filter((o) => o.status === 'confirmed').length,
             },
             {
               id: 'delivered' as const,
               label: 'Livrées',
-              count: filteredOrders.filter((o) => o.status === 'delivered').length,
+              count: scopedOrders.filter((o) => o.status === 'delivered').length,
             },
             {
               id: 'cancelled' as const,
               label: 'Annulées',
-              count: filteredOrders.filter((o) => o.status === 'cancelled').length,
+              count: scopedOrders.filter((o) => o.status === 'cancelled').length,
             },
           ].map((tab) => (
             <button
@@ -246,15 +312,25 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
         <div className="space-y-2">
           {mobileOrders.length === 0 ? (
             <div className="bg-white rounded-2xl p-6 text-center text-[13px] text-[#94A3B8] border border-[#ECEFF4]">
-              Aucune commande trouvée pour ces critères.
+              {searching || openDay
+                ? 'Aucune commande trouvée pour ces critères.'
+                : 'Aucune commande aujourd’hui pour le moment. Les commandes des jours passés sont rangées dans les dossiers ci-dessous.'}
             </div>
           ) : (
             mobileOrders.map((order) => {
               const isExpanded = !!expandedOrders[order.id];
-              const isPaidOnline =
-                order.paymentStatus === 'paid' ||
-                order.paymentType === 'online_wave' ||
-                order.paymentType === 'online_orange';
+              // Only a payment confirmed by the server counts as paid.
+              const isPaidOnline = order.paymentStatus === 'paid';
+              const paymentBadge =
+                order.paymentStatus === 'paid'
+                  ? { label: 'Payé', cls: 'bg-[#FF7900] text-white' }
+                  : order.paymentStatus === 'paid_direct'
+                    ? { label: 'Payé (direct)', cls: 'bg-emerald-600 text-white' }
+                    : order.paymentStatus === 'pending_direct'
+                      ? { label: 'Paiement à vérifier', cls: 'bg-amber-100 text-amber-800' }
+                      : order.paymentStatus === 'pending_online'
+                        ? { label: 'Paiement en cours', cls: 'bg-[#F1F3F6] text-[#3F4654]' }
+                        : null;
               const cleanPhone = (order.phone || '').replace(/[^0-9+]/g, '');
               const whatsappUrl = `https://wa.me/${order.whatsappNumber || cleanPhone}?text=${encodeURIComponent(
                 `Bonjour ${order.customerName} ! Boutique concernant votre commande #${order.id} (${order.productName}). Pouvez-vous nous confirmer votre heure de livraison à ${order.neighborhood} ?`,
@@ -264,7 +340,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                 <div
                   key={order.id}
                   id={`order-${order.id}`}
-                  className={`bg-white rounded-2xl border shadow-xs overflow-hidden transition-all ${order.id === focusOrderId ? 'ring-2 ring-[#235BF7] ' : ''}${
+                  className={`relative bg-white rounded-2xl border shadow-xs overflow-hidden transition-all ${order.status === 'new' ? 'before:absolute before:left-0 before:inset-y-0 before:w-1.5 before:bg-[#235BF7] bg-[#F7F9FF] ' : ''}${order.id === focusOrderId ? 'ring-2 ring-[#235BF7] ' : ''}${
                     isPaidOnline
                       ? 'border-2 border-[#FF7900] ring-2 ring-[#FF7900]/15'
                       : 'border-[#ECEFF4]'
@@ -279,9 +355,16 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                         <span className="tabular-nums text-[13px] font-bold text-[#235BF7] bg-[#EEF3FF] px-1.5 py-0.5 rounded">
                           {order.id}
                         </span>
-                        {isPaidOnline && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-black uppercase tracking-wider bg-[#FF7900] text-white">
-                            Payé
+                        {order.status === 'new' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-extrabold uppercase tracking-wide bg-[#235BF7] text-white">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" /> Nouvelle
+                          </span>
+                        )}
+                        {paymentBadge && (
+                          <span
+                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${paymentBadge.cls}`}
+                          >
+                            {paymentBadge.label}
                           </span>
                         )}
                         <span className="text-[13px] text-[#94A3B8]">{order.createdAt}</span>
@@ -356,11 +439,57 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                                 ? 'Wave (En ligne)'
                                 : order.paymentType === 'online_orange'
                                   ? 'Orange (En ligne)'
-                                  : 'Espèces (COD)'}
+                                  : order.paymentType === 'direct'
+                                    ? `Direct · ${order.paymentMethodName ?? 'lien du vendeur'}`
+                                    : 'Espèces (COD)'}
                             </span>
                           </div>
                         </div>
                       </div>
+
+                      {order.items && order.items.length > 1 && (
+                        <ul className="p-2.5 rounded-xl bg-white border border-[#E2E8F0] divide-y divide-[#F1F5F9]">
+                          {order.items.map((item) => (
+                            <li
+                              key={item.productId}
+                              className="py-1.5 flex items-center gap-2.5 text-[13px]"
+                            >
+                              <span className="w-8 h-8 rounded-md overflow-hidden bg-[#F1F5F9] shrink-0">
+                                {item.image && (
+                                  <img
+                                    src={item.image}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                )}
+                              </span>
+                              <span className="flex-1 min-w-0 truncate font-semibold text-[#201D1D]">
+                                {item.name}
+                              </span>
+                              <span className="text-[#7A808C] shrink-0">×{item.quantity}</span>
+                              <span className="font-bold text-[#201D1D] shrink-0 tabular-nums">
+                                {formatFCFA(item.lineTotal)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {order.paymentStatus === 'pending_direct' && onConfirmDirectPayment && (
+                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <span className="text-[13px] text-amber-800">
+                            Le client devait payer via {order.paymentMethodName ?? 'votre lien'}.
+                            Vérifiez la réception sur votre compte.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => onConfirmDirectPayment(order.id)}
+                            className="shrink-0 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] font-bold cursor-pointer"
+                          >
+                            J’ai reçu le paiement
+                          </button>
+                        </div>
+                      )}
 
                       {/* Note vocale ou adresse */}
                       {order.hasVoiceNote && order.voiceNoteUrl ? (
@@ -434,7 +563,63 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             })
           )}
         </div>
+
+        {/* Day folders (finished days) */}
+        {!searching && !openDay && dayFolders.length > 0 && (
+          <div className="pt-4 space-y-3">
+            <h3 className="text-[15px] font-extrabold text-[#201D1D] px-1">Journées précédentes</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+              {dayFolders.map((d) => (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => {
+                    setOpenDay(d.key);
+                    setMobileStatusTab('all');
+                  }}
+                  className="text-left p-4 rounded-2xl bg-white border border-[#ECEFF4] hover:border-[#BFD0FD] hover:bg-[#F7F9FF] transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center justify-between">
+                    <Folder className="w-6 h-6 text-[#235BF7]" />
+                    {d.newCount > 0 && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-[#235BF7] text-white">
+                        {d.newCount} nouvelle{d.newCount > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-3 block text-[15px] font-bold text-[#201D1D]">{d.label}</span>
+                  <span className="block text-[13px] text-[#7A808C]">
+                    {d.count} commande{d.count > 1 ? 's' : ''} · {formatFCFA(d.total)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+const DAY_FORMAT = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** Day of an order (Dakar = UTC all year): "2026-10-04". */
+function dayKeyOf(order: OrderLead): string {
+  return order.createdAtIso ? order.createdAtIso.slice(0, 10) : todayKey();
+}
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** "2026-10-04" → "Dimanche 4 octobre 2026". */
+function dayLabel(key: string): string {
+  const label = DAY_FORMAT.format(new Date(`${key}T12:00:00Z`));
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}

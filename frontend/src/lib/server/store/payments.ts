@@ -38,20 +38,18 @@ export function commissionPercent(): number {
 }
 
 /**
- * Net amount credited to merchant wallet:
- * - Free Plan: 7.5% total deduction (5% telecom gateway fee + 2.5% Juula platform margin)
- * - Pro Plan: 5.0% total deduction (strictly the 5% telecom gateway fee, 0% Juula fee)
+ * Net amount credited to the merchant wallet for a JuulaPay online payment:
+ * 7,5 % is kept by the platform (operator fees included), whatever the plan.
+ * (`isPro` is kept for call-site compatibility.)
  */
-export function netAmountFor(totalAmount: number, isPro: boolean = false): number {
+export function netAmountFor(totalAmount: number, _isPro: boolean = false): number {
   const envCommission = process.env.PLATFORM_COMMISSION_PERCENT
     ? Number(process.env.PLATFORM_COMMISSION_PERCENT)
     : null;
   const rate =
     typeof envCommission === 'number' && !Number.isNaN(envCommission) && envCommission > 0
       ? envCommission / 100
-      : isPro
-        ? 0.05
-        : 0.075;
+      : 0.075;
   return totalAmount - Math.round(totalAmount * rate);
 }
 

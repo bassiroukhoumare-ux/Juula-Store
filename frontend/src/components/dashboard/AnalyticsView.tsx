@@ -1,7 +1,8 @@
 'use client';
 
+import { SkeletonStats } from '@/components/ui/Skeleton';
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Loader2, Package, Radio, Settings2 } from 'lucide-react';
+import { CheckCircle2, Package, Radio, Settings2 } from 'lucide-react';
 import type { OrderLead } from '@/types/juula';
 import { formatFCFA } from '@/lib/orderUtils';
 import type { PeriodRange } from '@/lib/store/period';
@@ -43,11 +44,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ range, orders, onO
   const basket = liveOrders.length > 0 ? Math.round(revenue / liveOrders.length) : 0;
 
   if (loading && !data) {
-    return (
-      <div className="py-24 flex justify-center">
-        <Loader2 className="w-7 h-7 animate-spin text-[#235BF7]" />
-      </div>
-    );
+    return <SkeletonStats />;
   }
   if (error || !data) {
     return (

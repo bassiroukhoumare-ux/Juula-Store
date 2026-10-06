@@ -34,17 +34,18 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  verificationCodes VerificationCode[]
-  uploads           FileUpload[]
-  notifications     Notification[]
-  notifPrefs        NotificationPreferences?
-  orders            Order[]
-  withdrawals       Withdrawal[]
-  oauthAccounts     OAuthAccount[]
-  adminActions      AdminAction[]
-  store             Store?
-  products          Product[]
-  storeOrders       StoreOrder[]
+  verificationCodes  VerificationCode[]
+  uploads            FileUpload[]
+  notifications      Notification[]
+  notifPrefs         NotificationPreferences?
+  orders             Order[]
+  withdrawals        Withdrawal[]
+  oauthAccounts      OAuthAccount[]
+  adminActions       AdminAction[]
+  store              Store?
+  products           Product[]
+  storeOrders        StoreOrder[]
+  notificationStates NotificationState[]
 
   // Multi-tenancy is opt-in per project: by default no resource is org-scoped.
   // Apps that need it (marketplace, B2B SaaS, classifieds) wire owner relations
@@ -352,34 +353,47 @@ model Withdrawal {
 // Amounts are integers in FCFA.
 // ───────────────────────────────────────────────────────────────────────
 model Store {
-  id                 String       @id @default(cuid())
-  userId             String       @unique
-  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String       @id @default(cuid())
+  userId                String       @unique
+  user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Public storefront: https://<subdomain>.juula.store — chosen at onboarding,
   // editable in Paramètres. Previous subdomains live in StoreAlias so links
   // already shared keep redirecting to the current one.
-  name               String?
-  subdomain          String?      @unique
-  logoUrl            String? // store logo / profile picture (Cloudinary)
-  whatsapp           String? // support & order confirmations, E.164 without "+" (221…)
-  onlineOnly         Boolean      @default(false) // no physical shop
-  address            String? // physical shop address (when not online-only)
-  city               String?
-  displayCurrency    String       @default("XOF") // XOF | EUR | USD — display only, charges stay in XOF
-  facebookPixelId    String?
-  tiktokPixelId      String?
-  orderCounter       Int          @default(0) // last allocated StoreOrder.number
-  welcomeEmailSentAt DateTime? // set once when the welcome email is claimed
-  plan               String       @default("FREE") // "FREE" | "PRO"
+  name                  String?
+  subdomain             String?      @unique
+  logoUrl               String? // store logo / profile picture (Cloudinary)
+  whatsapp              String? // support & order confirmations, E.164 without "+" (221…)
+  onlineOnly            Boolean      @default(false) // no physical shop
+  address               String? // physical shop address (when not online-only)
+  city                  String?
+  displayCurrency       String       @default("XOF") // XOF | EUR | USD — display only, charges stay in XOF
+  facebookPixelId       String?
+  tiktokPixelId         String?
+  orderCounter          Int          @default(0) // last allocated StoreOrder.number
+  welcomeEmailSentAt    DateTime? // set once when the welcome email is claimed
+  plan                  String       @default("FREE") // "FREE" | "PRO"
   // Payout accounts (Paramètres → Moyens de paiement). Withdrawals only go
   // to these numbers, in the legal name of the ID card.
-  payoutLegalName    String?
-  payoutWavePhone    String? // E.164 (+221…)
-  payoutOrangePhone  String? // E.164 (+221…)
-  planExpiresAt      DateTime? // null = active if PRO, or expiration date
-  aliases            StoreAlias[]
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  payoutLegalName       String?
+  payoutWavePhone       String? // E.164 (+221…)
+  payoutOrangePhone     String? // E.164 (+221…)
+  // Storefront (<subdomain>.juula.store): draft until the merchant publishes it.
+  storefrontPublished   Boolean      @default(false)
+  storefrontSetupDone   Boolean      @default(false) // first-time guided setup finished
+  onlinePaymentsEnabled Boolean      @default(false) // JuulaPay online payments (7,5 % per payment)
+  storeTagline          String?
+  storeCoverUrl         String? // Cloudinary image
+  storeAccent           String? // hex colour of buttons/badges (#RRGGBB)
+  storeBanners          Json? // [{ id, imageUrl, title, badge, buttonLabel, category }]
+  storeSections         Json? // [{ id, type: products|testimonials, title, subtitle, placement, productSlugs, images }]
+  // Checkout options. COD, direct links and WhatsApp only apply to Pro stores.
+  codEnabled            Boolean      @default(true)
+  whatsappOrderEnabled  Boolean      @default(false)
+  directPaymentMethods  Json? // [{ id, name, url, qrUrl }]
+  planExpiresAt         DateTime? // null = active if PRO, or expiration date
+  aliases               StoreAlias[]
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
 }
 
 model StoreSubscription {
@@ -387,7 +401,7 @@ model StoreSubscription {
   storeId           String
   userId            String
   plan              String    @default("PRO") // PRO
-  amount            Int       @default(6000) // 6 000 FCFA / mois
+  amount            Int       @default(3900) // 3 900 FCFA / mois
   currency          String    @default("FCFA")
   status            String    @default("pending") // pending | active | expired
   providerSessionId String?   @unique
@@ -466,33 +480,36 @@ model CheckoutDraft {
 }
 
 model StoreOrder {
-  id              String   @id @default(cuid())
-  merchantId      String
-  merchant        User     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-  productId       String?
-  product         Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
-  number          Int // per-merchant sequence, formatted CMD-<storeCode>-000001
-  reference       String // formatted order id shown to customer + merchant
-  productName     String
-  productImage    String?
-  quantity        Int      @default(1)
-  selectedColor   String?
-  amount          Int // subtotal after quantity discount
-  deliveryFee     Int      @default(0)
-  totalAmount     Int
-  currency        String   @default("FCFA")
-  customerName    String
-  phone           String
-  whatsappNumber  String
-  neighborhood    String?
-  city            String?
-  deliveryAddress String?
-  deliveryNotes   String?
-  paymentType     String   @default("cod") // cod | online_wave | online_orange
-  paymentStatus   String   @default("pending_cod") // pending_cod | pending_online | paid
-  status          String   @default("new") // new | confirmed | delivered | cancelled
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String   @id @default(cuid())
+  merchantId        String
+  merchant          User     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  productId         String?
+  product           Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  number            Int // per-merchant sequence, formatted CMD-<storeCode>-000001
+  reference         String // formatted order id shown to customer + merchant
+  productName       String
+  productImage      String?
+  quantity          Int      @default(1)
+  /// Shop cart orders: [{ productId, slug, name, image, quantity, unitPrice, lineTotal, color }].
+  items             Json?
+  selectedColor     String?
+  amount            Int // subtotal after quantity discount
+  deliveryFee       Int      @default(0)
+  totalAmount       Int
+  currency          String   @default("FCFA")
+  customerName      String
+  phone             String
+  whatsappNumber    String
+  neighborhood      String?
+  city              String?
+  deliveryAddress   String?
+  deliveryNotes     String?
+  paymentType       String   @default("cod") // cod | online_wave | online_orange | direct
+  paymentStatus     String   @default("pending_cod") // pending_cod | pending_online | pending_direct | paid | paid_direct (direct link, never in the wallet)
+  paymentMethodName String? // direct payment: the merchant's method name (e.g. "Wave Business")
+  status            String   @default("new") // new | confirmed | delivered | cancelled
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Online payment (Moneriz). Set only after the payment is re-verified
   // against the Moneriz API — never from client input or a raw webhook body.
@@ -507,4 +524,19 @@ model StoreOrder {
   @@unique([merchantId, number])
   @@index([merchantId, createdAt])
   @@index([merchantId, paymentStatus])
+}
+
+/// Merchant notification feed state. The feed itself is derived from orders
+/// and withdrawals; this only remembers what was read or deleted.
+model NotificationState {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// e.g. "order:<orderId>", "paid:<orderId>", "withdrawal:<id>:COMPLETED"
+  key       String
+  readAt    DateTime?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, key])
 }

@@ -5,7 +5,6 @@ import { X, Zap, ArrowRight, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-
 import { PRO_PLAN_PRICE_FCFA } from '@/lib/store/plans';
 import { formatNumber } from '@/lib/orderUtils';
 
-import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 
 interface RechargeModalProps {
@@ -75,12 +74,12 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
             <span>Offre Marchand Juula</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-[#201D1D] tracking-tight">
-            {isPro ? 'Votre Abonnement Juula Pro' : 'Passez au Plan Juula Pro'}
+            {isPro ? 'Votre abonnement Juula' : 'Mettez votre boutique en ligne'}
           </h2>
           <p className="text-[13px] sm:text-[15px] text-[#7A808C] max-w-sm mx-auto">
             {isPro
-              ? 'Profitez de la puissance maximale de Juula Store sans aucune limite.'
-              : 'Débloquez le paiement à la livraison, les pixels publicitaires et vendez sans aucune limite.'}
+              ? 'Prolongez de 30 jours pour garder votre boutique et vos pages en ligne.'
+              : 'Votre boutique et vos pages produits deviennent visibles par vos clients.'}
           </p>
         </div>
 
@@ -89,9 +88,9 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
           <div className="flex items-start justify-between">
             <div>
               <span className="text-xs font-black uppercase tracking-widest text-[#38BDF8] block">
-                Formule Tout Inclus
+                30 jours
               </span>
-              <h3 className="text-xl font-black text-white mt-0.5">Plan Juula Pro</h3>
+              <h3 className="text-xl font-black text-white mt-0.5">Abonnement Juula</h3>
             </div>
             <div className="text-right">
               <span className="text-2xl sm:text-3xl font-black text-white">
@@ -109,33 +108,31 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
             <li className="flex items-center gap-2.5 text-white/95">
               <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
               <span>
-                <strong>Produits illimités</strong> (Plan Gratuit limité à 1 produit)
+                <strong>Liens de paiement directs</strong> (Wave Business, Orange Money…)
               </span>
             </li>
             <li className="flex items-center gap-2.5 text-white/95">
               <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
               <span>
-                <strong>Paiement à la livraison (Espèces) débloqué</strong>
+                <strong>Boutique et pages produits en ligne</strong> sur maboutique.juula.store
               </span>
             </li>
             <li className="flex items-center gap-2.5 text-white/95">
               <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
               <span>
-                <strong>0% de commission Juula</strong> (0 F sur le cash, seuls 5% télécom sur
-                Wave/OM)
+                <strong>Paiement à la livraison</strong> sans commission
               </span>
             </li>
             <li className="flex items-center gap-2.5 text-white/95">
               <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
               <span>
-                <strong>Pixels Facebook & TikTok débloqués</strong> pour tracker vos pubs
+                <strong>Pixels Facebook & TikTok</strong> pour suivre vos pubs
               </span>
             </li>
             <li className="flex items-center gap-2.5 text-white/95">
               <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
               <span>
-                <strong>Sous-domaine personnalisé</strong> (
-                <span className="text-[#38BDF8]">boutique.juula.store</span>)
+                <strong>Bouton « Commander sur WhatsApp »</strong>
               </span>
             </li>
           </ul>
@@ -143,7 +140,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
           <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[13px] text-white/70">
             <span>Paiement sécurisé Wave & OM</span>
             <span className="flex items-center gap-1 text-emerald-400 font-bold">
-              <ShieldCheck className="w-3.5 h-3.5" /> Sans engagement
+              <ShieldCheck className="w-3.5 h-3.5" /> Sans prélèvement automatique
             </span>
           </div>
         </div>
@@ -153,7 +150,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
           <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <div className="text-[13px]">
-              <p className="font-bold text-emerald-900">Votre abonnement Pro est actif</p>
+              <p className="font-bold text-emerald-900">Votre abonnement est actif</p>
               <p className="text-emerald-700">
                 Valable jusqu’au{' '}
                 {new Intl.DateTimeFormat('fr-FR', {
@@ -187,24 +184,17 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
                 <Zap className="w-4 h-4 fill-white text-white" />
                 <span>
                   {isPro
-                    ? 'Prolonger mon abonnement Pro (6 000 FCFA)'
-                    : 'Activer Juula Pro maintenant (6 000 FCFA)'}
+                    ? 'Prolonger de 30 jours (3 900 FCFA)'
+                    : 'Payer 3 900 FCFA et mettre en ligne'}
                 </span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
 
-          <div className="pt-2 text-center">
-            <Link
-              href="/pro"
-              onClick={onClose}
-              className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#235BF7] hover:underline"
-            >
-              <span>Voir la présentation complète & comparatif Juula Pro</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+          <p className="pt-1 text-center text-[13px] text-[#7A808C]">
+            Sans renouvellement après 30 jours, vos pages passent hors ligne. Rien n’est supprimé.
+          </p>
         </div>
       </div>
     </div>

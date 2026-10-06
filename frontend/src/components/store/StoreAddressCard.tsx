@@ -72,7 +72,7 @@ export const StoreAddressCard: React.FC<StoreAddressCardProps> = ({ profile, onS
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
         <div>
           <label
             htmlFor="settings-store-name"

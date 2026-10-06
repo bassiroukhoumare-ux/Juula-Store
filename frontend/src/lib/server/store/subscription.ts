@@ -1,4 +1,4 @@
-// Juula Store — Pro Subscription Service (6 000 FCFA / month)
+// Juula Store — Pro Subscription Service (3 900 FCFA / month)
 import 'server-only';
 import { prisma } from '@/lib/server/prisma';
 import {
@@ -94,7 +94,7 @@ export async function createProSubscriptionSession(
     const session = await createMonerizCheckoutSession({
       amount: PRO_PLAN_PRICE_FCFA,
       currency: 'XOF',
-      title: 'Abonnement Juula Pro — 1 mois (6 000 FCFA)',
+      title: 'Abonnement Juula — 1 mois (3 900 FCFA)',
       reference: sub.id,
       country: 'SN',
       integrationMode: 'redirect',
@@ -164,11 +164,13 @@ export async function verifyStoreSubscription(
   }
 
   if (session.status !== 'complete') return { status: 'pending' };
-  if (session.reference !== sub.id || session.amount !== PRO_PLAN_PRICE_FCFA) {
+  // Compare with the amount fixed when this checkout was created (a price
+  // change must not reject a checkout started before it).
+  if (session.reference !== sub.id || session.amount !== sub.amount) {
     log.error('store.subscription.mismatch', {
       subId: sub.id,
       sessionAmount: session.amount,
-      expected: PRO_PLAN_PRICE_FCFA,
+      expected: sub.amount,
     });
     return { status: 'mismatch' };
   }
@@ -218,8 +220,8 @@ export async function verifyStoreSubscription(
         create: {
           userId: sub.userId,
           type: 'plan.pro_activated',
-          title: 'Plan Juula Pro activé ! 🚀',
-          body: 'Félicitations ! Votre Plan Juula Pro est désormais actif. Vous avez accès aux produits illimités, au paiement à la livraison et aux pixels publicitaires.',
+          title: 'Abonnement Juula activé',
+          body: 'Votre boutique et vos pages produits peuvent être en ligne pendant 30 jours.',
           dedupeKey: `pro-activated-${sub.id}`,
           data: { plan: 'PRO', expiresAt: expiresAt.toISOString() },
         },

@@ -101,7 +101,7 @@ export const MonerizCheckoutModal: React.FC<MonerizCheckoutModalProps> = ({
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span className="text-xs font-black tracking-wide uppercase">
-              Paiement Sécurisé Moneriz (Wave · OM · Carte)
+              Paiement sécurisé JuulaPay (Wave · OM · Carte)
             </span>
           </div>
 
@@ -127,7 +127,7 @@ export const MonerizCheckoutModal: React.FC<MonerizCheckoutModalProps> = ({
 
           <iframe
             src={embedSrc}
-            title="Paiement sécurisé Moneriz"
+            title="Paiement sécurisé JuulaPay"
             className="w-full rounded-2xl border-0 bg-transparent transition-all"
             style={{ height: `${iframeHeight}px`, minHeight: '480px' }}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"

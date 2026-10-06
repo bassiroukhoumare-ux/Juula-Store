@@ -5,6 +5,7 @@
 // 403, so product IDs can't be probed.
 export const runtime = 'nodejs';
 
+import { isStorePro } from '@/lib/store/plans';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Prisma } from '@prisma/client';
@@ -98,6 +99,20 @@ export async function PATCH(
       data.price = config.price;
       if (!status && config.status) data.status = config.status;
       if (!internalName && config.internalName) data.internalName = config.internalName;
+    }
+
+    // Going online needs an active subscription (3 900 FCFA / mois).
+    if (data.status === 'published' && existing.status !== 'published') {
+      const store = await prisma.store.findUnique({ where: { userId: auth.user.sub } });
+      if (!isStorePro(store)) {
+        return NextResponse.json(
+          {
+            error: 'SUBSCRIPTION_REQUIRED',
+            message: 'Un abonnement actif est nécessaire pour mettre cette page en ligne.',
+          },
+          { status: 402, headers: { 'x-request-id': ctx.requestId } },
+        );
+      }
     }
 
     const product = await prisma.product.update({ where: { id: existing.id }, data });

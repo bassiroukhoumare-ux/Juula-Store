@@ -1,5 +1,5 @@
 // GET /api/store/subscription — get current merchant plan status
-// POST /api/store/subscription — initialize Juula Pro subscription checkout (6 000 FCFA)
+// POST /api/store/subscription — initialize Juula Pro subscription checkout (3 900 FCFA)
 export const runtime = 'nodejs';
 
 import 'server-only';

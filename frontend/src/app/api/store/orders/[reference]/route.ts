@@ -12,9 +12,13 @@ import { makeRequestContext, withRequestContext } from '@/lib/server/observabili
 import { prisma } from '@/lib/server/prisma';
 import { toOrderLead } from '@/lib/server/store/orders';
 
-const PatchBody = z.object({
-  status: z.enum(['new', 'confirmed', 'delivered', 'cancelled']),
-});
+const PatchBody = z
+  .object({
+    status: z.enum(['new', 'confirmed', 'delivered', 'cancelled']).optional(),
+    /** Direct payment (merchant's own link): the merchant received the money. */
+    paymentReceived: z.literal(true).optional(),
+  })
+  .refine((b) => b.status !== undefined || b.paymentReceived !== undefined);
 
 export async function PATCH(
   req: NextRequest,
@@ -38,7 +42,7 @@ export async function PATCH(
 
     const existing = await prisma.storeOrder.findFirst({
       where: { merchantId: auth.user.sub, reference: decodeURIComponent(reference) },
-      select: { id: true, paymentStatus: true },
+      select: { id: true, paymentStatus: true, paymentType: true },
     });
     if (!existing) {
       return NextResponse.json(
@@ -61,9 +65,27 @@ export async function PATCH(
       );
     }
 
+    // Direct payments never go through Juula: they get their own status
+    // (`paid_direct`) so they can't enter the wallet ledger (`paid`).
+    if (
+      parsed.data.paymentReceived &&
+      (existing.paymentType !== 'direct' || existing.paymentStatus !== 'pending_direct')
+    ) {
+      return NextResponse.json(
+        {
+          error: 'NOT_A_DIRECT_PAYMENT',
+          message: 'Cette commande n’attend pas de paiement direct.',
+        },
+        { status: 409, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
+
     const order = await prisma.storeOrder.update({
       where: { id: existing.id },
-      data: { status: parsed.data.status },
+      data: {
+        ...(parsed.data.status ? { status: parsed.data.status } : {}),
+        ...(parsed.data.paymentReceived ? { paymentStatus: 'paid_direct' } : {}),
+      },
     });
     return NextResponse.json(
       { order: toOrderLead(order) },

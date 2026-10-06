@@ -1,7 +1,7 @@
 // Product page on a store subdomain: https://<shop>.juula.store/<slug>
 // (rewritten here by middleware). Only published products of that store.
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { productConfig, withStoreBranding } from '@/lib/server/store/products';
 import {
   loadProductBySlug,
@@ -11,7 +11,8 @@ import {
 } from '@/lib/server/store/public';
 import { PublicProductView } from '@/components/showcase/PublicProductView';
 import { storeProductUrl } from '@/lib/store/subdomain';
-import { isStorePro } from '@/lib/store/plans';
+import { isStoreLive, withCheckoutOptions } from '@/lib/server/store/storefront';
+import { ComingSoon } from '@/components/storefront/ComingSoon';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,12 +24,11 @@ interface PageProps {
 async function load(shop: string, slug: string, search = '') {
   const found = await loadStoreBySubdomain(shop.toLowerCase());
   if (found.kind === 'moved') redirect(`${storeProductUrl(found.subdomain, slug)}${search}`);
-  if (found.kind === 'none') notFound();
-  if (!isStorePro(found.store)) {
-    redirect(`/p/${slug}${search}`);
-  }
+  if (found.kind === 'none') return null;
   const product = await loadProductBySlug(slug);
-  if (!product || product.isPreview || product.product.userId !== found.store.userId) notFound();
+  if (!product || product.isPreview || product.product.userId !== found.store.userId) {
+    return { store: found.store, product: null };
+  }
   return { store: found.store, product: product.product };
 }
 
@@ -41,16 +41,21 @@ function toSearch(sp: Record<string, string | string[] | undefined>): string {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { shop, slug } = await params;
-  const { store, product } = await load(shop, slug);
-  return productMetadata(product, store, false);
+  const found = await load(shop, slug);
+  if (!found?.product) return { title: 'Boutique en cours de préparation — Juula Store' };
+  return productMetadata(found.product, found.store, false);
 }
 
 export default async function StoreProductPage({ params, searchParams }: PageProps) {
   const { shop, slug } = await params;
-  const { store, product } = await load(shop, slug, toSearch(await searchParams));
+  const found = await load(shop, slug, toSearch(await searchParams));
+  if (!found?.product || !isStoreLive(found.store)) {
+    return <ComingSoon storeName={found?.store.name ?? null} />;
+  }
+  const { store, product } = found;
   return (
     <PublicProductView
-      config={withStoreBranding(productConfig(product), store)}
+      config={withCheckoutOptions(withStoreBranding(productConfig(product), store), store)}
       pixels={pixelsOf(store)}
       isPreview={false}
       displayCurrency={store.displayCurrency}

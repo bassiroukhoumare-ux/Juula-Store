@@ -41,33 +41,31 @@ describe('Juula Store Pricing & Plan Gating', () => {
       expect(netAmountFor(20000, false)).toBe(18500);
     });
 
-    it('calculates 5.0% total deduction on Pro plan (strictly telco gateway fee, 0% Juula fee)', () => {
-      // 10 000 FCFA - 5.0% (500 FCFA) = 9 500 FCFA
-      expect(netAmountFor(10000, true)).toBe(9500);
-      // 20 000 FCFA - 5.0% (1000 FCFA) = 19 000 FCFA
-      expect(netAmountFor(20000, true)).toBe(19000);
+    it('JuulaPay takes the same 7.5% whatever the subscription', () => {
+      // 10 000 FCFA - 7.5% (750 FCFA) = 9 250 FCFA
+      expect(netAmountFor(10000, true)).toBe(9250);
+      expect(netAmountFor(10000, false)).toBe(9250);
     });
   });
 
   describe('Plan configuration specifications', () => {
-    it('Free plan allows 1 active product and disables COD and pixels', () => {
+    it('Creation (free) cannot go online: no COD or pixels', () => {
       const free = JUULA_PLANS.FREE;
       expect(free.priceMonthly).toBe(0);
-      expect(free.maxActiveProducts).toBe(1);
+      expect(free.maxActiveProducts).toBe(Infinity);
       expect(free.codEnabled).toBe(false);
       expect(free.pixelsAllowed).toBe(false);
       expect(free.totalOnlineFeePercent).toBe(7.5);
     });
 
-    it('Pro plan allows unlimited products, enables COD and pixels for 6 000 FCFA/mo', () => {
+    it('Subscription puts the store online for 3 900 FCFA/mo; JuulaPay stays 7.5 %', () => {
       const pro = JUULA_PLANS.PRO;
       expect(pro.priceMonthly).toBe(PRO_PLAN_PRICE_FCFA);
-      expect(pro.priceMonthly).toBe(6000);
+      expect(pro.priceMonthly).toBe(3900);
       expect(pro.maxActiveProducts).toBe(Infinity);
       expect(pro.codEnabled).toBe(true);
       expect(pro.pixelsAllowed).toBe(true);
-      expect(pro.juulaCommissionPercent).toBe(0);
-      expect(pro.totalOnlineFeePercent).toBe(5.0);
+      expect(pro.totalOnlineFeePercent).toBe(7.5);
     });
   });
 });

@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@/components/ui/Skeleton';
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Loader2, Radar, Save } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
@@ -90,8 +91,13 @@ export const TrackingPixelsCard: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-[13px] text-[#7A808C]">
-          <Loader2 className="w-4 h-4 animate-spin" /> Chargement…
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          role="status"
+          aria-label="Chargement"
+        >
+          <Skeleton className="h-16" />
+          <Skeleton className="h-16" />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

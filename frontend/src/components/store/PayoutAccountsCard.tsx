@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@/components/ui/Skeleton';
 import React, { useEffect, useState } from 'react';
 import { Check, IdCard, Loader2, Wallet } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
@@ -99,8 +100,13 @@ export const PayoutAccountsCard: React.FC<PayoutAccountsCardProps> = ({ pinRequi
       </div>
 
       {loading ? (
-        <div className="py-8 flex justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-[#235BF7]" />
+        <div className="space-y-3" role="status" aria-label="Chargement">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-11 w-full" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Skeleton className="h-16" />
+            <Skeleton className="h-16" />
+          </div>
         </div>
       ) : (
         <>

@@ -48,7 +48,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
   previousOrders,
   periodRange,
   onCreatePageClick,
-  onOpenPayoutModal,
+  onOpenPayoutModal: _onOpenPayoutModal,
   onOpenKanban,
   activeWidgets = {
     kpiCards: true,
@@ -410,12 +410,6 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={onOpenPayoutModal}
-                        className="px-3 py-1.5 rounded-xl bg-[#EEF3FF] hover:bg-[#DBEAFE] text-[#235BF7] text-[13px] font-bold transition-colors cursor-pointer whitespace-nowrap"
-                      >
-                        Retirer vers Wave / OM
-                      </button>
                       <button className="p-1.5 text-[#94A3B8] hover:text-[#201D1D] rounded-lg">
                         <MoreHorizontal className="w-4 h-4" />
                       </button>

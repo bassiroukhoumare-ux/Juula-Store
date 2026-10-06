@@ -9,7 +9,7 @@ import {
   RedisRateLimitStore,
   type RateLimitStore,
 } from '@/lib/server/rate-limit-store';
-import type { OrderLead, OrderStatus, PaymentStatus, PaymentType } from '@/types/juula';
+import type { OrderItem, OrderLead, OrderStatus, PaymentStatus, PaymentType } from '@/types/juula';
 
 const dateTimeFmt = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
@@ -44,6 +44,8 @@ export function toOrderLead(order: StoreOrder): OrderLead {
     selectedColor: order.selectedColor ?? undefined,
     paymentType: order.paymentType as PaymentType,
     paymentStatus: order.paymentStatus as PaymentStatus,
+    ...(order.paymentMethodName ? { paymentMethodName: order.paymentMethodName } : {}),
+    ...(Array.isArray(order.items) ? { items: order.items as unknown as OrderItem[] } : {}),
   };
 }
 

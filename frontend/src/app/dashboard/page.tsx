@@ -7,7 +7,18 @@ import { Header, HeaderWidgetsState } from '@/components/dashboard/Header';
 import { CockpitView } from '@/components/dashboard/CockpitView';
 import { KanbanView } from '@/components/dashboard/KanbanView';
 import { WalletView } from '@/components/dashboard/WalletView';
+import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import { ProductsListView } from '@/components/dashboard/ProductsListView';
+import { BoutiqueView } from '@/components/dashboard/BoutiqueView';
+import type { SettingsSection } from '@/components/dashboard/SettingsView';
+import { NotificationsView } from '@/components/dashboard/NotificationsView';
+import type { MerchantNotification } from '@/lib/store/notification-types';
+import { PublishPlanModal } from '@/components/dashboard/PublishPlanModal';
+import {
+  savePendingPublish,
+  takePendingPublish,
+  type PendingPublish,
+} from '@/lib/store/pending-publish';
 import { WizardEditor } from '@/components/dashboard/WizardEditor';
 import { ImmersiveShowcase } from '@/components/showcase/ImmersiveShowcase';
 import { RechargeModal } from '@/components/dashboard/RechargeModal';
@@ -35,6 +46,7 @@ import {
   ordersInPreviousPeriod,
   periodRange,
   rangeLabel,
+  type CustomDates,
   type PeriodId,
 } from '@/lib/store/period';
 import {
@@ -46,7 +58,7 @@ import {
   OrderLead,
   WalletState,
 } from '@/types/juula';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 const SAVE_DEBOUNCE_MS = 800;
 const ORDERS_REFRESH_MS = 60_000;
@@ -91,7 +103,12 @@ export default function JuulaStoreApp() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
 
-  const [activeTab, setActiveTab] = useState<DashboardTab>('cockpit');
+  const [activeTab, setActiveTabRaw] = useState<DashboardTab>('cockpit');
+  // « Pages de vente » and « Produits » are one page now (Pages produits).
+  const setActiveTab = useCallback(
+    (tab: DashboardTab) => setActiveTabRaw(tab === 'wizard' ? 'products' : tab),
+    [],
+  );
   const [viewMode, setViewMode] = useState<'dashboard' | 'vitrine'>('dashboard');
   const [orders, setOrdersState] = useState<OrderLead[]>([]);
   const [kpis, setKpis] = useState<KpiMetrics>(initialKpis);
@@ -192,6 +209,10 @@ export default function JuulaStoreApp() {
           const params = new URLSearchParams(window.location.search);
           const subId = params.get('sub_id');
           const subStatus = params.get('sub_status');
+          if (subStatus === 'cancelled' && takePendingPublish()) {
+            toast('Paiement annulé : la publication n’a pas été faite.', 'error');
+            window.history.replaceState({}, '', '/dashboard');
+          }
           if (subStatus === 'success' && subId) {
             try {
               const verified = await api<{ status: string; plan: 'FREE' | 'PRO' }>(
@@ -202,7 +223,9 @@ export default function JuulaStoreApp() {
                 },
               );
               if (verified.status === 'active') {
-                toast('Félicitations ! Votre Plan Juula Pro est désormais actif.', 'success');
+                toast('Votre abonnement est actif : vos pages peuvent être en ligne.', 'success');
+                const intent = takePendingPublish();
+                if (intent) setPendingPublish(intent);
               }
             } catch {
               // Webhook or background verify handles it
@@ -285,7 +308,15 @@ export default function JuulaStoreApp() {
   // Filter & Dashboard Widget Customization States
   // Period filter: drives KPIs, revenue chart and analytics (not the Kanban).
   const [periodId, setPeriodId] = useState<PeriodId>('30d');
-  const range = useMemo(() => periodRange(periodId), [periodId]);
+  const [customDates, setCustomDates] = useState<CustomDates | null>(null);
+  const range = useMemo(
+    () => periodRange(periodId, new Date(), customDates),
+    [periodId, customDates],
+  );
+  const selectPeriod = useCallback((id: PeriodId, custom?: CustomDates) => {
+    setPeriodId(id);
+    if (custom) setCustomDates(custom);
+  }, []);
   const periodOrders = useMemo(() => ordersInPeriod(orders, range), [orders, range]);
   const previousOrders = useMemo(() => ordersInPreviousPeriod(orders, range), [orders, range]);
   const periodKpis = useMemo(() => kpisFromOrders(periodOrders, kpis), [periodOrders, kpis]);
@@ -294,6 +325,22 @@ export default function JuulaStoreApp() {
   // Pages de vente: product list first; the editor opens on « Modifier ».
   const [isEditingProduct, setIsEditingProduct] = useState(false);
   const [createSignal, setCreateSignal] = useState(0);
+  const [settingsSection, setSettingsSection] = useState<SettingsSection | undefined>(undefined);
+  useEffect(() => {
+    if (activeTab !== 'settings') setSettingsSection(undefined);
+  }, [activeTab]);
+  // Changing tab closes the editor, unless the change is « open this product ».
+  const keepEditorRef = useRef(false);
+  useEffect(() => {
+    if (keepEditorRef.current) keepEditorRef.current = false;
+    else setIsEditingProduct(false);
+  }, [activeTab]);
+  const openProductEditor = (id: string) => {
+    handleSelectPage(id);
+    keepEditorRef.current = activeTab !== 'products';
+    setActiveTab('products');
+    setIsEditingProduct(true);
+  };
   // Sales-page preview shows the store's own logo and name, like the public page.
   const previewConfig = useMemo(
     () => ({
@@ -339,7 +386,7 @@ export default function JuulaStoreApp() {
     }
   };
 
-  const handleCreateNewPage = async (internalName: string): Promise<boolean> => {
+  const handleCreateNewPage = async (internalName: string): Promise<FunnelPageItem | null> => {
     try {
       const { product } = await api<{ product: FunnelPageItem }>('/api/products', {
         method: 'POST',
@@ -349,10 +396,10 @@ export default function JuulaStoreApp() {
       setActivePageId(product.id);
       setFunnelConfig(product.config);
       toast('Produit créé — son lien est prêt à être partagé une fois publié.', 'success');
-      return true;
+      return product;
     } catch (err) {
       toast(errorMessage(err, 'La création du produit a échoué.'), 'error');
-      return false;
+      return null;
     }
   };
 
@@ -375,6 +422,58 @@ export default function JuulaStoreApp() {
     persistConfig(updatedConfig, true);
     if (newStatus === 'published') toast('Page publiée : votre lien est en ligne !', 'success');
   };
+
+  // Publishing on the Free plan first shows the plan chooser (Free / Pro).
+  const isPro = storeProfile.plan === 'PRO';
+  const [publishPrompt, setPublishPrompt] = useState<{
+    subject: string;
+    publish: () => void;
+    intent: PendingPublish;
+  } | null>(null);
+  const requestPublish = (subject: string, publish: () => void, intent: PendingPublish) => {
+    if (isPro) publish();
+    else setPublishPrompt({ subject, publish, intent });
+  };
+  const setPageStatus = (pageId: string, status: FunnelPageStatus) => {
+    const page = funnelPages.find((p) => p.id === pageId);
+    if (status === 'published' && page && page.status !== 'published') {
+      requestPublish('cette page produit', () => handleTogglePageStatus(pageId, status), {
+        kind: 'product',
+        id: pageId,
+      });
+    } else {
+      handleTogglePageStatus(pageId, status);
+    }
+  };
+
+  // Boutique: product-level shop fields (category, featured, visible).
+  const handleUpdateProduct = (pageId: string, patch: Partial<FunnelPageConfig>) => {
+    const page = funnelPages.find((p) => p.id === pageId);
+    if (!page) return;
+    const base = pageId === activePageId ? funnelConfig : page.config;
+    const updated: FunnelPageConfig = { ...base, ...patch };
+    setFunnelPages((prev) => prev.map((p) => (p.id === pageId ? { ...p, config: updated } : p)));
+    if (pageId === activePageId) setFunnelConfig(updated);
+    persistConfig(updated, true);
+  };
+
+  // Pro paid → run the publication the merchant asked for before paying.
+  const [pendingPublish, setPendingPublish] = useState<PendingPublish | null>(null);
+  useEffect(() => {
+    if (!pendingPublish || session !== 'ready') return;
+    setPendingPublish(null);
+    if (pendingPublish.kind === 'product') {
+      if (funnelPages.some((p) => p.id === pendingPublish.id)) {
+        handleTogglePageStatus(pendingPublish.id, 'published');
+      }
+    } else {
+      api('/api/store/storefront', { method: 'PATCH', body: { published: true } })
+        .then(() => toast('Votre boutique est en ligne !', 'success'))
+        .catch((err) =>
+          toast(errorMessage(err, 'La publication de la boutique a échoué.'), 'error'),
+        );
+    }
+  }, [pendingPublish, session]);
 
   const handleDeletePage = (pageId: string) => {
     const previous = funnelPages;
@@ -465,6 +564,56 @@ export default function JuulaStoreApp() {
     }
   };
 
+  // Notifications: real feed from the server (orders + withdrawals), with
+  // read / deleted state stored server-side.
+  const [notificationFeed, setNotificationFeed] = useState<{
+    items: MerchantNotification[];
+    unread: number;
+  } | null>(null);
+  const loadNotifications = useCallback(() => {
+    api<{ items: MerchantNotification[]; unread: number }>('/api/store/notifications')
+      .then(setNotificationFeed)
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    if (session !== 'ready') return;
+    loadNotifications();
+    const timer = setInterval(loadNotifications, 60_000);
+    return () => clearInterval(timer);
+  }, [session, loadNotifications, orders.length]);
+  const handleNotificationAction = async (
+    keys: string[] | 'all',
+    action: 'read' | 'unread' | 'delete',
+  ) => {
+    try {
+      const feed = await api<{ items: MerchantNotification[]; unread: number }>(
+        '/api/store/notifications',
+        { method: 'PATCH', body: keys === 'all' ? { all: true, action } : { keys, action } },
+      );
+      setNotificationFeed(feed);
+    } catch (err) {
+      toast(errorMessage(err, 'L’action a échoué. Réessayez.'), 'error');
+    }
+  };
+  const openNotification = (n: MerchantNotification) => {
+    if (!n.read) void handleNotificationAction([n.key], 'read');
+    setIsPayoutPageOpen(false);
+    setActiveTab(n.target.tab);
+    if (n.target.order) setFocusOrderId(n.target.order);
+  };
+
+  const handleConfirmDirectPayment = (reference: string) => {
+    api<{ order: OrderLead }>(`/api/store/orders/${encodeURIComponent(reference)}`, {
+      method: 'PATCH',
+      body: { paymentReceived: true },
+    })
+      .then(({ order }) => {
+        setOrders(orders.map((o) => (o.id === order.id ? order : o)));
+        toast('Paiement confirmé.', 'success');
+      })
+      .catch((err) => toast(errorMessage(err, 'La confirmation a échoué.'), 'error'));
+  };
+
   const handleLogout = async () => {
     try {
       await api('/api/auth/logout', { method: 'POST' });
@@ -500,17 +649,20 @@ export default function JuulaStoreApp() {
     return <OnboardingScreen email={userEmail} initial={storeProfile} onDone={handleOnboarded} />;
   }
 
+  if (session === 'loading') {
+    return (
+      <div className={`${displayFont.className} min-h-screen bg-[#EDEFF3]`}>
+        <DashboardSkeleton />
+      </div>
+    );
+  }
+
   if (session !== 'ready') {
     return (
       <div
         className={`${displayFont.className} min-h-screen bg-[#EDEFF3] flex items-center justify-center p-4`}
       >
-        {session === 'loading' ? (
-          <div className="flex items-center gap-3 text-sm font-bold text-[#7A808C]">
-            <Loader2 className="w-5 h-5 animate-spin text-[#235BF7]" />
-            Chargement de votre boutique…
-          </div>
-        ) : (
+        {
           <div className="max-w-sm text-center space-y-3">
             <p className="text-sm font-semibold text-[#201D1D]">{loadError}</p>
             <button
@@ -520,7 +672,7 @@ export default function JuulaStoreApp() {
               Réessayer
             </button>
           </div>
-        )}
+        }
       </div>
     );
   }
@@ -556,17 +708,10 @@ export default function JuulaStoreApp() {
           <Sidebar
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            leadCreditsRemaining={kpis.leadCredits.remaining}
-            leadCreditsTotal={kpis.leadCredits.total}
-            onOpenRecharge={() => setIsRechargeOpen(true)}
             onOpenStorefrontPreview={() => setViewMode('vitrine')}
             newOrdersCount={newOrdersCount}
-            availableBalance={wallet.availableBalance}
-            currency={wallet.currency}
             userEmail={userEmail}
             onLogout={handleLogout}
-            plan={storeProfile.plan || 'FREE'}
-            planExpiresAt={storeProfile.planExpiresAt}
           />
 
           {/* Main Content Area */}
@@ -587,21 +732,16 @@ export default function JuulaStoreApp() {
               onCreatePageClick={() => {
                 setIsPayoutPageOpen(false);
                 setIsEditingProduct(false);
-                setActiveTab('wizard');
+                setActiveTab('products');
                 setCreateSignal((n) => n + 1);
               }}
               periodId={periodId}
-              onSelectPeriod={setPeriodId}
+              customDates={customDates}
+              onSelectPeriod={selectPeriod}
               dateRangeLabel={rangeLabel(range)}
-              orders={orders}
-              payouts={wallet.payoutHistory}
+              unreadNotifications={notificationFeed?.unread ?? 0}
               avatarUrl={storeProfile.logoUrl}
               storeName={storeProfile.name ?? funnelConfig.storeName}
-              onOpenOrder={(reference) => {
-                setIsPayoutPageOpen(false);
-                setActiveTab('kanban');
-                setFocusOrderId(reference);
-              }}
               onSearch={(q) => {
                 setOrderSearch(q);
                 setIsPayoutPageOpen(false);
@@ -634,7 +774,7 @@ export default function JuulaStoreApp() {
                       recentOrders={periodOrders}
                       previousOrders={previousOrders}
                       periodRange={range}
-                      onCreatePageClick={() => setActiveTab('wizard')}
+                      onCreatePageClick={() => setActiveTab('products')}
                       onOpenRecharge={() => setIsRechargeOpen(true)}
                       onOpenPayoutModal={() => setIsPayoutPageOpen(true)}
                       onOpenStorefrontPreview={() => setViewMode('vitrine')}
@@ -648,6 +788,7 @@ export default function JuulaStoreApp() {
                     <KanbanView
                       orders={orders}
                       onOrdersChange={handleOrdersChange}
+                      onConfirmDirectPayment={handleConfirmDirectPayment}
                       onOpenStorefrontPreview={() => setViewMode('vitrine')}
                       focusOrderId={focusOrderId}
                       searchQuery={orderSearch}
@@ -662,7 +803,29 @@ export default function JuulaStoreApp() {
                     />
                   )}
 
-                  {activeTab === 'wizard' &&
+                  {activeTab === 'notifications' && (
+                    <NotificationsView
+                      items={notificationFeed?.items ?? null}
+                      unread={notificationFeed?.unread ?? 0}
+                      onAction={handleNotificationAction}
+                      onOpen={openNotification}
+                    />
+                  )}
+
+                  {activeTab === 'storefront' && (
+                    <BoutiqueView
+                      onCreateProduct={handleCreateNewPage}
+                      onEditProduct={openProductEditor}
+                      storeName={storeProfile.name ?? undefined}
+                      pages={funnelPages}
+                      onUpdateProduct={handleUpdateProduct}
+                      onRequestPublish={(subject, publish) =>
+                        requestPublish(subject, publish, { kind: 'storefront' })
+                      }
+                    />
+                  )}
+
+                  {(activeTab === 'wizard' || activeTab === 'products') &&
                     (isEditingProduct && activePageId ? (
                       <>
                         <button
@@ -671,14 +834,14 @@ export default function JuulaStoreApp() {
                           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E3E7EE] text-[14px] font-semibold text-[#201D1D] hover:bg-[#F6F7F9] transition-colors cursor-pointer"
                         >
                           <ArrowLeft className="w-4 h-4 text-[#235BF7]" />
-                          Mes produits
+                          Mes pages produits
                         </button>
                         <ShareLinkBar
                           slug={funnelConfig.slug}
                           subdomain={storeProfile.subdomain}
                           status={funnelConfig.status ?? 'draft'}
                           productTitle={funnelConfig.productTitle}
-                          onPublish={() => handleTogglePageStatus(funnelConfig.id, 'published')}
+                          onPublish={() => setPageStatus(funnelConfig.id, 'published')}
                         />
                         <WizardEditor
                           initialConfig={funnelConfig}
@@ -688,12 +851,17 @@ export default function JuulaStoreApp() {
                           activePageId={activePageId}
                           onSelectPage={handleSelectPage}
                           onCreatePage={handleCreateNewPage}
-                          onUpdatePageStatus={handleTogglePageStatus}
+                          onUpdatePageStatus={setPageStatus}
                           onDeletePage={handleDeletePage}
                         />
                       </>
                     ) : (
                       <ProductsListView
+                        key={activeTab}
+                        mode="catalog"
+                        onSetShopVisibility={(id, visible) =>
+                          handleUpdateProduct(id, { showInStore: visible })
+                        }
                         pages={funnelPages}
                         subdomain={storeProfile.subdomain}
                         createSignal={createSignal}
@@ -708,7 +876,7 @@ export default function JuulaStoreApp() {
                           handleSelectPage(id);
                           setViewMode('vitrine');
                         }}
-                        onSetStatus={handleTogglePageStatus}
+                        onSetStatus={setPageStatus}
                         onDelete={handleDeletePage}
                       />
                     ))}
@@ -733,7 +901,8 @@ export default function JuulaStoreApp() {
                       onUpdateSecurityPin={(newPin) => void handleSetWithdrawalPin(newPin)}
                       storeProfile={storeProfile}
                       onStoreProfileSaved={handleStoreProfileSaved}
-                      onLogout={handleLogout}
+                      onOpenUpgrade={() => setIsRechargeOpen(true)}
+                      initialSection={settingsSection}
                     />
                   )}
                 </>
@@ -747,12 +916,25 @@ export default function JuulaStoreApp() {
                 setIsPayoutPageOpen(false);
                 setActiveTab(tab);
               }}
-              onOpenStorefrontPreview={() => setViewMode('vitrine')}
               newOrdersCount={newOrdersCount}
+              onLogout={handleLogout}
             />
           </div>
         </div>
       )}
+
+      <PublishPlanModal
+        open={publishPrompt !== null}
+        subject={publishPrompt?.subject ?? ''}
+        onClose={() => setPublishPrompt(null)}
+        onChoosePro={() => {
+          // Publish only once the Pro payment is confirmed (back from the
+          // hosted checkout, see `pendingPublish`).
+          if (publishPrompt) savePendingPublish(publishPrompt.intent);
+          setPublishPrompt(null);
+          setIsRechargeOpen(true);
+        }}
+      />
 
       {/* Recharge / Plan Upgrade Modal */}
       <RechargeModal

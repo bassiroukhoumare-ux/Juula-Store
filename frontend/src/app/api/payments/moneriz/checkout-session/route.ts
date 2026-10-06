@@ -9,6 +9,7 @@
 export const runtime = 'nodejs';
 
 import 'server-only';
+import { storeOrigin } from '@/lib/store/subdomain';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
@@ -76,9 +77,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const order = await prisma.storeOrder.findUnique({
       where: { id: parsed.data.orderId },
-      include: { product: { select: { slug: true } } },
+      include: {
+        product: { select: { slug: true } },
+        merchant: { select: { store: { select: { subdomain: true } } } },
+      },
     });
-    if (!order || order.paymentType === 'cod') {
+    if (!order || !order.paymentType.startsWith('online_')) {
       return NextResponse.json(
         { error: 'ORDER_NOT_FOUND', message: 'Commande introuvable' },
         { status: 404, headers },
@@ -121,7 +125,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
       const isLive = config.secretKey.startsWith('izp_live_');
       const base = publicBaseUrl(req, isLive);
-      const returnPath = order.product ? `/p/${order.product.slug}` : '/';
+      // Product page order → back to that page; shop cart order → the shop.
+      const shop = order.merchant.store?.subdomain;
+      const returnTo = order.product
+        ? `${base}/p/${order.product.slug}`
+        : shop
+          ? `${storeOrigin(shop)}/`
+          : `${base}/`;
       const session = await createMonerizCheckoutSession({
         amount: order.totalAmount,
         currency: 'XOF',
@@ -132,8 +142,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         country: 'SN',
         integrationMode: parsed.data.integrationMode,
         embedOrigin: req.headers.get('origin') || base,
-        successUrl: `${base}${returnPath}?payment=success&order=${order.id}`,
-        cancelUrl: `${base}${returnPath}?payment=cancelled&order=${order.id}`,
+        successUrl: `${returnTo}?payment=success&order=${order.id}`,
+        cancelUrl: `${returnTo}?payment=cancelled&order=${order.id}`,
         metadata: { orderId: order.id, reference: order.reference, merchantId: order.merchantId },
         // A new key per session attempt; the reuse branch above prevents
         // duplicate open sessions for the same order.

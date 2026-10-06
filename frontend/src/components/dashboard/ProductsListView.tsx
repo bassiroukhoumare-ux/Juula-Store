@@ -1,5 +1,6 @@
 'use client';
 
+import { SkeletonStats } from '@/components/ui/Skeleton';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   BarChart3,
@@ -38,6 +39,12 @@ interface ProductsListViewProps {
   onDelete: (id: string) => void;
   /** Incremented by the dashboard header's « Créer » button: opens the create dialog. */
   createSignal?: number;
+  /**
+   * 'catalog' (onglet Produits): every product, with its shop visibility and
+   * sales page switches. 'pages' (onglet Pages de vente): sales pages.
+   */
+  mode?: 'catalog' | 'pages';
+  onSetShopVisibility?: (id: string, visible: boolean) => void;
 }
 
 type Filter = 'all' | FunnelPageStatus;
@@ -65,6 +72,8 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
   onSetStatus,
   onDelete,
   createSignal = 0,
+  mode = 'pages',
+  onSetShopVisibility,
 }) => {
   const [filter, setFilter] = useState<Filter>('all');
   const [creating, setCreating] = useState(false);
@@ -137,17 +146,24 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
     { id: 'inactive', label: 'Désactivés' },
   ];
 
+  // Tailwind needs literal class names: one column template per mode.
+  const tableCols =
+    mode === 'catalog'
+      ? 'grid-cols-[minmax(0,1fr)_80px_104px_60px_60px_204px]'
+      : 'grid-cols-[minmax(0,1fr)_80px_104px_204px]';
+
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-[#201D1D] tracking-tight">
-            Mes produits
+            {mode === 'catalog' ? 'Mes pages produits' : 'Mes pages de vente'}
           </h2>
           <p className="text-[14px] text-[#7A808C]">
-            {counts.published} publié{counts.published > 1 ? 's' : ''} sur {counts.all} produit
-            {counts.all > 1 ? 's' : ''} · statistiques des 30 derniers jours
+            {mode === 'catalog'
+              ? `${counts.all} produit${counts.all > 1 ? 's' : ''} · chacun a sa page en ligne (à activer) et peut être affiché dans votre boutique · statistiques des 30 derniers jours`
+              : `${counts.published} page${counts.published > 1 ? 's' : ''} active${counts.published > 1 ? 's' : ''} sur ${counts.all} · statistiques des 30 derniers jours`}
           </p>
         </div>
         <button
@@ -217,139 +233,321 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
-          {visible.map((page) => {
-            const cfg = page.config;
-            const image = cfg.mediaItems?.find((m) => m.type === 'image')?.url;
-            const stats = statsById.get(page.id);
-            const meta = STATUS_META[page.status];
-            return (
-              <article
-                key={page.id}
-                className="rounded-[24px] bg-white border border-[#ECEFF4] overflow-hidden flex flex-col"
-              >
-                <div className="flex gap-3.5 p-4">
-                  <button
-                    type="button"
-                    onClick={() => onPreview(page.id)}
-                    className="shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-[#F1F3F6] cursor-pointer"
-                    aria-label={`Voir ${cfg.productTitle || page.internalName}`}
+        // Table or cards depending on the room actually available (not the screen).
+        <div className="@container">
+          {/* Wide enough: one linear table */}
+          <div className="hidden @min-[46rem]:block rounded-[24px] bg-white border border-[#ECEFF4] overflow-hidden">
+            <div
+              className={`grid ${tableCols} items-center gap-3 px-4 h-11 bg-[#F8F9FB] border-b border-[#ECEFF4] text-[12px] font-bold uppercase tracking-wide text-[#7A808C]`}
+            >
+              <span>Produit</span>
+              <span>Statut</span>
+              <span>Ventes · 30 j</span>
+              {mode === 'catalog' && <span className="text-center">Boutique</span>}
+              {mode === 'catalog' && <span className="text-center">En ligne</span>}
+              <span className="text-right">Actions</span>
+            </div>
+            <ul className="divide-y divide-[#F1F3F6]">
+              {visible.map((page) => {
+                const cfg = page.config;
+                const image = cfg.mediaItems?.find((m) => m.type === 'image')?.url;
+                const stats = statsById.get(page.id);
+                const meta = STATUS_META[page.status];
+                const title = cfg.productTitle || page.internalName;
+                return (
+                  <li
+                    key={page.id}
+                    className={`grid ${tableCols} items-center gap-3 px-4 py-3 hover:bg-[#FAFBFC] transition-colors`}
                   >
-                    {image ? (
-                      <img src={image} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="w-full h-full flex items-center justify-center text-[#9AA0AB]">
-                        <Package className="w-6 h-6" />
-                      </span>
-                    )}
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-extrabold text-[15px] text-[#201D1D] leading-snug line-clamp-2">
-                        {cfg.productTitle || page.internalName}
-                      </h3>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => onPreview(page.id)}
+                        className="shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-[#F1F3F6] cursor-pointer"
+                        aria-label={`Voir ${title}`}
+                      >
+                        {image ? (
+                          <img src={image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="w-full h-full flex items-center justify-center text-[#9AA0AB]">
+                            <Package className="w-5 h-5" />
+                          </span>
+                        )}
+                      </button>
+                      <div className="min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(page.id)}
+                          className="block max-w-full truncate text-left font-bold text-[15px] text-[#201D1D] hover:text-[#235BF7] cursor-pointer"
+                        >
+                          {title}
+                        </button>
+                        <p className="text-[13px] text-[#7A808C] truncate">
+                          <span className="font-bold text-[#235BF7]">{formatFCFA(cfg.price)}</span>
+                          {' · '}modifié {page.updatedAt}
+                        </p>
+                      </div>
+                    </div>
+                    <span>
                       <span
-                        className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-md border ${meta.cls}`}
+                        className={`text-xs font-bold px-2 py-0.5 rounded-md border ${meta.cls}`}
                       >
                         {meta.label}
                       </span>
-                    </div>
-                    <p className="mt-0.5 text-[13px] text-[#7A808C] truncate">
-                      {page.internalName} · modifié {page.updatedAt}
-                    </p>
-                    <p className="mt-1 text-[15px] font-extrabold text-[#235BF7]">
-                      {formatFCFA(cfg.price)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* 30-day numbers */}
-                <div className="grid grid-cols-3 border-y border-[#F1F3F6] text-center">
-                  {[
-                    { label: 'Vues', value: stats?.views ?? 0 },
-                    { label: 'Commandes', value: stats?.orders ?? 0 },
-                    { label: 'Conversion', value: `${stats?.conversionRate ?? 0}%` },
-                  ].map((s) => (
-                    <div key={s.label} className="py-2.5">
-                      <p className="text-[15px] font-extrabold text-[#201D1D] tabular-nums">
-                        {s.value}
-                      </p>
-                      <p className="text-xs text-[#9AA0AB]">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Actions */}
-                <div className="p-3 flex flex-wrap items-center gap-2 mt-auto">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(page.id)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[13px] font-bold cursor-pointer"
-                  >
-                    <Pencil className="w-3.5 h-3.5" /> Modifier
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onPreview(page.id)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#E3E7EE] text-[#201D1D] text-[13px] font-bold hover:bg-[#F6F7F9] cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-[#235BF7]" /> Voir
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStatsFor(page)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#E3E7EE] text-[#201D1D] text-[13px] font-bold hover:bg-[#F6F7F9] cursor-pointer"
-                  >
-                    <BarChart3 className="w-3.5 h-3.5 text-[#235BF7]" /> Statistiques
-                  </button>
-
-                  <div className="ml-auto flex items-center gap-1">
-                    {page.status === 'published' && (
-                      <IconAction
-                        label={copiedId === page.id ? 'Lien copié' : 'Copier le lien'}
-                        onClick={() => void copyLink(page)}
-                      >
-                        {copiedId === page.id ? (
-                          <Check className="w-4 h-4 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </IconAction>
+                    </span>
+                    <span className="min-w-0 tabular-nums">
+                      <span className="block text-[14px] font-bold text-[#201D1D]">
+                        {stats?.orders ?? 0} commande{(stats?.orders ?? 0) > 1 ? 's' : ''}
+                      </span>
+                      <span className="block text-[12px] text-[#7A808C]">
+                        {stats?.views ?? 0} vues · {stats?.conversionRate ?? 0}%
+                      </span>
+                    </span>
+                    {mode === 'catalog' && (
+                      <span className="flex justify-center">
+                        <MiniSwitch
+                          label={`Visible dans la boutique : ${title}`}
+                          on={page.config.showInStore === true}
+                          disabled={page.status === 'inactive' || !onSetShopVisibility}
+                          onClick={() =>
+                            onSetShopVisibility?.(page.id, page.config.showInStore !== true)
+                          }
+                        />
+                      </span>
                     )}
-                    {page.status === 'draft' && (
-                      <IconAction label="Publier" onClick={() => onSetStatus(page.id, 'published')}>
-                        <Rocket className="w-4 h-4 text-emerald-600" />
-                      </IconAction>
+                    {mode === 'catalog' && (
+                      <span className="flex justify-center">
+                        <MiniSwitch
+                          label={`Page en ligne : ${title}`}
+                          on={page.status === 'published'}
+                          onClick={() =>
+                            onSetStatus(
+                              page.id,
+                              page.status === 'published' ? 'draft' : 'published',
+                            )
+                          }
+                        />
+                      </span>
                     )}
-                    {page.status === 'published' && (
-                      <>
-                        <IconAction label="Dépublier" onClick={() => onSetStatus(page.id, 'draft')}>
-                          <EyeOff className="w-4 h-4" />
-                        </IconAction>
+                    <div className="flex items-center justify-end gap-0.5">
+                      <IconAction compact label="Modifier" onClick={() => onEdit(page.id)}>
+                        <Pencil className="w-4 h-4 text-[#235BF7]" />
+                      </IconAction>
+                      <IconAction compact label="Voir" onClick={() => onPreview(page.id)}>
+                        <Eye className="w-4 h-4" />
+                      </IconAction>
+                      <IconAction compact label="Statistiques" onClick={() => setStatsFor(page)}>
+                        <BarChart3 className="w-4 h-4" />
+                      </IconAction>
+                      {page.status === 'published' && (
                         <IconAction
+                          compact
+                          label={copiedId === page.id ? 'Lien copié' : 'Copier le lien'}
+                          onClick={() => void copyLink(page)}
+                        >
+                          {copiedId === page.id ? (
+                            <Check className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </IconAction>
+                      )}
+                      {page.status === 'inactive' ? (
+                        <IconAction
+                          compact
+                          label="Réactiver"
+                          onClick={() => onSetStatus(page.id, 'published')}
+                        >
+                          <Power className="w-4 h-4 text-emerald-600" />
+                        </IconAction>
+                      ) : (
+                        <IconAction
+                          compact
                           label="Désactiver"
                           onClick={() => onSetStatus(page.id, 'inactive')}
                         >
                           <Power className="w-4 h-4 text-rose-600" />
                         </IconAction>
-                      </>
-                    )}
-                    {page.status === 'inactive' && (
-                      <IconAction
-                        label="Réactiver"
-                        onClick={() => onSetStatus(page.id, 'published')}
-                      >
-                        <Power className="w-4 h-4 text-emerald-600" />
+                      )}
+                      <IconAction compact label="Supprimer" onClick={() => setToDelete(page)}>
+                        <Trash2 className="w-4 h-4 text-rose-600" />
                       </IconAction>
-                    )}
-                    <IconAction label="Supprimer" onClick={() => setToDelete(page)}>
-                      <Trash2 className="w-4 h-4 text-rose-600" />
-                    </IconAction>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* Phones and tablets: cards */}
+          <div className="grid grid-cols-1 @min-[36rem]:grid-cols-2 gap-4 @min-[46rem]:hidden">
+            {visible.map((page) => {
+              const cfg = page.config;
+              const image = cfg.mediaItems?.find((m) => m.type === 'image')?.url;
+              const stats = statsById.get(page.id);
+              const meta = STATUS_META[page.status];
+              return (
+                <article
+                  key={page.id}
+                  className="rounded-[24px] bg-white border border-[#ECEFF4] overflow-hidden flex flex-col"
+                >
+                  <div className="flex gap-3.5 p-4">
+                    <button
+                      type="button"
+                      onClick={() => onPreview(page.id)}
+                      className="shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-[#F1F3F6] cursor-pointer"
+                      aria-label={`Voir ${cfg.productTitle || page.internalName}`}
+                    >
+                      {image ? (
+                        <img src={image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="w-full h-full flex items-center justify-center text-[#9AA0AB]">
+                          <Package className="w-6 h-6" />
+                        </span>
+                      )}
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-extrabold text-[15px] text-[#201D1D] leading-snug line-clamp-2">
+                          {cfg.productTitle || page.internalName}
+                        </h3>
+                        <span
+                          className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-md border ${meta.cls}`}
+                        >
+                          {meta.label}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-[13px] text-[#7A808C] truncate">
+                        {page.internalName} · modifié {page.updatedAt}
+                      </p>
+                      <p className="mt-1 text-[15px] font-extrabold text-[#235BF7]">
+                        {formatFCFA(cfg.price)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </article>
-            );
-          })}
+
+                  {/* 30-day numbers */}
+                  <div className="grid grid-cols-3 border-y border-[#F1F3F6] text-center">
+                    {[
+                      { label: 'Vues', value: stats?.views ?? 0 },
+                      { label: 'Commandes', value: stats?.orders ?? 0 },
+                      { label: 'Conversion', value: `${stats?.conversionRate ?? 0}%` },
+                    ].map((s) => (
+                      <div key={s.label} className="py-2.5">
+                        <p className="text-[15px] font-extrabold text-[#201D1D] tabular-nums">
+                          {s.value}
+                        </p>
+                        <p className="text-xs text-[#9AA0AB]">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {mode === 'catalog' && (
+                    <div className="grid grid-cols-2 border-b border-[#F1F3F6]">
+                      <SwitchCell
+                        label="Boutique"
+                        hint={page.config.showInStore === true ? 'Visible' : 'Masqué'}
+                        on={page.config.showInStore === true}
+                        disabled={page.status === 'inactive' || !onSetShopVisibility}
+                        onClick={() =>
+                          onSetShopVisibility?.(page.id, page.config.showInStore !== true)
+                        }
+                      />
+                      <SwitchCell
+                        label="Page en ligne"
+                        hint={
+                          page.status === 'published'
+                            ? 'Active'
+                            : page.status === 'inactive'
+                              ? 'Désactivée'
+                              : 'Inactive'
+                        }
+                        on={page.status === 'published'}
+                        onClick={() =>
+                          onSetStatus(page.id, page.status === 'published' ? 'draft' : 'published')
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="p-3 flex flex-wrap items-center gap-2 mt-auto">
+                    <button
+                      type="button"
+                      onClick={() => onEdit(page.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[13px] font-bold cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5" /> Modifier
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onPreview(page.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#E3E7EE] text-[#201D1D] text-[13px] font-bold hover:bg-[#F6F7F9] cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-[#235BF7]" /> Voir
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStatsFor(page)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#E3E7EE] text-[#201D1D] text-[13px] font-bold hover:bg-[#F6F7F9] cursor-pointer"
+                    >
+                      <BarChart3 className="w-3.5 h-3.5 text-[#235BF7]" /> Statistiques
+                    </button>
+
+                    <div className="ml-auto flex items-center gap-1">
+                      {page.status === 'published' && (
+                        <IconAction
+                          label={copiedId === page.id ? 'Lien copié' : 'Copier le lien'}
+                          onClick={() => void copyLink(page)}
+                        >
+                          {copiedId === page.id ? (
+                            <Check className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </IconAction>
+                      )}
+                      {page.status === 'draft' && (
+                        <IconAction
+                          label="Publier"
+                          onClick={() => onSetStatus(page.id, 'published')}
+                        >
+                          <Rocket className="w-4 h-4 text-emerald-600" />
+                        </IconAction>
+                      )}
+                      {page.status === 'published' && (
+                        <>
+                          <IconAction
+                            label="Dépublier"
+                            onClick={() => onSetStatus(page.id, 'draft')}
+                          >
+                            <EyeOff className="w-4 h-4" />
+                          </IconAction>
+                          <IconAction
+                            label="Désactiver"
+                            onClick={() => onSetStatus(page.id, 'inactive')}
+                          >
+                            <Power className="w-4 h-4 text-rose-600" />
+                          </IconAction>
+                        </>
+                      )}
+                      {page.status === 'inactive' && (
+                        <IconAction
+                          label="Réactiver"
+                          onClick={() => onSetStatus(page.id, 'published')}
+                        >
+                          <Power className="w-4 h-4 text-emerald-600" />
+                        </IconAction>
+                      )}
+                      <IconAction label="Supprimer" onClick={() => setToDelete(page)}>
+                        <Trash2 className="w-4 h-4 text-rose-600" />
+                      </IconAction>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -417,17 +615,70 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
   );
 };
 
-const IconAction: React.FC<{ label: string; onClick: () => void; children: React.ReactNode }> = ({
-  label,
-  onClick,
-  children,
-}) => (
+const SwitchCell: React.FC<{
+  label: string;
+  hint: string;
+  on: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}> = ({ label, hint, on, disabled = false, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    aria-pressed={on}
+    className="flex items-center justify-between gap-2 px-4 py-3 text-left first:border-r border-[#F1F3F6] hover:bg-[#F6F7F9] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+  >
+    <span className="min-w-0">
+      <span className="block text-[13px] font-bold text-[#201D1D]">{label}</span>
+      <span className="block text-[12px] text-[#7A808C]">{hint}</span>
+    </span>
+    <span
+      className={`shrink-0 w-10 h-6 rounded-full p-0.5 transition-colors ${on ? 'bg-[#235BF7]' : 'bg-[#D5DAE2]'}`}
+    >
+      <span
+        className={`block w-5 h-5 rounded-full bg-white transition-transform ${on ? 'translate-x-4' : ''}`}
+      />
+    </span>
+  </button>
+);
+
+const MiniSwitch: React.FC<{
+  label: string;
+  on: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}> = ({ label, on, disabled = false, onClick }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={on}
+    aria-label={label}
+    title={label}
+    disabled={disabled}
+    onClick={onClick}
+    className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+      on ? 'bg-[#235BF7]' : 'bg-[#D5DAE2]'
+    }`}
+  >
+    <span
+      className={`block w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${on ? 'translate-x-5' : ''}`}
+    />
+  </button>
+);
+
+const IconAction: React.FC<{
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+  compact?: boolean;
+}> = ({ label, onClick, children, compact = false }) => (
   <button
     type="button"
     onClick={onClick}
     title={label}
     aria-label={label}
-    className="w-9 h-9 rounded-xl flex items-center justify-center text-[#3F4654] hover:bg-[#F1F3F6] transition-colors cursor-pointer"
+    className={`${compact ? 'w-8 h-8' : 'w-9 h-9'} rounded-xl flex items-center justify-center text-[#3F4654] hover:bg-[#F1F3F6] transition-colors cursor-pointer`}
   >
     {children}
   </button>
@@ -511,9 +762,7 @@ const ProductStatsModal: React.FC<{ page: FunnelPageItem; onClose: () => void }>
       </div>
 
       {loading && !data ? (
-        <div className="py-16 flex justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-[#235BF7]" />
-        </div>
+        <SkeletonStats />
       ) : error || !data || !t ? (
         <p className="py-10 text-center text-[14px] text-[#7A808C]">
           Impossible de charger les statistiques. Réessayez.

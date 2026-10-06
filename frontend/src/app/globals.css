@@ -33,6 +33,36 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
+/* iPhone / iPad: Safari zooms into any field whose text is under 16px and
+   the page then looks « deformed ». Fields are 16px on touch screens, the
+   text size is never auto-inflated, and nothing can push the page sideways
+   (clip, unlike hidden, keeps sticky headers working). */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html,
+body {
+  overflow-x: clip;
+}
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+/* Fields never force their container wider than the screen. */
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* Custom subtle scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

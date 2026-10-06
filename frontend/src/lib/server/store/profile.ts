@@ -85,7 +85,7 @@ export type ProfileUpdateResult =
   | { ok: false; status: number; error: string; message: string };
 
 /** Logos must be images hosted on our Cloudinary account. */
-function isAllowedLogoUrl(url: string): boolean {
+export function isAllowedLogoUrl(url: string): boolean {
   try {
     const u = new URL(url);
     const cloud = process.env.CLOUDINARY_CLOUD_NAME?.trim();

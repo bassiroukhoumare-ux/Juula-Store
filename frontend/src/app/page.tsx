@@ -54,11 +54,11 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: 'Combien ça coûte ?',
-    a: `Le Plan Gratuit ne coûte rien : vous ne payez des frais que sur vos ventes en ligne. Le Plan Juula Pro est à ${formatNumber(JUULA_PLANS.PRO.priceMonthly)} FCFA par mois, sans commission Juula.`,
+    a: `Créer votre boutique est gratuit. Pour la mettre en ligne, l’abonnement est à ${formatNumber(JUULA_PLANS.PRO.priceMonthly)} FCFA par mois. Si vous activez le paiement en ligne JuulaPay, 7,5 % sont prélevés sur chaque paiement en ligne ; le paiement à la livraison et WhatsApp sont sans commission.`,
   },
   {
     q: 'Comment mes clients paient-ils ?',
-    a: 'Par Wave, Orange Money ou carte Visa / Mastercard, en un clic. Avec le Plan Pro, ils peuvent aussi payer en espèces à la livraison.',
+    a: 'À la livraison, en commandant sur WhatsApp, ou par Mobile Money en ligne si vous activez JuulaPay. Vous choisissez ce que vous proposez.',
   },
   {
     q: 'Quand est-ce que je reçois mon argent ?',
@@ -439,7 +439,7 @@ export default function LandingPage() {
                 Simple et <span className="text-[#235BF7]">transparent</span>
               </h2>
               <p className="mt-3 text-center text-[#7A808C] text-base sm:text-lg">
-                Commencez gratuitement. Passez Pro quand vous êtes prêt.
+                Créez gratuitement. Abonnez-vous quand vous êtes prêt à vendre.
               </p>
             </Reveal>
 
@@ -462,7 +462,7 @@ export default function LandingPage() {
                     >
                       {isPro && (
                         <span className="absolute top-6 right-6 text-[11px] font-bold uppercase tracking-wider bg-[#235BF7] text-white px-3 py-1 rounded-full">
-                          Recommandé
+                          Pour vendre
                         </span>
                       )}
                       <p className="text-lg font-bold">{plan.name}</p>
@@ -504,13 +504,17 @@ export default function LandingPage() {
                             : 'bg-white border border-[#E3E7EE] hover:bg-[#FAFBFC]'
                         }`}
                       >
-                        {isPro ? 'Passer à Juula Pro' : 'Commencer gratuitement'}
+                        {isPro ? 'Mettre ma boutique en ligne' : 'Créer ma boutique'}
                       </Link>
                     </div>
                   </Reveal>
                 );
               })}
             </div>
+            <p className="mt-6 text-center text-[15px] text-[#7A808C]">
+              Paiement en ligne Mobile Money (JuulaPay) : optionnel, 7,5 % par paiement en ligne,
+              activable ou désactivable à tout moment.
+            </p>
           </div>
         </section>
 
