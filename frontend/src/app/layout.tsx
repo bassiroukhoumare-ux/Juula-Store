@@ -17,10 +17,36 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+const siteUrl = process.env.APP_URL || 'https://www.juula.store';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'Juula Store — Boutique en ligne, paiement à la livraison & Mobile Money',
   description:
-    'Plateforme e-commerce & funnel builder nouvelle génération pour les marchands africains.',
+    "La plateforme E-commerce pensée pour l'Afrique. Des pages produits conçues pour convertir.",
+  openGraph: {
+    type: 'website',
+    locale: 'fr_FR',
+    url: siteUrl,
+    siteName: 'Juula Store',
+    title: "Juula — La plateforme E-commerce pensée pour l'Afrique",
+    description:
+      'Des pages produits conçues pour convertir. Vendez sur WhatsApp & encaissez par Wave, Orange Money ou à la livraison.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: "Juula — La plateforme E-commerce pensée pour l'Afrique",
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Juula — La plateforme E-commerce pensée pour l'Afrique",
+    description: 'Des pages produits conçues pour convertir.',
+    images: ['/og-image.png'],
+  },
 };
 
 export default function RootLayout({

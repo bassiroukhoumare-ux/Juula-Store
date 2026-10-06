@@ -33,8 +33,6 @@ import {
   VisaWordmark,
   WaveTile,
 } from '@/components/landing/BrandIcons';
-import { JUULA_PLANS } from '@/lib/store/plans';
-import { formatNumber } from '@/lib/orderUtils';
 import { LEGAL } from '@/lib/legal';
 
 export const metadata: Metadata = {
@@ -46,27 +44,48 @@ export const metadata: Metadata = {
     type: 'website',
     title: 'Juula — Votre boutique pro en un seul lien',
     description:
-      'Page de vente pro, paiement Wave, Orange Money, carte ou à la livraison, pixels Facebook & TikTok.',
-    images: [{ url: '/email/juula-logo.png' }],
+      "La plateforme E-commerce pensée pour l'Afrique. Des pages produits conçues pour convertir.",
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: "Juula — La plateforme E-commerce pensée pour l'Afrique",
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Juula — La plateforme E-commerce pensée pour l'Afrique",
+    description: 'Des pages produits conçues pour convertir.',
+    images: ['/og-image.png'],
   },
 };
 
 const FAQ = [
   {
-    q: 'Combien ça coûte ?',
-    a: `Créer votre boutique est gratuit. Pour la mettre en ligne, l’abonnement est à ${formatNumber(JUULA_PLANS.PRO.priceMonthly)} FCFA par mois. Si vous activez le paiement en ligne JuulaPay, 7,5 % sont prélevés sur chaque paiement en ligne ; le paiement à la livraison et WhatsApp sont sans commission.`,
+    q: 'Ai-je besoin de compétences techniques ou d’un développeur pour créer ma boutique ?',
+    a: 'Absolument pas. Juula est conçue pour être ultra-simple et rapide : connectez-vous avec votre compte Google, personnalisez vos couleurs, ajoutez vos produits et votre boutique est prête en moins de 3 minutes sans écrire une seule ligne de code.',
   },
   {
-    q: 'Comment mes clients paient-ils ?',
-    a: 'À la livraison, en commandant sur WhatsApp, ou par Mobile Money en ligne si vous activez JuulaPay. Vous choisissez ce que vous proposez.',
+    q: 'Puis-je avoir une page de produit dédiée et professionnelle pour mes campagnes ?',
+    a: 'Oui ! Chaque produit dispose d’une page de vente dédiée (landing page produit haute-conversion) spécialement conçue pour vos campagnes publicitaires TikTok, Facebook et Instagram, avec visuels haute définition, boutons d’action percutants et commande fluide en un clic.',
   },
   {
-    q: 'Quand est-ce que je reçois mon argent ?',
-    a: 'Les paiements en ligne deviennent retirables 72 h après chaque paiement, directement vers votre compte Wave ou Orange Money.',
+    q: 'Est-il possible de connecter mes pixels Facebook, TikTok et Google Analytics ?',
+    a: 'Oui, très facilement. Vous pouvez intégrer vos pixels Meta (Facebook & Instagram), TikTok Pixel et Google Analytics en renseignant simplement vos identifiants. Les événements clés (vues de page, ajouts au panier, achats) sont trackés automatiquement pour maximiser la rentabilité de vos publicités.',
   },
   {
-    q: 'Ai-je besoin d’un site ou d’un développeur ?',
-    a: 'Non. Connectez-vous avec Google, créez votre page en 2 minutes et partagez le lien.',
+    q: 'Comment puis-je encaisser mes ventes en ligne ?',
+    a: 'Vous pouvez encaisser directement vos clients par Mobile Money (Wave, Orange Money) ainsi que par carte bancaire. Vous pouvez également activer le paiement à la livraison et la commande directe via WhatsApp selon vos préférences.',
+  },
+  {
+    q: 'Comment fonctionne le portefeuille et comment puis-je retirer mes gains ?',
+    a: 'Vos revenus générés en ligne sont centralisés dans un portefeuille sécurisé accessible directement depuis votre tableau de bord. Vous pouvez demander le retrait de vos fonds à tout moment vers votre compte Wave ou Orange Money en toute simplicité.',
+  },
+  {
+    q: 'Mes clients peuvent-ils commander sur WhatsApp ou payer à la livraison ?',
+    a: 'Oui. Le bouton « Commander sur WhatsApp » et l’option « Paiement à la livraison » sont intégrés nativement. Ce sont des leviers majeurs pour rassurer vos acheteurs locaux et convertir un maximum de visiteurs en clients.',
   },
 ];
 
@@ -113,8 +132,6 @@ const PRIMARY_CTA =
   'inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-gradient-to-b from-[#3D6CFF] to-[#235BF7] text-white font-bold shadow-[0_14px_30px_-12px_rgba(35,91,247,0.8),inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300';
 
 export default function LandingPage() {
-  const free = JUULA_PLANS.FREE;
-  const pro = JUULA_PLANS.PRO;
   const year = new Date().getFullYear();
 
   return (
@@ -431,93 +448,6 @@ export default function LandingPage() {
           </Reveal>
         </section>
 
-        {/* ─────────────────────── PRICING ─────────────────────── */}
-        <section id="tarifs" className="scroll-mt-28 rounded-[36px] bg-white px-4 py-16 sm:py-20">
-          <div className="max-w-4xl mx-auto">
-            <Reveal>
-              <h2 className="text-center text-4xl sm:text-6xl font-extrabold tracking-[-0.035em]">
-                Simple et <span className="text-[#235BF7]">transparent</span>
-              </h2>
-              <p className="mt-3 text-center text-[#7A808C] text-base sm:text-lg">
-                Créez gratuitement. Abonnez-vous quand vous êtes prêt à vendre.
-              </p>
-            </Reveal>
-
-            <div className="mt-12 grid gap-4 md:grid-cols-2 items-stretch">
-              {[free, pro].map((plan, idx) => {
-                const isPro = plan.id === 'PRO';
-                return (
-                  <Reveal
-                    key={plan.id}
-                    delay={idx * 150}
-                    from={idx ? 'right' : 'left'}
-                    className="h-full"
-                  >
-                    <div
-                      className={`relative h-full rounded-[28px] p-7 flex flex-col transition-all duration-500 hover:-translate-y-1.5 ${
-                        isPro
-                          ? 'bg-[#201D1D] text-white shadow-[0_30px_60px_-30px_rgba(35,91,247,0.6)] hover:shadow-[0_40px_80px_-30px_rgba(35,91,247,0.75)]'
-                          : 'bg-[#F6F7F9] border border-[#ECEFF4] hover:shadow-[0_30px_60px_-34px_rgba(32,29,29,0.3)]'
-                      }`}
-                    >
-                      {isPro && (
-                        <span className="absolute top-6 right-6 text-[11px] font-bold uppercase tracking-wider bg-[#235BF7] text-white px-3 py-1 rounded-full">
-                          Pour vendre
-                        </span>
-                      )}
-                      <p className="text-lg font-bold">{plan.name}</p>
-                      <p className={`mt-1 text-sm ${isPro ? 'text-white/65' : 'text-[#7A808C]'}`}>
-                        {plan.tagline}
-                      </p>
-                      <p className="mt-6 text-5xl font-extrabold tracking-tight">
-                        {formatNumber(plan.priceMonthly)}
-                        <span
-                          className={`text-base font-semibold ${isPro ? 'text-white/65' : 'text-[#7A808C]'}`}
-                        >
-                          {' '}
-                          FCFA / mois
-                        </span>
-                      </p>
-                      <ul
-                        className={`mt-6 space-y-2.5 text-[15px] flex-1 ${isPro ? 'text-white/90' : 'text-[#3F4654]'}`}
-                      >
-                        {plan.features.slice(0, 5).map((f) => (
-                          <li key={f} className="flex items-start gap-2.5">
-                            <span
-                              className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                                isPro
-                                  ? 'bg-[#235BF7] text-white'
-                                  : 'bg-white text-[#235BF7] border border-[#E3E7EE]'
-                              }`}
-                            >
-                              <Check className="w-3 h-3" />
-                            </span>
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-                      <Link
-                        href="/signup"
-                        className={`mt-8 py-3.5 rounded-2xl text-center font-bold transition-all duration-300 hover:-translate-y-0.5 ${
-                          isPro
-                            ? 'bg-gradient-to-b from-[#3D6CFF] to-[#235BF7] text-white hover:brightness-110'
-                            : 'bg-white border border-[#E3E7EE] hover:bg-[#FAFBFC]'
-                        }`}
-                      >
-                        {isPro ? 'Mettre ma boutique en ligne' : 'Créer ma boutique'}
-                      </Link>
-                    </div>
-                  </Reveal>
-                );
-              })}
-            </div>
-            <p className="mt-6 text-center text-[15px] text-[#7A808C]">
-              Paiement en ligne Mobile Money (JuulaPay) : optionnel, 7,5 % par paiement en ligne,
-              activable ou désactivable à tout moment.
-            </p>
-          </div>
-        </section>
-
         {/* ─────────────────────── FAQ ─────────────────────── */}
         <section id="faq" className="scroll-mt-28 rounded-[36px] bg-[#F6F7F9] px-4 py-16 sm:py-20">
           <div className="max-w-2xl mx-auto">
@@ -565,12 +495,6 @@ export default function LandingPage() {
                     className="block text-[#7A808C] hover:text-[#201D1D] transition-colors"
                   >
                     Fonctionnalités
-                  </Link>
-                  <Link
-                    href="#tarifs"
-                    className="block text-[#7A808C] hover:text-[#201D1D] transition-colors"
-                  >
-                    Tarifs
                   </Link>
                   <Link
                     href="#faq"

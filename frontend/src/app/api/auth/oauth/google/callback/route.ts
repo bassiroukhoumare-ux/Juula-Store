@@ -53,7 +53,7 @@ async function clearEphemeralCookies(): Promise<void> {
     httpOnly: true,
     secure: isProd(),
     sameSite: 'lax' as const,
-    path: '/api/auth/oauth',
+    path: '/api/auth',
     maxAge: 0,
   };
   store.set(OAUTH_STATE_COOKIE, '', expireOpts);
@@ -64,10 +64,12 @@ async function clearEphemeralCookies(): Promise<void> {
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
-    const appUrl = process.env.APP_URL ?? '';
+    const isLocal =
+      req.nextUrl.origin.includes('localhost') || req.nextUrl.origin.includes('127.0.0.1');
+    const appUrl = isLocal ? req.nextUrl.origin : (process.env.APP_URL ?? '');
     const redirectOpts = appUrl ? { appUrl } : {};
 
-    const provider = tryCreateGoogleProvider();
+    const provider = tryCreateGoogleProvider(req.nextUrl.origin);
     if (!provider) {
       await clearEphemeralCookies();
       return redirectToAuthError('OAUTH_PROVIDER_DISABLED', redirectOpts);

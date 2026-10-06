@@ -28,10 +28,14 @@ export interface GoogleProviderHandle {
   redirectUri: string;
 }
 
-export function tryCreateGoogleProvider(): GoogleProviderHandle | undefined {
+export function tryCreateGoogleProvider(origin?: string): GoogleProviderHandle | undefined {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  let redirectUri = process.env.GOOGLE_REDIRECT_URI;
+
+  if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    redirectUri = `${origin}/api/auth/callback/google`;
+  }
 
   if (!clientId || !clientSecret || !redirectUri) {
     logger.warn('oauth: Google env missing — /api/auth/oauth/google/* routes are inert', {

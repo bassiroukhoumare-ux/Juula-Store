@@ -33,7 +33,7 @@ function isProd(): boolean {
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
-    const provider = tryCreateGoogleProvider();
+    const provider = tryCreateGoogleProvider(req.nextUrl.origin);
     if (!provider) {
       // env-gated: 404 silently. Mirrors the Bictorys / R2 inert pattern.
       return NextResponse.json(
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       httpOnly: true,
       secure: isProd(),
       sameSite: 'lax' as const,
-      path: '/api/auth/oauth',
+      path: '/api/auth',
       maxAge: OAUTH_COOKIE_MAX_AGE,
     };
     store.set(OAUTH_STATE_COOKIE, state, cookieOpts);
