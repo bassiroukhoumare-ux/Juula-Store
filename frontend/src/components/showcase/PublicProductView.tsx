@@ -1,5 +1,6 @@
 'use client';
 
+import { storedReferral, useReferralCapture } from '@/lib/store/referral';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Clock, Eye } from 'lucide-react';
 import { applyDisplayCurrency, isDisplayCurrency } from '@/lib/money';
@@ -35,6 +36,7 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
   pixels,
   isPreview,
 }) => {
+  useReferralCapture();
   // Server HTML is in FCFA; switch to the merchant's display currency once
   // in the browser, then re-render the page with converted amounts.
   const [currencyTick, setCurrencyTick] = useState(0);
@@ -97,6 +99,9 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
           paymentType: order.paymentType,
           directMethodId: order.directMethodId,
           visitorId: getVisitorId(),
+          ...(order.promoCode ? { promoCode: order.promoCode } : {}),
+          ...(order.extras && order.extras.length > 0 ? { extras: order.extras } : {}),
+          ...(storedReferral() ? { partnerRef: storedReferral() } : {}),
         }),
       });
       const body = (await res.json().catch(() => null)) as {

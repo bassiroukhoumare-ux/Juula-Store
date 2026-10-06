@@ -1,6 +1,10 @@
 'use client';
 
+import { useReferralCapture } from '@/lib/store/referral';
 import { FaqList } from '@/components/showcase/ProductLongContent';
+import { AnnouncementBar } from './AnnouncementBar';
+import { trackAddToCart } from '@/lib/store/tracking';
+import type { AnnouncementBar as AnnouncementBarData } from '@/lib/store/marketing';
 import type { FaqItem } from '@/lib/store/product-content';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -43,6 +47,8 @@ export interface StorefrontViewProps {
   base: string;
   /** Shop FAQ, shown just before the footer. */
   faq: FaqItem[];
+  /** Marketing → announcement bar on top of the shop. */
+  announcement: AnnouncementBarData;
 }
 
 const NEW_COUNT = 4;
@@ -55,6 +61,7 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
   const bySlug = useMemo(() => new Map(allProducts.map((p) => [p.slug, p])), [allProducts]);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const cart = useCart(shop);
+  useReferralCapture();
   const [category, setCategory] = useState('');
   // Banner « collection » (e.g. a promotion): only its products are listed.
   const [collection, setCollection] = useState<StoreBanner | null>(null);
@@ -102,9 +109,23 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
       { slug: p.slug, color, title: p.title, image: p.images[0] ?? null, price: p.price },
       quantity,
     );
+    trackAddToCart({ id: p.slug, name: p.title, price: p.price, quantity });
     setBump(true);
     setTimeout(() => setBump(false), 450);
   };
+
+  // « ?categorie=Mode » (announcement bar link): open the catalogue on it.
+  useEffect(() => {
+    const cat = new URLSearchParams(window.location.search).get('categorie');
+    if (!cat) return;
+    setCollection(null);
+    setCategory(cat);
+    const t = setTimeout(
+      () => catalogueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      300,
+    );
+    return () => clearTimeout(t);
+  }, []);
 
   const showCatalogue = (cat = '') => {
     setCollection(null);
@@ -231,6 +252,7 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
           <Eye className="w-4 h-4" /> Aperçu privé — votre boutique n’est pas encore publiée.
         </div>
       )}
+      <AnnouncementBar bar={props.announcement} accent={accent} base={props.base} />
       <PaymentReturnBanner onPaid={cart.clear} />
 
       {/* Top bar */}
@@ -487,7 +509,20 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
       <footer className="mt-24 bg-[var(--accent)] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row sm:items-start justify-between gap-6">
           <div className="max-w-sm">
-            <p className="text-[17px] font-bold">{storeName}</p>
+            <div className="flex items-center gap-3">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={`Logo ${storeName}`}
+                  className="w-12 h-12 rounded-full object-cover bg-white ring-2 ring-white/40 shrink-0"
+                />
+              ) : (
+                <span className="w-12 h-12 rounded-full bg-white/15 ring-2 ring-white/40 flex items-center justify-center font-bold shrink-0">
+                  {storeName.charAt(0).toUpperCase()}
+                </span>
+              )}
+              <p className="text-[18px] font-bold">{storeName}</p>
+            </div>
             {tagline && <p className="mt-2 text-[14px] text-white/75">{tagline}</p>}
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[14px] text-white/85">

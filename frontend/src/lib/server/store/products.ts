@@ -5,6 +5,7 @@ import type { Prisma, Product } from '@prisma/client';
 import { z } from 'zod';
 import type { FunnelPageConfig, FunnelPageItem, FunnelPageStatus } from '@/types/juula';
 import { cleanComparison, cleanDescription, cleanFaq } from '@/lib/store/product-content';
+import { parseCrossSell } from '@/lib/store/marketing';
 
 export { pickStoreWide } from '@/lib/store/store-fields';
 
@@ -79,6 +80,7 @@ export function sanitizeConfig(config: FunnelPageConfig): FunnelPageConfig {
     description: cleanDescription(config.description),
     faqItems: cleanFaq(config.faqItems),
     comparison: cleanComparison(config.comparison),
+    crossSell: parseCrossSell(config.crossSell),
   };
 }
 

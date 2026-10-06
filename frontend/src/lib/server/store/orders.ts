@@ -19,7 +19,7 @@ const dateTimeFmt = new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Africa/Dakar',
 });
 
-export function toOrderLead(order: StoreOrder): OrderLead {
+export function toOrderLead(order: StoreOrder & { partner?: { name: string } | null }): OrderLead {
   return {
     id: order.reference,
     sequenceNumber: order.number,
@@ -45,6 +45,12 @@ export function toOrderLead(order: StoreOrder): OrderLead {
     paymentType: order.paymentType as PaymentType,
     paymentStatus: order.paymentStatus as PaymentStatus,
     ...(order.paymentMethodName ? { paymentMethodName: order.paymentMethodName } : {}),
+    ...(order.promoCode
+      ? { promoCode: order.promoCode, discountAmount: order.discountAmount }
+      : {}),
+    ...(order.partner
+      ? { partnerName: order.partner.name, partnerCommission: order.partnerCommission }
+      : {}),
     ...(Array.isArray(order.items) ? { items: order.items as unknown as OrderItem[] } : {}),
   };
 }

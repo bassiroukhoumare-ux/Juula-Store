@@ -1,5 +1,6 @@
 'use client';
 
+import { useReferralCapture } from '@/lib/store/referral';
 import React, { useEffect, useMemo } from 'react';
 import {
   Banknote,
@@ -16,9 +17,11 @@ import { formatMoney } from '@/lib/money';
 import type { CheckoutOptions } from '@/lib/store/storefront-types';
 import { useDisplayCurrency } from './useDisplayCurrency';
 import { useCart } from './useCart';
+import { PromoCodeField, useStoredPromo } from './PromoCodeField';
+import { bundlePrice, type AnnouncementBar as AnnouncementBarData } from '@/lib/store/marketing';
 import { ProductCard } from './ProductCard';
 import { Card, ShopPageShell } from './ShopPageShell';
-import type { ShopProduct } from './types';
+import { priceCart, type ShopProduct } from './types';
 
 export interface ShopPageProps {
   shop: string;
@@ -30,6 +33,7 @@ export interface ShopPageProps {
   options: CheckoutOptions;
   isPreview: boolean;
   displayCurrency: string;
+  announcement: AnnouncementBarData;
 }
 
 /** Highest delivery fee among the cart's products (what the server charges). */
@@ -70,8 +74,11 @@ export const CartPage: React.FC<ShopPageProps> = ({
   options,
   isPreview,
   displayCurrency,
+  announcement,
 }) => {
   const cart = useCart(shop);
+  useReferralCapture();
+  const [promo, setPromo] = useStoredPromo(shop);
   const home = base || '/';
   useDisplayCurrency(displayCurrency);
   const { sync, loaded } = cart;
@@ -79,11 +86,37 @@ export const CartPage: React.FC<ShopPageProps> = ({
     if (loaded) sync(products.map((p) => ({ slug: p.slug, price: p.price, title: p.title })));
   }, [loaded, sync, products]);
 
-  const deliveryFee = cartDeliveryFee(
-    cart.lines.map((l) => l.slug),
-    products,
-  );
-  const total = cart.subtotal + deliveryFee;
+  const { unitPrice, subtotal, deliveryFee } = priceCart(cart.lines, products);
+  const discount = promo ? Math.min(promo.discount, subtotal + deliveryFee) : 0;
+  const total = subtotal + deliveryFee - discount;
+  const promoRequest = {
+    shop,
+    items: cart.lines.map((l) => ({
+      slug: l.slug,
+      quantity: l.quantity,
+      ...(l.color ? { color: l.color } : {}),
+    })),
+  };
+  const promoSignature = cart.lines.map((l) => `${l.key}:${l.quantity}`).join('|');
+  // « Souvent acheté avec » : what the cart's products suggest, not in the cart yet.
+  const inCart = new Set(cart.lines.map((l) => l.slug));
+  const pairings = useMemo(() => {
+    const out: { product: ShopProduct; price: number; withTitle: string }[] = [];
+    for (const l of cart.lines) {
+      const main = products.find((p) => p.slug === l.slug);
+      if (!main) continue;
+      for (const slug of main.crossSell.slugs) {
+        const p = products.find((x) => x.slug === slug);
+        if (!p || inCart.has(slug) || out.some((o) => o.product.slug === slug)) continue;
+        out.push({
+          product: p,
+          price: bundlePrice(p.price, main.crossSell.discountPercent),
+          withTitle: main.title,
+        });
+      }
+    }
+    return out.slice(0, 3);
+  }, [cart.lines, products]);
   const notices = [
     ...new Set(
       cart.lines
@@ -94,9 +127,14 @@ export const CartPage: React.FC<ShopPageProps> = ({
   const suggestions = useMemo(
     () =>
       products
-        .filter((p) => p.inCatalogue && !cart.lines.some((l) => l.slug === p.slug))
+        .filter(
+          (p) =>
+            p.inCatalogue &&
+            !cart.lines.some((l) => l.slug === p.slug) &&
+            !pairings.some((x) => x.product.slug === p.slug),
+        )
         .slice(0, 4),
-    [products, cart.lines],
+    [products, cart.lines, pairings],
   );
   const hrefOf = (slug: string) => products.find((p) => p.slug === slug)?.pageHref ?? null;
 
@@ -121,6 +159,8 @@ export const CartPage: React.FC<ShopPageProps> = ({
       step={1}
       back={{ href: home, label: 'Continuer mes achats' }}
       isPreview={isPreview}
+      announcement={announcement}
+      base={base}
     >
       <h1 className="text-[28px] sm:text-[36px] font-bold tracking-tight">
         Mon panier
@@ -187,7 +227,10 @@ export const CartPage: React.FC<ShopPageProps> = ({
                           <p className="text-[16px] font-semibold line-clamp-2">{l.title}</p>
                         )}
                         <p className="mt-1 text-[14px] text-[#7A808C]">
-                          {formatMoney(l.price)} l’unité
+                          {(unitPrice.get(l.key) ?? l.price) < l.price && (
+                            <span className="mr-1.5 line-through">{formatMoney(l.price)}</span>
+                          )}
+                          {formatMoney(unitPrice.get(l.key) ?? l.price)} l’unité
                           {l.color ? ` · Couleur : ${l.color}` : ''}
                         </p>
                         <button
@@ -222,11 +265,11 @@ export const CartPage: React.FC<ShopPageProps> = ({
                         </button>
                       </div>
                       <span className="sm:hidden text-[17px] font-extrabold tabular-nums">
-                        {formatMoney(l.price * l.quantity)}
+                        {formatMoney((unitPrice.get(l.key) ?? l.price) * l.quantity)}
                       </span>
                     </div>
                     <span className="hidden sm:block text-right text-[17px] font-extrabold tabular-nums">
-                      {formatMoney(l.price * l.quantity)}
+                      {formatMoney((unitPrice.get(l.key) ?? l.price) * l.quantity)}
                     </span>
                   </li>
                 );
@@ -242,7 +285,7 @@ export const CartPage: React.FC<ShopPageProps> = ({
                   <dt>
                     Sous-total ({cart.count} article{cart.count > 1 ? 's' : ''})
                   </dt>
-                  <dd className="tabular-nums">{formatMoney(cart.subtotal)}</dd>
+                  <dd className="tabular-nums">{formatMoney(subtotal)}</dd>
                 </div>
                 <div className="flex justify-between text-[#3F4654]">
                   <dt>Livraison</dt>
@@ -252,11 +295,26 @@ export const CartPage: React.FC<ShopPageProps> = ({
                     {deliveryFee > 0 ? formatMoney(deliveryFee) : 'Offerte'}
                   </dd>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between font-semibold text-emerald-700">
+                    <dt>Code {promo?.code}</dt>
+                    <dd className="tabular-nums">-{formatMoney(discount)}</dd>
+                  </div>
+                )}
                 <div className="pt-3 border-t border-black/5 flex justify-between text-[20px] font-extrabold">
                   <dt>Total</dt>
                   <dd className="tabular-nums">{formatMoney(total)}</dd>
                 </div>
               </dl>
+              <div className="mt-4">
+                <PromoCodeField
+                  request={promoRequest}
+                  signature={promoSignature}
+                  applied={promo}
+                  onChange={setPromo}
+                  accentVar="var(--accent)"
+                />
+              </div>
               <div className="mt-5 space-y-2.5">
                 <a
                   href={`${base}/commande`}
@@ -313,6 +371,51 @@ export const CartPage: React.FC<ShopPageProps> = ({
             </Card>
           </div>
         </div>
+      )}
+
+      {pairings.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-[22px] sm:text-[28px] font-bold tracking-tight">
+            Souvent acheté avec…
+          </h2>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {pairings.map(({ product: p, price, withTitle }) => (
+              <div
+                key={p.slug}
+                className="flex items-center gap-3 p-3 rounded-[20px] bg-white border border-black/5"
+              >
+                <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[#F1F3F6] shrink-0">
+                  {p.images[0] && (
+                    <img src={p.images[0]} alt="" className="w-full h-full object-cover" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-semibold line-clamp-2">{p.title}</p>
+                  <p className="mt-0.5 text-[15px] font-extrabold">
+                    {formatMoney(price)}
+                    {price < p.price && (
+                      <span className="ml-2 text-[13px] font-medium text-[#9AA0AB] line-through">
+                        {formatMoney(p.price)}
+                      </span>
+                    )}
+                  </p>
+                  {price < p.price && (
+                    <p className="text-[12px] text-emerald-700 font-semibold truncate">
+                      Prix spécial avec {withTitle}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => addSuggestion(p)}
+                  className="shrink-0 h-10 px-3.5 rounded-full bg-[var(--accent)] text-white text-[14px] font-semibold hover:brightness-110 cursor-pointer"
+                >
+                  + Ajouter
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {suggestions.length > 0 && (

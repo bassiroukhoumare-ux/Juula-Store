@@ -13,6 +13,8 @@ import { sendWelcomeEmailOnce } from '@/lib/server/store/notify';
 import { toStoreProfile } from '@/lib/server/store/profile';
 import {
   FACEBOOK_PIXEL_ID_REGEX,
+  GOOGLE_TAG_ID_REGEX,
+  normalizeGoogleTagId,
   normalizeFacebookPixelId,
   normalizeTiktokPixelId,
   TIKTOK_PIXEL_ID_REGEX,
@@ -32,6 +34,13 @@ const PutBody = z.object({
     .refine((v) => v === '' || TIKTOK_PIXEL_ID_REGEX.test(v), {
       message: 'TIKTOK_PIXEL_INVALID',
     }),
+  googleTagId: z
+    .string()
+    .transform(normalizeGoogleTagId)
+    .refine((v) => v === '' || GOOGLE_TAG_ID_REGEX.test(v), {
+      message: 'GOOGLE_TAG_INVALID',
+    })
+    .optional(),
 });
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -50,6 +59,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const pixels: StorePixels = {
       facebookPixelId: store?.facebookPixelId ?? null,
       tiktokPixelId: store?.tiktokPixelId ?? null,
+      googleTagId: store?.googleTagId ?? null,
     };
     return NextResponse.json(
       { store: { ...pixels, ...toStoreProfile(store) } },
@@ -69,7 +79,10 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     const parsed = PutBody.safeParse(await req.json().catch(() => null));
     if (!parsed.success) {
       const code = parsed.error.issues[0]?.message;
-      const known = code === 'FACEBOOK_PIXEL_INVALID' || code === 'TIKTOK_PIXEL_INVALID';
+      const known =
+        code === 'FACEBOOK_PIXEL_INVALID' ||
+        code === 'TIKTOK_PIXEL_INVALID' ||
+        code === 'GOOGLE_TAG_INVALID';
       return NextResponse.json(
         {
           error: known ? code : 'VALIDATION_FAILED',
@@ -78,7 +91,9 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
               ? "L'ID du Pixel Facebook doit contenir uniquement des chiffres (15–16 en général)"
               : code === 'TIKTOK_PIXEL_INVALID'
                 ? "L'ID du Pixel TikTok doit contenir uniquement des lettres majuscules et des chiffres"
-                : 'Requête invalide',
+                : code === 'GOOGLE_TAG_INVALID'
+                  ? "L'ID Google doit ressembler à G-XXXXXXXXXX (Analytics) ou AW-XXXXXXXXX (Ads)"
+                  : 'Requête invalide',
         },
         { status: 400, headers: { 'x-request-id': ctx.requestId } },
       );
@@ -88,11 +103,14 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     const isPro =
       store?.plan === 'PRO' && (!store.planExpiresAt || store.planExpiresAt > new Date());
 
-    if (!isPro && (parsed.data.facebookPixelId || parsed.data.tiktokPixelId)) {
+    if (
+      !isPro &&
+      (parsed.data.facebookPixelId || parsed.data.tiktokPixelId || parsed.data.googleTagId)
+    ) {
       return NextResponse.json(
         {
           error: 'PRO_REQUIRED',
-          message: 'Les pixels Facebook et TikTok nécessitent un abonnement actif.',
+          message: 'Les pixels publicitaires nécessitent un abonnement actif.',
         },
         { status: 403, headers: { 'x-request-id': ctx.requestId } },
       );
@@ -101,6 +119,9 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     const data = {
       facebookPixelId: parsed.data.facebookPixelId || null,
       tiktokPixelId: parsed.data.tiktokPixelId || null,
+      ...(parsed.data.googleTagId !== undefined
+        ? { googleTagId: parsed.data.googleTagId || null }
+        : {}),
     };
     const saved = await prisma.store.upsert({
       where: { userId: auth.user.sub },
@@ -110,6 +131,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     const pixels: StorePixels = {
       facebookPixelId: saved.facebookPixelId,
       tiktokPixelId: saved.tiktokPixelId,
+      googleTagId: saved.googleTagId,
     };
     return NextResponse.json({ store: pixels }, { headers: { 'x-request-id': ctx.requestId } });
   });

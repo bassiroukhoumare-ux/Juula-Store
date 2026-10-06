@@ -58,6 +58,7 @@ export default async function StorefrontPage({ params }: PageProps) {
         isPreview={isPreview}
         base={base}
         faq={settings.faq}
+        announcement={settings.announcement}
       />
     </div>
   );

@@ -13,15 +13,14 @@ import {
   Globe,
   Coins,
   Wallet,
-  Radio,
   Crown,
 } from 'lucide-react';
 import { FunnelPageConfig } from '@/types/juula';
-import { TrackingPixelsCard } from './TrackingPixelsCard';
 import { SectionLayout, type SectionItem } from './SectionLayout';
 import { PayoutAccountsCard } from '@/components/store/PayoutAccountsCard';
 import { SubscriptionCard } from '@/components/store/SubscriptionCard';
 import { StoreAddressCard } from '@/components/store/StoreAddressCard';
+import { StoreLogoCard } from '@/components/store/StoreLogoCard';
 import { CurrencyCard } from '@/components/store/CurrencyCard';
 import type { StoreProfile } from '@/components/store/OnboardingScreen';
 
@@ -32,7 +31,6 @@ export type SettingsSection =
   | 'devise'
   | 'retraits'
   | 'securite'
-  | 'pixels'
   | 'abonnement';
 
 const SECTIONS: SectionItem<SettingsSection>[] = [
@@ -42,7 +40,6 @@ const SECTIONS: SectionItem<SettingsSection>[] = [
   { id: 'devise', label: 'Devise', icon: <Coins /> },
   { id: 'retraits', label: 'Moyens de retrait', icon: <Wallet /> },
   { id: 'securite', label: 'Sécurité des virements', icon: <KeyRound /> },
-  { id: 'pixels', label: 'Pixels de suivi', icon: <Radio /> },
   { id: 'abonnement', label: 'Abonnement', icon: <Crown /> },
 ];
 
@@ -118,7 +115,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   return (
     <SectionLayout sections={SECTIONS} active={section} onChange={setSection}>
       {section === 'boutique' && storeProfile && onStoreProfileSaved && (
-        <StoreAddressCard profile={storeProfile} onSaved={onStoreProfileSaved} />
+        <>
+          <StoreLogoCard profile={storeProfile} onSaved={onStoreProfileSaved} />
+          <StoreAddressCard profile={storeProfile} onSaved={onStoreProfileSaved} />
+        </>
       )}
 
       {section === 'devise' && storeProfile && onStoreProfileSaved && (
@@ -126,8 +126,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       )}
 
       {section === 'retraits' && <PayoutAccountsCard pinRequired={payoutSecurity.isPinSet} />}
-
-      {section === 'pixels' && <TrackingPixelsCard />}
 
       {section === 'abonnement' && (
         <SubscriptionCard

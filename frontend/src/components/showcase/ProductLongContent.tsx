@@ -104,7 +104,7 @@ export function RichText({ text }: { text: string }) {
           out.push(
             <Tag
               key={`l${b}-${out.length}`}
-              className={`space-y-1.5 pl-5 ${ordered ? 'list-decimal' : 'list-disc'} marker:text-[#235BF7]`}
+              className={`space-y-1.5 pl-5 ${ordered ? 'list-decimal' : 'list-disc'} marker:text-[var(--accent,#235BF7)]`}
             >
               {items.map((it, i) => (
                 <li key={i}>{inline(it, `l${b}-${i}`)}</li>
@@ -243,7 +243,7 @@ export function ComparisonTable({ comparison }: { comparison: ProductComparison 
       <div className="hidden @min-[30rem]:block">
         <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)] items-stretch">
           <div />
-          <div className="rounded-t-[20px] bg-[#235BF7] text-white text-center px-3 py-4">
+          <div className="rounded-t-[20px] bg-[var(--accent,#235BF7)] text-white text-center px-3 py-4">
             <span className="text-[16px] @3xl:text-[18px] font-extrabold">{oursLabel}</span>
           </div>
           <div className="text-center px-3 py-4 text-[16px] @3xl:text-[18px] font-bold text-[#9AA0AB]">
@@ -259,7 +259,7 @@ export function ComparisonTable({ comparison }: { comparison: ProductComparison 
                   {r.criterion}
                 </div>
                 <div
-                  className={`flex items-center justify-center text-center px-3 py-4 bg-[#F3F6FF] border-x-2 border-[#235BF7] ${last ? 'border-b-2 rounded-b-[20px]' : 'border-b border-b-[#DCE5FF]'}`}
+                  className={`flex items-center justify-center text-center px-3 py-4 bg-[#F3F6FF] border-x-2 border-[var(--accent,#235BF7)] ${last ? 'border-b-2 rounded-b-[20px]' : 'border-b border-b-[#DCE5FF]'}`}
                 >
                   <Cell value={r.ours} ours />
                 </div>
@@ -277,14 +277,16 @@ export function ComparisonTable({ comparison }: { comparison: ProductComparison 
       {/* Narrow (phones): one card per criterion, no sideways scroll */}
       <div className="@min-[30rem]:hidden space-y-2.5">
         <div className="grid grid-cols-2 gap-2 text-center text-[15px] font-extrabold">
-          <span className="py-2.5 px-2 rounded-xl bg-[#235BF7] text-white">{oursLabel}</span>
+          <span className="py-2.5 px-2 rounded-xl bg-[var(--accent,#235BF7)] text-white">
+            {oursLabel}
+          </span>
           <span className="py-2.5 px-2 rounded-xl bg-[#F1F3F6] text-[#7A808C]">{othersLabel}</span>
         </div>
         {rows.map((r) => (
           <div key={r.id} className="rounded-2xl bg-white border border-[#ECEFF4] p-3.5 space-y-3">
             <p className="text-[16px] font-bold text-[#201D1D] text-center">{r.criterion}</p>
             <div className="grid grid-cols-2 gap-2">
-              <div className="min-h-14 flex items-center justify-center text-center p-2.5 rounded-xl bg-[#F3F6FF] ring-2 ring-[#235BF7]">
+              <div className="min-h-14 flex items-center justify-center text-center p-2.5 rounded-xl bg-[#F3F6FF] ring-2 ring-[var(--accent,#235BF7)]">
                 <Cell value={r.ours} ours />
               </div>
               <div className="min-h-14 flex items-center justify-center text-center p-2.5 rounded-xl bg-[#F6F7F9]">

@@ -1,4 +1,5 @@
 import type { FaqItem, ProductComparison } from '@/lib/store/product-content';
+import type { AnnouncementBar, CrossSell } from '@/lib/store/marketing';
 import type { DirectPaymentMethod } from '@/lib/store/storefront-types';
 
 export type DashboardTab =
@@ -11,6 +12,7 @@ export type DashboardTab =
   | 'wizard'
   | 'customers'
   | 'analytics'
+  | 'marketing'
   | 'settings';
 
 export type OrderStatus = 'new' | 'confirmed' | 'delivered' | 'cancelled';
@@ -61,6 +63,13 @@ export interface OrderLead {
   directMethodId?: string | undefined;
   /** Shop cart orders: one line per product. */
   items?: OrderItem[] | undefined;
+  /** Public product page → order route: applied promo code and ticked suggestions. */
+  promoCode?: string | undefined;
+  extras?: { slug: string }[] | undefined;
+  discountAmount?: number | undefined;
+  /** Affiliate partner that brought the order, and its commission. */
+  partnerName?: string | undefined;
+  partnerCommission?: number | undefined;
 }
 
 export interface OrderItem {
@@ -72,6 +81,8 @@ export interface OrderItem {
   unitPrice: number;
   lineTotal: number;
   color: string | null;
+  /** Set when bought at the « acheté ensemble » price. */
+  originalUnitPrice?: number | undefined;
 }
 
 export interface KpiMetrics {
@@ -238,6 +249,22 @@ export interface FunnelPageConfig {
   faqItems?: FaqItem[] | undefined;
   /** Optional « Nous vs Les autres » table. */
   comparison?: ProductComparison | undefined;
+  /** « Souvent acheté avec » : 1–3 suggested products + bundle discount. */
+  crossSell?: CrossSell | undefined;
+  /** Injected at render time: the suggested products, priced when bought together. */
+  crossSellProducts?:
+    | {
+        slug: string;
+        title: string;
+        image: string | null;
+        price: number;
+        bundlePrice: number;
+        deliveryFee: number;
+      }[]
+    | undefined;
+  /** Injected at render time: the shop announcement bar and accent colour. */
+  storeAnnouncement?: AnnouncementBar | undefined;
+  storeAccent?: string | undefined;
   ctaButtonText: string;
   codEnabled: boolean;
   mobileMoneyEnabled: boolean;

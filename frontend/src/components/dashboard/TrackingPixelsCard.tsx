@@ -6,8 +6,10 @@ import { CheckCircle2, Loader2, Radar, Save } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import {
   isValidFacebookPixelId,
+  isValidGoogleTagId,
   isValidTiktokPixelId,
   normalizeFacebookPixelId,
+  normalizeGoogleTagId,
   normalizeTiktokPixelId,
   type StorePixels,
 } from '@/lib/store/pixels';
@@ -24,10 +26,19 @@ const TiktokIcon = () => (
   </svg>
 );
 
-/** Settings card: Meta (Facebook) + TikTok pixel IDs for all product pages. */
+const GoogleIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
+    <path fill="#F9AB00" d="M15.5 2.5h4a2 2 0 0 1 2 2v15a2 2 0 0 1-2 2h-4z" />
+    <path fill="#E37400" d="M9 9.5h4.5v12H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z" />
+    <circle fill="#E37400" cx="4.5" cy="19" r="2.5" />
+  </svg>
+);
+
+/** Marketing card: Meta (Facebook) + TikTok pixel IDs for all product pages. */
 export const TrackingPixelsCard: React.FC = () => {
   const [facebook, setFacebook] = useState('');
   const [tiktok, setTiktok] = useState('');
+  const [google, setGoogle] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -38,6 +49,7 @@ export const TrackingPixelsCard: React.FC = () => {
       .then(({ store }) => {
         setFacebook(store.facebookPixelId ?? '');
         setTiktok(store.tiktokPixelId ?? '');
+        setGoogle(store.googleTagId ?? '');
       })
       .catch(() => setError('Impossible de charger vos pixels.'))
       .finally(() => setLoading(false));
@@ -47,18 +59,21 @@ export const TrackingPixelsCard: React.FC = () => {
   const ttValue = normalizeTiktokPixelId(tiktok);
   const fbInvalid = fbValue !== '' && !isValidFacebookPixelId(fbValue);
   const ttInvalid = ttValue !== '' && !isValidTiktokPixelId(ttValue);
+  const gValue = normalizeGoogleTagId(google);
+  const gInvalid = gValue !== '' && !isValidGoogleTagId(gValue);
 
   const handleSave = async () => {
-    if (fbInvalid || ttInvalid) return;
+    if (fbInvalid || ttInvalid || gInvalid) return;
     setSaving(true);
     setError(null);
     try {
       const { store } = await api<{ store: StorePixels }>('/api/store', {
         method: 'PUT',
-        body: { facebookPixelId: fbValue, tiktokPixelId: ttValue },
+        body: { facebookPixelId: fbValue, tiktokPixelId: ttValue, googleTagId: gValue },
       });
       setFacebook(store.facebookPixelId ?? '');
       setTiktok(store.tiktokPixelId ?? '');
+      setGoogle(store.googleTagId ?? '');
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -84,8 +99,9 @@ export const TrackingPixelsCard: React.FC = () => {
         <div>
           <h3 className="text-[15px] font-black text-[#201D1D]">Pixels de suivi publicitaire</h3>
           <p className="text-[13px] text-[#7A808C]">
-            Mesurez vos publicités Facebook / Instagram et TikTok : visites, ouvertures du
-            formulaire et commandes sont envoyées automatiquement depuis toutes vos pages produits.
+            Mesurez vos publicités Facebook / Instagram, TikTok et Google : visites, ajouts au
+            panier, commandes… sont envoyés automatiquement depuis votre boutique et vos pages
+            produits.
           </p>
         </div>
       </div>
@@ -98,6 +114,7 @@ export const TrackingPixelsCard: React.FC = () => {
         >
           <Skeleton className="h-16" />
           <Skeleton className="h-16" />
+          <Skeleton className="h-16 sm:col-span-2" />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -141,18 +158,39 @@ export const TrackingPixelsCard: React.FC = () => {
                 : 'TikTok Ads Manager → Outils → Événements → Web → votre Pixel.'}
             </p>
           </div>
+
+          <div className="sm:col-span-2">
+            <label className="flex items-center gap-1.5 text-[13px] font-bold text-[#201D1D] mb-1">
+              <GoogleIcon /> Google Tag / Google Analytics 4{' '}
+              <span className="font-semibold text-[#94A3B8]">(optionnel)</span>
+            </label>
+            <input
+              type="text"
+              value={google}
+              onChange={(e) => setGoogle(e.target.value)}
+              className={inputClass(gInvalid)}
+              placeholder="Ex : G-XXXXXXXXXX"
+            />
+            <p
+              className={`text-xs mt-1 ${gInvalid ? 'text-red-600 font-semibold' : 'text-[#94A3B8]'}`}
+            >
+              {gInvalid
+                ? 'Format attendu : G-XXXXXXXXXX (Analytics) ou AW-XXXXXXXXX (Google Ads).'
+                : 'Google Analytics → Administration → Flux de données → ID de mesure.'}
+            </p>
+          </div>
         </div>
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <p className="text-xs text-[#94A3B8]">
-          Événements envoyés : PageView, ViewContent, InitiateCheckout, Purchase (Meta) ·
-          PlaceAnOrder, CompletePayment (TikTok). Laissez vide pour désactiver.
+          Événements envoyés automatiquement : PageView, ViewContent, AddToCart, InitiateCheckout,
+          Purchase. Laissez un champ vide pour le désactiver.
         </p>
         <button
           type="button"
           onClick={handleSave}
-          disabled={loading || saving || fbInvalid || ttInvalid}
+          disabled={loading || saving || fbInvalid || ttInvalid || gInvalid}
           className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[13px] font-black transition-all cursor-pointer disabled:opacity-50 shrink-0"
         >
           {saving ? (

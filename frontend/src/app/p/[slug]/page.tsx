@@ -9,6 +9,7 @@ import { loadProductBySlug, pixelsOf, productMetadata } from '@/lib/server/store
 import { PublicProductView } from '@/components/showcase/PublicProductView';
 import { storeProductUrl } from '@/lib/store/subdomain';
 import { isStoreLive, withCheckoutOptions } from '@/lib/server/store/storefront';
+import { withMarketing } from '@/lib/server/store/marketing';
 import { ComingSoon } from '@/components/storefront/ComingSoon';
 
 // Edits must show up on the shared link immediately.
@@ -46,9 +47,10 @@ export default async function PublicProductPage({ params, searchParams }: PagePr
     );
   }
 
-  const config = withCheckoutOptions(
-    withStoreBranding(productConfig(found.product), found.store),
+  const config = await withMarketing(
+    withCheckoutOptions(withStoreBranding(productConfig(found.product), found.store), found.store),
     found.store,
+    found.product.userId,
   );
 
   return (

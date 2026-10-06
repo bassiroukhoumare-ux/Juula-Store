@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { storedReferral, useReferralCapture } from '@/lib/store/referral';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Banknote,
   CheckCircle2,
@@ -19,7 +20,10 @@ import { formatMoney } from '@/lib/money';
 import { useDisplayCurrency } from './useDisplayCurrency';
 import { useCart, type CartLine } from './useCart';
 import { Card, ShopPageShell } from './ShopPageShell';
-import { cartDeliveryFee, type ShopPageProps } from './CartPage';
+import { type ShopPageProps } from './CartPage';
+import { priceCart } from './types';
+import { PromoCodeField, useStoredPromo } from './PromoCodeField';
+import { trackCartCheckout, trackCartPurchase } from '@/lib/store/tracking';
 
 interface CheckoutPageProps extends ShopPageProps {
   /** « Commander sur WhatsApp »: no payment choice, ends on WhatsApp. */
@@ -47,9 +51,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   options,
   isPreview,
   displayCurrency,
+  announcement,
   mode: initialMode,
 }) => {
   const cart = useCart(shop);
+  useReferralCapture();
+  const [promo, setPromo] = useStoredPromo(shop);
   const home = base || '/';
   useDisplayCurrency(displayCurrency);
   const mode = initialMode === 'whatsapp' && options.whatsapp ? 'whatsapp' : 'order';
@@ -75,11 +82,32 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     if (loaded) sync(products.map((p) => ({ slug: p.slug, price: p.price, title: p.title })));
   }, [loaded, sync, products]);
 
-  const deliveryFee = cartDeliveryFee(
-    cart.lines.map((l) => l.slug),
-    products,
-  );
-  const total = cart.subtotal + deliveryFee;
+  const { unitPrice, subtotal, deliveryFee } = priceCart(cart.lines, products);
+  const discount = promo ? Math.min(promo.discount, subtotal + deliveryFee) : 0;
+  const total = subtotal + deliveryFee - discount;
+  const promoRequest = {
+    shop,
+    items: cart.lines.map((l) => ({
+      slug: l.slug,
+      quantity: l.quantity,
+      ...(l.color ? { color: l.color } : {}),
+    })),
+  };
+  const promoSignature = cart.lines.map((l) => `${l.key}:${l.quantity}`).join('|');
+  const trackedLines = cart.lines.map((l) => ({
+    id: l.slug,
+    name: l.title,
+    price: unitPrice.get(l.key) ?? l.price,
+    quantity: l.quantity,
+  }));
+
+  // Pixels: the customer reached the checkout (once, when the cart is loaded).
+  const checkoutTracked = useRef(false);
+  useEffect(() => {
+    if (!loaded || checkoutTracked.current || cart.lines.length === 0) return;
+    checkoutTracked.current = true;
+    trackCartCheckout(trackedLines, total);
+  }, [loaded]);
   const direct = payment.startsWith('direct:')
     ? options.direct.find((m) => `direct:${m.id}` === payment)
     : undefined;
@@ -139,12 +167,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           addressDetails: details || undefined,
           paymentType,
           ...(direct && mode === 'order' ? { directMethodId: direct.id } : {}),
+          ...(promo ? { promoCode: promo.code } : {}),
+          ...(storedReferral(shop) ? { partnerRef: storedReferral(shop) } : {}),
         }),
       });
       const body = (await res.json().catch(() => null)) as {
         order?: { id: string; reference: string; totalAmount: number };
         message?: string;
+        error?: string;
       } | null;
+      if (body?.error?.startsWith('PROMO_')) setPromo(null);
       if (!res.ok || !body?.order) {
         throw new Error(body?.message || 'La commande n’a pas pu être envoyée. Réessayez.');
       }
@@ -158,6 +190,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           `Nom : ${name}`,
           `Adresse : ${[address, details].filter(Boolean).join(' — ')}`,
         ].join('\n');
+        trackCartPurchase(trackedLines, { reference: order.reference, total: order.totalAmount });
+        setPromo(null);
         cart.clear();
         window.location.href = `https://wa.me/${options.whatsapp}?text=${encodeURIComponent(recap)}`;
         return;
@@ -182,12 +216,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         return;
       }
 
+      trackCartPurchase(trackedLines, { reference: order.reference, total: order.totalAmount });
+      setPromo(null);
       setPlaced({
         reference: order.reference,
         totalAmount: order.totalAmount,
         payment: direct ? `direct:${direct.id}` : 'cod',
         firstName: name.split(' ')[0] ?? '',
-        lines: cart.lines,
+        lines: cart.lines.map((l) => ({ ...l, price: unitPrice.get(l.key) ?? l.price })),
       });
       cart.clear();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -211,6 +247,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           : { href: `${base}/panier`, label: 'Retour au panier' }
       }
       isPreview={isPreview}
+      announcement={announcement}
+      base={base}
     >
       {children}
     </ShopPageShell>
@@ -375,8 +413,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         </button>
         {showSummary && (
           <div className="px-5 pb-5 border-t border-black/5 pt-4">
-            <SummaryLines lines={cart.lines} />
-            <Totals subtotal={cart.subtotal} deliveryFee={deliveryFee} total={total} />
+            <SummaryLines lines={cart.lines} unitPrice={unitPrice} />
+            <Totals
+              subtotal={subtotal}
+              deliveryFee={deliveryFee}
+              discount={discount}
+              promoCode={promo?.code}
+              total={total}
+            />
           </div>
         )}
       </div>
@@ -512,8 +556,23 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         {/* Summary (desktop) + submit */}
         <div className="space-y-4 lg:sticky lg:top-24">
           <Card title="Votre commande" className="hidden lg:block">
-            <SummaryLines lines={cart.lines} />
-            <Totals subtotal={cart.subtotal} deliveryFee={deliveryFee} total={total} />
+            <SummaryLines lines={cart.lines} unitPrice={unitPrice} />
+            <Totals
+              subtotal={subtotal}
+              deliveryFee={deliveryFee}
+              discount={discount}
+              promoCode={promo?.code}
+              total={total}
+            />
+            <div className="mt-4">
+              <PromoCodeField
+                request={promoRequest}
+                signature={promoSignature}
+                applied={promo}
+                onChange={setPromo}
+                accentVar="var(--accent)"
+              />
+            </div>
             <a
               href={`${base}/panier`}
               className="mt-3 inline-block text-[14px] font-semibold text-[var(--accent)] hover:underline underline-offset-2"
@@ -521,6 +580,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               Modifier le panier
             </a>
           </Card>
+
+          <div className="lg:hidden rounded-[20px] bg-white border border-black/5 p-4">
+            <PromoCodeField
+              request={promoRequest}
+              signature={promoSignature}
+              applied={promo}
+              onChange={setPromo}
+              accentVar="var(--accent)"
+            />
+          </div>
 
           {error && (
             <p
@@ -580,7 +649,10 @@ const Field: React.FC<{ label: string; icon?: React.ReactNode; children: React.R
   </label>
 );
 
-const SummaryLines: React.FC<{ lines: CartLine[] }> = ({ lines }) => (
+const SummaryLines: React.FC<{ lines: CartLine[]; unitPrice?: Map<string, number> }> = ({
+  lines,
+  unitPrice,
+}) => (
   <ul className="space-y-3">
     {lines.map((l) => (
       <li key={l.key} className="flex items-center gap-3">
@@ -595,18 +667,20 @@ const SummaryLines: React.FC<{ lines: CartLine[] }> = ({ lines }) => (
           {l.color && <span className="block text-[13px] text-[#7A808C]">{l.color}</span>}
         </span>
         <span className="text-[15px] font-bold tabular-nums">
-          {formatMoney(l.price * l.quantity)}
+          {formatMoney((unitPrice?.get(l.key) ?? l.price) * l.quantity)}
         </span>
       </li>
     ))}
   </ul>
 );
 
-const Totals: React.FC<{ subtotal: number; deliveryFee: number; total: number }> = ({
-  subtotal,
-  deliveryFee,
-  total,
-}) => (
+const Totals: React.FC<{
+  subtotal: number;
+  deliveryFee: number;
+  discount?: number;
+  promoCode?: string | undefined;
+  total: number;
+}> = ({ subtotal, deliveryFee, discount = 0, promoCode, total }) => (
   <dl className="mt-4 pt-4 border-t border-black/5 space-y-2.5 text-[15px]">
     <div className="flex justify-between text-[#3F4654]">
       <dt>Sous-total</dt>
@@ -618,6 +692,12 @@ const Totals: React.FC<{ subtotal: number; deliveryFee: number; total: number }>
         {deliveryFee > 0 ? formatMoney(deliveryFee) : 'Offerte'}
       </dd>
     </div>
+    {discount > 0 && (
+      <div className="flex justify-between font-semibold text-emerald-700">
+        <dt>Code {promoCode}</dt>
+        <dd className="tabular-nums">-{formatMoney(discount)}</dd>
+      </div>
+    )}
     <div className="pt-2.5 border-t border-black/5 flex justify-between text-[19px] font-extrabold">
       <dt>Total</dt>
       <dd className="tabular-nums">{formatMoney(total)}</dd>

@@ -14,6 +14,7 @@ import {
   Users,
   Wallet,
   X,
+  Megaphone,
 } from 'lucide-react';
 import { DashboardTab } from '@/types/juula';
 import { LogoutConfirmDialog } from './LogoutConfirmDialog';
@@ -34,6 +35,7 @@ const MAIN: { id: DashboardTab; label: string; icon: React.ElementType }[] = [
 
 const MORE: { id: DashboardTab; label: string; icon: React.ElementType }[] = [
   { id: 'wallet', label: 'Finances', icon: Wallet },
+  { id: 'marketing', label: 'Marketing', icon: Megaphone },
   { id: 'analytics', label: 'Performances', icon: BarChart3 },
   { id: 'customers', label: 'Clients', icon: Users },
   { id: 'notifications', label: 'Notifications', icon: Bell },

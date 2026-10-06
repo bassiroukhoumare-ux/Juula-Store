@@ -23,7 +23,20 @@ export function isValidTiktokPixelId(id: string | null | undefined): id is strin
   return typeof id === 'string' && TIKTOK_PIXEL_ID_REGEX.test(id);
 }
 
+// Google tag: GA4 measurement id (G-…), Google Ads (AW-…) or tag id (GT-…).
+export const GOOGLE_TAG_ID_REGEX = /^(G|AW|GT)-[A-Z0-9]{4,20}$/;
+
+export function normalizeGoogleTagId(raw: string): string {
+  return raw.replace(/\s+/g, '').toUpperCase();
+}
+
+export function isValidGoogleTagId(id: string | null | undefined): id is string {
+  return typeof id === 'string' && GOOGLE_TAG_ID_REGEX.test(id);
+}
+
 export interface StorePixels {
   facebookPixelId: string | null;
   tiktokPixelId: string | null;
+  /** Optional Google tag (GA4 / Ads). */
+  googleTagId?: string | null | undefined;
 }

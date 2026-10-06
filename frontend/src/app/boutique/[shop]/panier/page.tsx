@@ -35,6 +35,7 @@ export default async function Page({ params }: PageProps) {
         options={checkoutOptionsFor(store)}
         isPreview={isPreview}
         displayCurrency={store.displayCurrency}
+        announcement={settings.announcement}
       />
     </div>
   );

@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { ArrowLeft, Check, Eye, Lock } from 'lucide-react';
+import { AnnouncementBar } from './AnnouncementBar';
+import type { AnnouncementBar as AnnouncementBarData } from '@/lib/store/marketing';
 
 export type ShopStep = 1 | 2 | 3;
 
@@ -21,6 +23,9 @@ interface ShopPageShellProps {
   /** « Continuer mes achats » / « Retour au panier ». */
   back: { href: string; label: string };
   isPreview: boolean;
+  announcement?: AnnouncementBarData | undefined;
+  /** Shop URL prefix, for the announcement link. */
+  base?: string | undefined;
   children: React.ReactNode;
 }
 
@@ -33,12 +38,15 @@ export const ShopPageShell: React.FC<ShopPageShellProps> = ({
   step,
   back,
   isPreview,
+  announcement,
+  base = '',
   children,
 }) => (
   <div
     className="min-h-screen flex flex-col bg-[#F1F3F2] text-[#201D1D]"
     style={{ ['--accent' as string]: accent }}
   >
+    <AnnouncementBar bar={announcement} accent={accent} base={base} />
     {isPreview && (
       <div className="bg-[#201D1D] text-white text-[13px] font-semibold text-center py-2 px-4 flex items-center justify-center gap-2">
         <Eye className="w-4 h-4" /> Aperçu privé — votre boutique n’est pas encore publiée.
@@ -123,7 +131,20 @@ export const ShopPageShell: React.FC<ShopPageShellProps> = ({
 
     <footer className="bg-[var(--accent)] text-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-        <p className="text-[16px] font-bold">{storeName}</p>
+        <div className="flex items-center gap-3">
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={`Logo ${storeName}`}
+              className="w-10 h-10 rounded-full object-cover bg-white ring-2 ring-white/40 shrink-0"
+            />
+          ) : (
+            <span className="w-10 h-10 rounded-full bg-white/15 ring-2 ring-white/40 flex items-center justify-center font-bold shrink-0">
+              {storeName.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <p className="text-[16px] font-bold">{storeName}</p>
+        </div>
         <p className="text-[13px] text-white/70">
           Paiement sécurisé · Boutique propulsée par{' '}
           <a

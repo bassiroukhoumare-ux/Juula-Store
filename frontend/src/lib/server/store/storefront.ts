@@ -1,4 +1,5 @@
 import { capFaq } from '@/lib/store/product-content';
+import { parseAnnouncement } from '@/lib/store/marketing';
 import 'server-only';
 // Storefront (<subdomain>.juula.store) settings and the payment options a
 // customer gets on the shop and on product pages, according to the plan.
@@ -115,6 +116,7 @@ export function toStorefrontSettings(store: Store | null): StorefrontSettings {
     banners: parseBanners(store?.storeBanners),
     sections: parseSections(store?.storeSections),
     faq: capFaq(store?.storeFaq),
+    announcement: parseAnnouncement(store?.announcementBar),
     codEnabled: store?.codEnabled ?? true,
     onlinePaymentsEnabled: store?.onlinePaymentsEnabled ?? false,
     setupDone: store?.storefrontSetupDone ?? false,
@@ -154,6 +156,7 @@ export interface StorefrontInput {
   banners?: unknown[] | undefined; // normalized by parseBanners
   sections?: unknown[] | undefined; // normalized by parseSections
   faq?: unknown[] | undefined; // normalized by capFaq
+  announcement?: unknown; // normalized by parseAnnouncement
   codEnabled?: boolean | undefined;
   onlinePaymentsEnabled?: boolean | undefined;
   setupDone?: boolean | undefined;
@@ -214,6 +217,11 @@ export async function saveStorefrontSettings(
       images: x.images.filter((u) => isAllowedLogoUrl(u)),
     }));
     data.storeSections = sections as unknown as Prisma.InputJsonValue;
+  }
+  if (input.announcement !== undefined) {
+    data.announcementBar = parseAnnouncement(
+      input.announcement,
+    ) as unknown as Prisma.InputJsonValue;
   }
   if (input.faq !== undefined) {
     data.storeFaq = capFaq(input.faq) as unknown as Prisma.InputJsonValue;

@@ -1,6 +1,6 @@
 'use client';
 
-import { Dropdown } from '@/components/ui/Dropdown';
+import { FilterBar } from '@/components/ui/FilterBar';
 import { SkeletonStats } from '@/components/ui/Skeleton';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -77,6 +77,8 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
   onSetShopVisibility,
 }) => {
   const [filter, setFilter] = useState<Filter>('all');
+  const [shopFilter, setShopFilter] = useState<'all' | 'visible' | 'hidden'>('all');
+  const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -110,8 +112,21 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
     () =>
       pages
         .filter((p) => filter === 'all' || p.status === filter)
+        .filter(
+          (p) =>
+            shopFilter === 'all' || (shopFilter === 'visible') === (p.config.showInStore === true),
+        )
+        .filter((p) => {
+          const q = query.trim().toLowerCase();
+          return (
+            !q ||
+            (p.config.productTitle || '').toLowerCase().includes(q) ||
+            p.internalName.toLowerCase().includes(q) ||
+            (p.config.category || '').toLowerCase().includes(q)
+          );
+        })
         .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]),
-    [pages, filter],
+    [pages, filter, shopFilter, query],
   );
 
   const submitCreate = async (e: React.FormEvent) => {
@@ -155,64 +170,71 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-[#201D1D] tracking-tight">
-            {mode === 'catalog' ? 'Mes pages produits' : 'Mes pages de vente'}
-          </h2>
-          <p className="text-[14px] text-[#7A808C]">
-            {mode === 'catalog'
-              ? `${counts.all} produit${counts.all > 1 ? 's' : ''} · chacun a sa page en ligne (à activer) et peut être affiché dans votre boutique · statistiques des 30 derniers jours`
-              : `${counts.published} page${counts.published > 1 ? 's' : ''} active${counts.published > 1 ? 's' : ''} sur ${counts.all} · statistiques des 30 derniers jours`}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setCreating(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[14px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Nouveau produit
-        </button>
-      </div>
-
-      {/* Status filter */}
-      {pages.length > 0 && (
-        <>
-          <Dropdown
-            className="sm:hidden"
-            label="Filtrer les produits"
-            caption="Afficher"
-            value={filter}
-            onChange={setFilter}
-            options={FILTERS.map((f) => ({ value: f.id, label: `${f.label} (${counts[f.id]})` }))}
-          />
-          <div className="hidden sm:flex flex-wrap gap-2">
-            {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilter(f.id)}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-semibold border transition-colors cursor-pointer ${
-                  filter === f.id
-                    ? 'bg-[#201D1D] text-white border-[#201D1D]'
-                    : 'bg-white text-[#3F4654] border-[#E3E7EE] hover:bg-[#F6F7F9]'
-                }`}
-              >
-                {f.label}
-                <span
-                  className={`text-xs font-bold px-1.5 rounded-md ${
-                    filter === f.id ? 'bg-white/15' : 'bg-[#F1F3F6] text-[#7A808C]'
-                  }`}
-                >
-                  {counts[f.id]}
-                </span>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+      {/* Recherche + un seul bouton « Filtrer » + nouveau produit */}
+      <FilterBar
+        {...(pages.length > 0
+          ? {
+              search: {
+                value: query,
+                onChange: setQuery,
+                placeholder: 'Nom, catégorie…',
+              },
+            }
+          : {})}
+        groups={
+          pages.length === 0
+            ? []
+            : [
+                {
+                  id: 'status',
+                  label: 'Statut',
+                  value: filter,
+                  defaultValue: 'all',
+                  onChange: (v) => setFilter(v as Filter),
+                  options: FILTERS.map((f) => ({
+                    value: f.id,
+                    label: f.label,
+                    count: counts[f.id],
+                  })),
+                },
+                ...(mode === 'catalog'
+                  ? [
+                      {
+                        id: 'shop',
+                        label: 'Dans la boutique',
+                        value: shopFilter,
+                        defaultValue: 'all',
+                        onChange: (v: string) => setShopFilter(v as typeof shopFilter),
+                        options: [
+                          { value: 'all', label: 'Tous' },
+                          {
+                            value: 'visible',
+                            label: 'Visibles',
+                            count: pages.filter((p) => p.config.showInStore === true).length,
+                          },
+                          {
+                            value: 'hidden',
+                            label: 'Masqués',
+                            count: pages.filter((p) => p.config.showInStore !== true).length,
+                          },
+                        ],
+                      },
+                    ]
+                  : []),
+              ]
+        }
+        action={
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[14px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            <span className="hidden min-[400px]:inline">Nouveau produit</span>
+            <span className="min-[400px]:hidden">Nouveau</span>
+          </button>
+        }
+      />
 
       {/* List */}
       {visible.length === 0 ? (

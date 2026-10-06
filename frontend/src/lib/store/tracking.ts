@@ -15,11 +15,18 @@
 //   Purchase (Meta) / PlaceAnOrder + CompletePayment (TikTok) — order saved
 // Purchase events carry the order reference as event_id, so a future
 // server-side Conversions API can deduplicate against them.
-import { isValidFacebookPixelId, isValidTiktokPixelId, type StorePixels } from './pixels';
+import {
+  isValidFacebookPixelId,
+  isValidGoogleTagId,
+  isValidTiktokPixelId,
+  type StorePixels,
+} from './pixels';
 
 type QueueFn = ((...args: unknown[]) => void) & Record<string, unknown>;
 
 interface TrackingWindow {
+  dataLayer?: unknown[];
+  gtag?: (...args: unknown[]) => void;
   fbq?: QueueFn;
   _fbq?: QueueFn;
   ttq?: unknown[] & Record<string, unknown>;
@@ -112,7 +119,22 @@ function loadTiktokPixel(pixelId: string): void {
   ttq.page?.();
 }
 
-let activePixels: StorePixels = { facebookPixelId: null, tiktokPixelId: null };
+function loadGoogleTag(tagId: string): void {
+  const w = win();
+  if (!w.gtag) {
+    w.dataLayer = w.dataLayer ?? [];
+    // gtag must push the `arguments` object itself (official snippet).
+    w.gtag = function gtag() {
+      // eslint-disable-next-line prefer-rest-params
+      (w.dataLayer as unknown[]).push(arguments);
+    };
+    w.gtag('js', new Date());
+    appendScript(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(tagId)}`);
+  }
+  w.gtag('config', tagId); // sends page_view
+}
+
+let activePixels: StorePixels = { facebookPixelId: null, tiktokPixelId: null, googleTagId: null };
 let initialized = false;
 
 /** Load the store's pixels once per page. Invalid IDs are ignored. */
@@ -122,9 +144,11 @@ export function initPixels(pixels: StorePixels): void {
   activePixels = {
     facebookPixelId: isValidFacebookPixelId(pixels.facebookPixelId) ? pixels.facebookPixelId : null,
     tiktokPixelId: isValidTiktokPixelId(pixels.tiktokPixelId) ? pixels.tiktokPixelId : null,
+    googleTagId: isValidGoogleTagId(pixels.googleTagId) ? pixels.googleTagId : null,
   };
   if (activePixels.facebookPixelId) loadFacebookPixel(activePixels.facebookPixelId);
   if (activePixels.tiktokPixelId) loadTiktokPixel(activePixels.tiktokPixelId);
+  if (activePixels.googleTagId) loadGoogleTag(activePixels.googleTagId);
 }
 
 function fb(event: string, params: Record<string, unknown>, eventId?: string): void {
@@ -136,6 +160,11 @@ function tt(event: string, params: Record<string, unknown>, eventId?: string): v
   if (!activePixels.tiktokPixelId) return;
   const ttq = win().ttq as Record<string, (...a: unknown[]) => void> | undefined;
   ttq?.track?.(event, params, ...(eventId ? [{ event_id: eventId }] : []));
+}
+
+function ga(event: string, params: Record<string, unknown>): void {
+  if (!activePixels.googleTagId) return;
+  win().gtag?.('event', event, params);
 }
 
 // Pixels expect ISO 4217; the app displays FCFA (= XOF).
@@ -153,6 +182,11 @@ export interface TrackedProduct {
 
 export function trackViewContent(p: TrackedProduct): void {
   const currency = isoCurrency(p.currency);
+  ga('view_item', {
+    currency,
+    value: p.price,
+    items: [{ item_id: p.id, item_name: p.name, price: p.price, quantity: 1 }],
+  });
   fb('ViewContent', {
     content_ids: [p.id],
     content_name: p.name,
@@ -177,6 +211,11 @@ export function trackViewContent(p: TrackedProduct): void {
 
 export function trackInitiateCheckout(p: TrackedProduct, quantity: number, value: number): void {
   const currency = isoCurrency(p.currency);
+  ga('begin_checkout', {
+    currency,
+    value,
+    items: [{ item_id: p.id, item_name: p.name, price: p.price, quantity }],
+  });
   fb('InitiateCheckout', {
     content_ids: [p.id],
     content_type: 'product',
@@ -220,5 +259,80 @@ export function trackPurchase(
     order.reference,
   );
   tt('PlaceAnOrder', { contents, value: order.total, currency }, order.reference);
+  ga('purchase', {
+    transaction_id: order.reference,
+    currency,
+    value: order.total,
+    items: [{ item_id: p.id, item_name: p.name, price: p.price, quantity: order.quantity }],
+  });
   tt('CompletePayment', { contents, value: order.total, currency }, `${order.reference}-pay`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Shop (several products): add to cart, checkout, purchase.
+// ─────────────────────────────────────────────────────────────────────────
+export interface TrackedLine {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+function cartPayloads(lines: TrackedLine[], value: number, currency: string) {
+  return {
+    fb: {
+      content_ids: lines.map((l) => l.id),
+      content_type: 'product',
+      num_items: lines.reduce((s, l) => s + l.quantity, 0),
+      value,
+      currency,
+    },
+    tt: {
+      contents: lines.map((l) => ({
+        content_id: l.id,
+        content_name: l.name,
+        content_type: 'product',
+        price: l.price,
+        quantity: l.quantity,
+      })),
+      value,
+      currency,
+    },
+    ga: {
+      currency,
+      value,
+      items: lines.map((l) => ({
+        item_id: l.id,
+        item_name: l.name,
+        price: l.price,
+        quantity: l.quantity,
+      })),
+    },
+  };
+}
+
+export function trackAddToCart(line: TrackedLine, currency = 'XOF'): void {
+  const c = isoCurrency(currency);
+  const p = cartPayloads([line], line.price * line.quantity, c);
+  fb('AddToCart', p.fb);
+  tt('AddToCart', p.tt);
+  ga('add_to_cart', p.ga);
+}
+
+export function trackCartCheckout(lines: TrackedLine[], value: number, currency = 'XOF'): void {
+  const p = cartPayloads(lines, value, isoCurrency(currency));
+  fb('InitiateCheckout', p.fb);
+  tt('InitiateCheckout', p.tt);
+  ga('begin_checkout', p.ga);
+}
+
+export function trackCartPurchase(
+  lines: TrackedLine[],
+  order: { reference: string; total: number },
+  currency = 'XOF',
+): void {
+  const p = cartPayloads(lines, order.total, isoCurrency(currency));
+  fb('Purchase', p.fb, order.reference);
+  tt('PlaceAnOrder', p.tt, order.reference);
+  ga('purchase', { ...p.ga, transaction_id: order.reference });
 }

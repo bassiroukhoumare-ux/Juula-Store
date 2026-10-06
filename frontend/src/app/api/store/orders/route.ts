@@ -25,6 +25,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       where: { merchantId: auth.user.sub },
       orderBy: { createdAt: 'desc' },
       take: MAX_ORDERS,
+      include: { partner: { select: { name: true } } },
     });
     return NextResponse.json(
       { orders: orders.map(toOrderLead) },

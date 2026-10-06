@@ -9,6 +9,7 @@ import { KanbanView } from '@/components/dashboard/KanbanView';
 import { WalletView } from '@/components/dashboard/WalletView';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import { ProductsListView } from '@/components/dashboard/ProductsListView';
+import { MarketingView } from '@/components/dashboard/MarketingView';
 import { BoutiqueView } from '@/components/dashboard/BoutiqueView';
 import type { SettingsSection } from '@/components/dashboard/SettingsView';
 import { NotificationsView } from '@/components/dashboard/NotificationsView';
@@ -341,14 +342,23 @@ export default function JuulaStoreApp() {
     setActiveTab('products');
     setIsEditingProduct(true);
   };
-  // Sales-page preview shows the store's own logo and name, like the public page.
+  // Shop colour (Boutique → Couverture & identité), reloaded when opening a preview.
+  const [storeAccent, setStoreAccent] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (session !== 'ready' || viewMode !== 'vitrine') return;
+    api<{ settings: { accent: string } }>('/api/store/storefront')
+      .then(({ settings }) => setStoreAccent(settings.accent))
+      .catch(() => undefined);
+  }, [session, viewMode]);
+  // Sales-page preview shows the store's own logo, name and colour, like the public page.
   const previewConfig = useMemo(
     () => ({
       ...funnelConfig,
       storeLogoUrl: storeProfile.logoUrl,
       ...(storeProfile.name ? { storeName: storeProfile.name } : {}),
+      ...(storeAccent ? { storeAccent } : {}),
     }),
-    [funnelConfig, storeProfile.logoUrl, storeProfile.name],
+    [funnelConfig, storeProfile.logoUrl, storeProfile.name, storeAccent],
   );
   // Cockpit blocks (the AI assistant is hidden for now).
   const activeWidgets: HeaderWidgetsState = {
@@ -883,6 +893,10 @@ export default function JuulaStoreApp() {
 
                   {activeTab === 'customers' && (
                     <CustomersView orders={orders} storeName={funnelConfig.storeName} />
+                  )}
+
+                  {activeTab === 'marketing' && (
+                    <MarketingView pages={funnelPages} onUpdateProduct={handleUpdateProduct} />
                   )}
 
                   {activeTab === 'analytics' && (

@@ -12,15 +12,16 @@ import { after, NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { prisma } from '@/lib/server/prisma';
-import { productConfig } from '@/lib/server/store/products';
 import { nextOrderNumber, publicOrderRateLimit } from '@/lib/server/store/orders';
 import { loadStoreBySubdomain } from '@/lib/server/store/public';
 import { customerPhone, decidePayment } from '@/lib/server/store/checkout';
-import { isStoreLive, shopSellableSlugs } from '@/lib/server/store/storefront';
+import { priceShopCart } from '@/lib/server/store/order-pricing';
+import { activePartner } from '@/lib/server/store/partners';
+import { computeCommission } from '@/lib/store/partners';
+import { checkPromo, consumePromo, PromoExhaustedError } from '@/lib/server/store/promo';
+import { isStoreLive } from '@/lib/server/store/storefront';
 import { sendNewOrderEmail } from '@/lib/server/store/notify';
-import { computeDeliveryFee } from '@/lib/store/pricing';
 import { formatOrderId, getStoreCode } from '@/lib/orderUtils';
-import type { OrderItem } from '@/types/juula';
 import type { Prisma } from '@prisma/client';
 
 const Body = z.object({
@@ -43,6 +44,9 @@ const Body = z.object({
   addressDetails: z.string().trim().max(500).optional(),
   paymentType: z.enum(['cod', 'online_momo', 'online_wave', 'online_orange', 'direct', 'whatsapp']),
   directMethodId: z.string().max(40).optional(),
+  promoCode: z.string().trim().max(40).optional(),
+  /** Affiliate link the visitor came through (?ref=), kept 7 days in the browser. */
+  partnerRef: z.string().trim().max(60).optional(),
 });
 
 export async function POST(
@@ -79,49 +83,22 @@ export async function POST(
     const payment = decidePayment(store, input.paymentType, input.directMethodId);
     if (!payment.ok) return fail(payment.status, payment.error, payment.message);
 
-    const slugs = [...new Set(input.items.map((i) => i.slug))];
-    // Shop products: made visible in the shop or placed in a banner / section
-    // (independent of the product's own sales page), never deactivated ones.
-    const inCollections = shopSellableSlugs(store);
-    const products = (
-      await prisma.product.findMany({
-        where: { slug: { in: slugs }, userId: store.userId, status: { not: 'inactive' } },
-      })
-    ).filter((p) => productConfig(p).showInStore === true || inCollections.has(p.slug));
-    if (products.length !== slugs.length) {
-      return fail(
-        409,
-        'PRODUCT_NOT_AVAILABLE',
-        'Un article de votre panier n’est plus disponible. Retirez-le et réessayez.',
-      );
-    }
+    const priced = await priceShopCart(store, input.items, input.paymentType);
+    if (!priced.ok) return fail(priced.status, priced.error, priced.message);
+    const { items, deliveryFee } = priced;
 
-    let deliveryFee = 0;
-    const items: OrderItem[] = [];
-    for (const line of input.items) {
-      const product = products.find((p) => p.slug === line.slug)!;
-      const config = productConfig(product);
-      if (input.paymentType === 'cod' && config.codEnabled === false) {
-        return fail(
-          400,
-          'PAYMENT_METHOD_DISABLED',
-          `« ${config.productTitle} » n’est pas payable à la livraison.`,
-        );
-      }
-      deliveryFee = Math.max(deliveryFee, computeDeliveryFee(config));
-      const color = (config.availableColors ?? []).some((c) => c.name === line.color)
-        ? (line.color ?? null)
-        : null;
-      items.push({
-        productId: product.id,
-        slug: product.slug,
-        name: config.productTitle || product.internalName,
-        image: config.mediaItems.find((m) => m.type === 'image')?.url ?? null,
-        quantity: line.quantity,
-        unitPrice: config.price,
-        lineTotal: config.price * line.quantity,
-        color,
-      });
+    // Promo code: checked here (clear error), counted inside the order transaction.
+    let promo: { id: string; code: string; discount: number } | null = null;
+    if (input.promoCode) {
+      const checked = await checkPromo(
+        prisma,
+        store.userId,
+        input.promoCode,
+        priced.amount,
+        deliveryFee,
+      );
+      if (!checked.ok) return fail(400, checked.error, checked.message);
+      promo = { id: checked.id, code: checked.code, discount: checked.discount };
     }
 
     const amount = items.reduce((s, i) => s + i.lineTotal, 0);
@@ -136,36 +113,57 @@ export async function POST(
     const storeCode = getStoreCode(store.name || store.subdomain || 'Juula Store');
     const { phone, whatsappNumber } = customerPhone(input.whatsappNumber);
 
-    const order = await prisma.$transaction(async (tx) => {
-      const number = await nextOrderNumber(tx, store.userId);
-      return tx.storeOrder.create({
-        data: {
-          merchantId: store.userId,
-          productId: items.length === 1 ? first.productId : null,
-          number,
-          reference: formatOrderId(storeCode, number),
-          productName,
-          productImage: first.image,
-          quantity,
-          selectedColor: items.length === 1 ? first.color : null,
-          amount,
-          deliveryFee,
-          totalAmount: amount + deliveryFee,
-          currency: 'FCFA',
-          customerName: input.customerName,
-          phone,
-          whatsappNumber,
-          neighborhood: input.address,
-          city: null,
-          deliveryAddress: [input.address, input.addressDetails].filter(Boolean).join(' — '),
-          deliveryNotes: payment.deliveryNotes,
-          paymentType: input.paymentType,
-          paymentStatus: payment.paymentStatus,
-          paymentMethodName: payment.paymentMethodName,
-          items: items as unknown as Prisma.InputJsonValue,
-        },
+    // Affiliate: only while the campaign is active; commission on products only.
+    const partner = await activePartner(prisma, store.userId, input.partnerRef);
+    const partnerCommission = partner ? computeCommission(items, partner) : 0;
+
+    let order;
+    try {
+      order = await prisma.$transaction(async (tx) => {
+        if (promo && !(await consumePromo(tx, promo.id))) throw new PromoExhaustedError();
+        const number = await nextOrderNumber(tx, store.userId);
+        return tx.storeOrder.create({
+          data: {
+            merchantId: store.userId,
+            productId: items.length === 1 ? first.productId : null,
+            number,
+            reference: formatOrderId(storeCode, number),
+            productName,
+            productImage: first.image,
+            quantity,
+            selectedColor: items.length === 1 ? first.color : null,
+            amount,
+            deliveryFee,
+            totalAmount: amount + deliveryFee - (promo?.discount ?? 0),
+            promoCode: promo?.code ?? null,
+            discountAmount: promo?.discount ?? 0,
+            partnerId: partner?.id ?? null,
+            partnerCommission,
+            currency: 'FCFA',
+            customerName: input.customerName,
+            phone,
+            whatsappNumber,
+            neighborhood: input.address,
+            city: null,
+            deliveryAddress: [input.address, input.addressDetails].filter(Boolean).join(' — '),
+            deliveryNotes: payment.deliveryNotes,
+            paymentType: input.paymentType,
+            paymentStatus: payment.paymentStatus,
+            paymentMethodName: payment.paymentMethodName,
+            items: items as unknown as Prisma.InputJsonValue,
+          },
+        });
       });
-    });
+    } catch (err) {
+      if (err instanceof PromoExhaustedError) {
+        return fail(
+          409,
+          'PROMO_EXHAUSTED',
+          'Ce code promo a déjà été utilisé le nombre de fois prévu.',
+        );
+      }
+      throw err;
+    }
 
     after(() => sendNewOrderEmail(order.id));
 
@@ -177,6 +175,8 @@ export async function POST(
           amount: order.amount,
           deliveryFee: order.deliveryFee,
           totalAmount: order.totalAmount,
+          discountAmount: order.discountAmount,
+          promoCode: order.promoCode,
           currency: order.currency,
         },
       },

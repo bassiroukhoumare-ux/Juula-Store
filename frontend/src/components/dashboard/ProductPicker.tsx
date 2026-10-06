@@ -11,6 +11,8 @@ interface ProductPickerProps {
   /** Creates a product for this block, then opens its editor. */
   onCreate?: (name: string) => Promise<void>;
   createLabel: string;
+  /** Maximum number of products that can be selected. */
+  max?: number;
 }
 
 /** Choose existing products for a banner / section, or create a new one. */
@@ -20,6 +22,7 @@ export const ProductPicker: React.FC<ProductPickerProps> = ({
   onChange,
   onCreate,
   createLabel,
+  max,
 }) => {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
@@ -89,7 +92,9 @@ export const ProductPicker: React.FC<ProductPickerProps> = ({
                 key={p.id}
                 type="button"
                 aria-pressed={on}
-                disabled={p.status === 'inactive'}
+                disabled={
+                  p.status === 'inactive' || (!on && max !== undefined && selected.length >= max)
+                }
                 onClick={() =>
                   onChange(on ? selected.filter((x) => x !== slug) : [...selected, slug])
                 }

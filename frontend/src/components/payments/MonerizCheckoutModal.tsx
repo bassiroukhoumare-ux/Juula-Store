@@ -118,7 +118,7 @@ export const MonerizCheckoutModal: React.FC<MonerizCheckoutModalProps> = ({
         <div className="relative flex-1 overflow-y-auto min-h-[400px] p-2 bg-[#F8FAFC]">
           {isLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/90 z-10">
-              <Loader2 className="w-8 h-8 text-[#235BF7] animate-spin" />
+              <Loader2 className="w-8 h-8 text-[var(--accent,#235BF7)] animate-spin" />
               <span className="text-xs font-bold text-[#201D1D]">
                 Connexion sécurisée aux passerelles de paiement...
               </span>
@@ -146,7 +146,7 @@ export const MonerizCheckoutModal: React.FC<MonerizCheckoutModalProps> = ({
             href={resumeUrl || session.checkoutUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-bold text-[#235BF7] hover:underline"
+            className="inline-flex items-center gap-1 font-bold text-[var(--accent,#235BF7)] hover:underline"
           >
             <span>Ouvrir en plein écran</span>
             <ExternalLink className="w-3.5 h-3.5" />

@@ -1,3 +1,4 @@
+import type { AnnouncementBar } from '@/lib/store/marketing';
 import type { FaqItem } from '@/lib/store/product-content';
 // Storefront settings shared by the dashboard, the public shop and the API.
 
@@ -61,6 +62,8 @@ export interface StorefrontSettings {
   sections: StoreSection[];
   /** Shop FAQ, shown just before the footer (incomplete entries are hidden). */
   faq: FaqItem[];
+  /** Marketing → top announcement bar. */
+  announcement: AnnouncementBar;
   codEnabled: boolean;
   /** JuulaPay online payments (optional, 7,5 % per payment). */
   onlinePaymentsEnabled: boolean;

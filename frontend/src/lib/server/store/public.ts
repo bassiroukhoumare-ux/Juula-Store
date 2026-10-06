@@ -14,16 +14,17 @@ import { isStorePro } from '@/lib/store/plans';
 
 export function pixelsOf(
   store:
-    | (Pick<Store, 'facebookPixelId' | 'tiktokPixelId'> &
+    | (Pick<Store, 'facebookPixelId' | 'tiktokPixelId' | 'googleTagId'> &
         Partial<Pick<Store, 'plan' | 'planExpiresAt'>>)
     | null,
 ): StorePixels {
   if (!isStorePro(store)) {
-    return { facebookPixelId: null, tiktokPixelId: null };
+    return { facebookPixelId: null, tiktokPixelId: null, googleTagId: null };
   }
   return {
     facebookPixelId: store?.facebookPixelId ?? null,
     tiktokPixelId: store?.tiktokPixelId ?? null,
+    googleTagId: store?.googleTagId ?? null,
   };
 }
 

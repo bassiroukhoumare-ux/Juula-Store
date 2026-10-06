@@ -86,6 +86,7 @@ export async function PATCH(
         ...(parsed.data.status ? { status: parsed.data.status } : {}),
         ...(parsed.data.paymentReceived ? { paymentStatus: 'paid_direct' } : {}),
       },
+      include: { partner: { select: { name: true } } },
     });
     return NextResponse.json(
       { order: toOrderLead(order) },

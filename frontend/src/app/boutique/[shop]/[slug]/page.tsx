@@ -12,6 +12,7 @@ import {
 import { PublicProductView } from '@/components/showcase/PublicProductView';
 import { storeProductUrl } from '@/lib/store/subdomain';
 import { isStoreLive, withCheckoutOptions } from '@/lib/server/store/storefront';
+import { withMarketing } from '@/lib/server/store/marketing';
 import { ComingSoon } from '@/components/storefront/ComingSoon';
 
 export const dynamic = 'force-dynamic';
@@ -55,7 +56,11 @@ export default async function StoreProductPage({ params, searchParams }: PagePro
   const { store, product } = found;
   return (
     <PublicProductView
-      config={withCheckoutOptions(withStoreBranding(productConfig(product), store), store)}
+      config={await withMarketing(
+        withCheckoutOptions(withStoreBranding(productConfig(product), store), store),
+        store,
+        product.userId,
+      )}
       pixels={pixelsOf(store)}
       isPreview={false}
       displayCurrency={store.displayCurrency}

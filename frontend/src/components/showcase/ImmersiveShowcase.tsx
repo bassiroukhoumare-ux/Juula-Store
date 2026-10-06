@@ -1,5 +1,8 @@
 'use client';
 
+import { isHexColor } from '@/lib/store/storefront-types';
+import { AnnouncementBar } from '@/components/storefront/AnnouncementBar';
+import { PromoCodeField, type AppliedPromo } from '@/components/storefront/PromoCodeField';
 import {
   ComparisonTable,
   FaqAccordion,
@@ -110,6 +113,8 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   const [isMuted, setIsMuted] = useState(true);
   const [isCheckoutPageOpen, setIsCheckoutPageOpen] = useState(false);
   const [quantity, setQuantity] = useState<number>(1);
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [promo, setPromo] = useState<AppliedPromo | null>(null);
   // What the merchant offers (injected on public pages from the store).
   const codOn = config.codEnabled !== false;
   const onlineOn = config.onlinePaymentsEnabled !== false && config.mobileMoneyEnabled !== false;
@@ -285,7 +290,31 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   }
 
   const subtotalAfterDiscount = baseSubtotal - discountAmount;
-  const totalAmount = subtotalAfterDiscount + deliveryFee;
+  // « Souvent acheté avec » ticked by the customer (priced « acheté ensemble »).
+  const crossSellProducts = config.crossSellProducts ?? [];
+  const chosenExtras = crossSellProducts.filter((p) => selectedExtras.includes(p.slug));
+  const extrasTotal = chosenExtras.reduce((s, p) => s + p.bundlePrice, 0);
+  const orderDeliveryFee = Math.max(deliveryFee, ...chosenExtras.map((p) => p.deliveryFee));
+  const promoDiscount = promo
+    ? Math.min(promo.discount, subtotalAfterDiscount + extrasTotal + orderDeliveryFee)
+    : 0;
+  const totalAmount = subtotalAfterDiscount + extrasTotal + orderDeliveryFee - promoDiscount;
+  const promoRequest = {
+    productSlug: config.slug,
+    quantity,
+    ...(selectedColor ? { color: selectedColor } : {}),
+    extras: selectedExtras.map((slug) => ({ slug })),
+  };
+  const promoSignature = `${quantity}|${selectedExtras.join(',')}`;
+
+  // The shop's colour (chosen when creating the shop) drives every accent of
+  // the page: buttons, prices, highlights. Blue when the shop has none.
+  const accent = isHexColor(config.storeAccent) ? config.storeAccent : '#235BF7';
+  const accentStyle = {
+    '--accent': accent,
+    '--accent-hover': `color-mix(in srgb, ${accent} 82%, black)`,
+    '--accent-soft': `color-mix(in srgb, ${accent} 10%, white)`,
+  } as React.CSSProperties;
 
   const images = config.mediaItems.filter((m) => m.type === 'image');
   const totalSlides = images.length + (config.hasVideo && config.videoUrl ? 1 : 0);
@@ -479,9 +508,11 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
         voiceNoteUrl: voiceNoteUrl || undefined,
         city: 'Dakar',
         productName: quantity > 1 ? `${config.productTitle} (×${quantity})` : config.productTitle,
-        amount: subtotalAfterDiscount,
-        deliveryFee,
+        amount: subtotalAfterDiscount + extrasTotal,
+        deliveryFee: orderDeliveryFee,
         totalAmount,
+        ...(promo ? { promoCode: promo.code, discountAmount: promoDiscount } : {}),
+        ...(chosenExtras.length > 0 ? { extras: chosenExtras.map((p) => ({ slug: p.slug })) } : {}),
         quantity,
         currency: config.currency,
         status: 'new',
@@ -642,6 +673,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   if (config.status === 'inactive') {
     return (
       <div
+        style={accentStyle}
         className={`w-full bg-[#F6F7F9] text-[#201D1D] flex items-center justify-center p-6 text-center select-none ${
           isInsideMockup ? 'h-full' : 'min-h-screen'
         }`}
@@ -674,6 +706,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   if (isCheckoutPageOpen) {
     return (
       <div
+        style={accentStyle}
         className={`relative w-full bg-[#F6F7F9] text-[#201D1D] flex flex-col ${displayFont.className} select-none ${
           isInsideMockup ? 'h-full overflow-y-auto' : 'min-h-screen'
         }`}
@@ -686,7 +719,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               setIsCheckoutPageOpen(false);
               setOrderSuccess(null);
             }}
-            className="inline-flex items-center gap-2 text-xs font-bold text-[#235BF7] hover:text-[#1A4AD6] transition-colors cursor-pointer bg-[#EEF3FF] hover:bg-[#DBEAFE] px-3 py-1.5 rounded-xl"
+            className="inline-flex items-center gap-2 text-xs font-bold text-[var(--accent,#235BF7)] hover:text-[var(--accent-hover,#1A4AD6)] transition-colors cursor-pointer bg-[var(--accent-soft,#EEF3FF)] hover:bg-[var(--accent-soft,#DBEAFE)] px-3 py-1.5 rounded-xl"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Retourner à la vitrine</span>
@@ -731,7 +764,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               <div className="p-4 sm:p-5 rounded-2xl bg-[#F6F7F9] border border-[#E3E7EE] text-left text-xs space-y-2.5">
                 <div className="flex justify-between items-center pb-2 border-b border-[#E3E7EE]">
                   <span className="text-[#7A808C]">Numéro de commande :</span>
-                  <span className="font-mono font-bold text-[#235BF7] bg-[#EEF3FF] px-2 py-0.5 rounded">
+                  <span className="font-mono font-bold text-[var(--accent,#235BF7)] bg-[var(--accent-soft,#EEF3FF)] px-2 py-0.5 rounded">
                     #{orderSuccess.id}
                   </span>
                 </div>
@@ -753,7 +786,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 )}
 
                 {orderSuccess.hasVoiceNote && (
-                  <div className="flex justify-between items-center bg-[#EEF3FF] border border-[#BFDBFE] p-2.5 rounded-xl text-[#235BF7] font-bold">
+                  <div className="flex justify-between items-center bg-[var(--accent-soft,#EEF3FF)] border border-[#BFDBFE] p-2.5 rounded-xl text-[var(--accent,#235BF7)] font-bold">
                     <span className="flex items-center gap-1.5">
                       <Mic className="w-4 h-4" /> Note vocale d'adresse
                     </span>
@@ -765,7 +798,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
                 <div className="flex justify-between items-center pt-2 border-t border-[#E3E7EE]">
                   <span className="text-sm font-bold text-[#201D1D]">Montant total à régler :</span>
-                  <span className="text-base font-black text-[#235BF7]">
+                  <span className="text-base font-black text-[var(--accent,#235BF7)]">
                     {formatFCFA(orderSuccess.totalAmount || orderSuccess.amount)}
                   </span>
                 </div>
@@ -861,7 +894,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   />
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                      <span className="text-[11px] font-bold text-[var(--accent,#235BF7)] bg-[var(--accent-soft,#EEF3FF)] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                         {config.storeName || 'Boutique Officielle'}
                       </span>
                       {config.stockQuantity !== undefined && config.showStockBadge !== false ? (
@@ -880,7 +913,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       {config.productTitle}
                     </h3>
                     <div className="flex items-baseline gap-2 pt-0.5">
-                      <span className="text-lg font-black text-[#235BF7]">
+                      <span className="text-lg font-black text-[var(--accent,#235BF7)]">
                         {formatFCFA(config.price)}
                       </span>
                       {config.originalPrice > config.price && (
@@ -897,10 +930,10 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   <div className="p-4 sm:p-5 rounded-[28px] bg-white border border-[#E3E7EE] shadow-xs space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Palette className="w-4 h-4 text-[#235BF7]" />
+                        <Palette className="w-4 h-4 text-[var(--accent,#235BF7)]" />
                         <h4 className="text-sm font-black text-[#201D1D]">Couleur / Modèle</h4>
                       </div>
-                      <span className="text-xs font-black text-[#235BF7]">
+                      <span className="text-xs font-black text-[var(--accent,#235BF7)]">
                         {selectedColor || config.availableColors[0]?.name}
                       </span>
                     </div>
@@ -979,14 +1012,14 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           onClick={() => setQuantity(1)}
                           className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                             quantity === 1
-                              ? 'border-[#235BF7] bg-[#EEF3FF] ring-2 ring-[#235BF7]/20 shadow-xs'
+                              ? 'border-[var(--accent,#235BF7)] bg-[var(--accent-soft,#EEF3FF)] ring-2 ring-[var(--accent,#235BF7)]/20 shadow-xs'
                               : 'border-[#E3E7EE] bg-[#F6F7F9] hover:bg-white'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-[#201D1D]">1 Article</span>
                             {quantity === 1 && (
-                              <Check className="w-3.5 h-3.5 text-[#235BF7] stroke-[3]" />
+                              <Check className="w-3.5 h-3.5 text-[var(--accent,#235BF7)] stroke-[3]" />
                             )}
                           </div>
                           <span className="text-[11px] text-[#7A808C] block mt-0.5">
@@ -1014,7 +1047,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                               onClick={() => setQuantity(tier.minQty)}
                               className={`p-3 rounded-2xl border text-left transition-all relative cursor-pointer ${
                                 isSelected
-                                  ? 'border-[#235BF7] bg-[#EEF3FF] ring-2 ring-[#235BF7]/20 shadow-xs'
+                                  ? 'border-[var(--accent,#235BF7)] bg-[var(--accent-soft,#EEF3FF)] ring-2 ring-[var(--accent,#235BF7)]/20 shadow-xs'
                                   : 'border-[#E3E7EE] bg-[#F6F7F9] hover:bg-white'
                               }`}
                             >
@@ -1028,7 +1061,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                                   {tier.label}
                                 </span>
                                 {isSelected && (
-                                  <Check className="w-3.5 h-3.5 text-[#235BF7] stroke-[3]" />
+                                  <Check className="w-3.5 h-3.5 text-[var(--accent,#235BF7)] stroke-[3]" />
                                 )}
                               </div>
                               <span className="text-[11px] text-emerald-700 font-semibold block mt-0.5">
@@ -1043,6 +1076,80 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       </div>
                     )}
                 </div>
+
+                {/* « Souvent acheté avec » : le client coche / décoche librement */}
+                {crossSellProducts.length > 0 && (
+                  <div className="p-5 rounded-[28px] bg-white border border-[#E3E7EE] space-y-3">
+                    <div>
+                      <h4 className="text-[15px] font-black text-[#201D1D]">Souvent acheté avec</h4>
+                      <p className="text-[13px] text-[#7A808C]">
+                        Ajoutez-les à votre commande, livrés ensemble.
+                      </p>
+                    </div>
+                    <ul className="space-y-2">
+                      {crossSellProducts.map((p) => {
+                        const on = selectedExtras.includes(p.slug);
+                        return (
+                          <li key={p.slug}>
+                            <label
+                              className={`flex items-center gap-3 p-2.5 rounded-2xl border-2 cursor-pointer transition-colors ${
+                                on
+                                  ? 'border-[var(--accent,#235BF7)] bg-[var(--accent-soft,#F5F8FF)]'
+                                  : 'border-[#ECEFF4] hover:bg-[#F8FAFC]'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={on}
+                                onChange={() =>
+                                  setSelectedExtras((cur) =>
+                                    on ? cur.filter((x) => x !== p.slug) : [...cur, p.slug],
+                                  )
+                                }
+                                className="w-5 h-5 shrink-0 accent-[var(--accent,#235BF7)]"
+                              />
+                              <span className="w-14 h-14 rounded-xl overflow-hidden bg-[#F1F3F6] shrink-0">
+                                {p.image && (
+                                  <img
+                                    src={p.image}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                )}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-[14px] font-bold text-[#201D1D] line-clamp-2">
+                                  {p.title}
+                                </span>
+                                <span className="block text-[14px] font-black text-[var(--accent,#235BF7)]">
+                                  {formatFCFA(p.bundlePrice)}
+                                  {p.bundlePrice < p.price && (
+                                    <span className="ml-1.5 text-[12px] font-medium text-[#9AA0AB] line-through">
+                                      {formatFCFA(p.price)}
+                                    </span>
+                                  )}
+                                </span>
+                              </span>
+                              {on && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setSelectedExtras((cur) => cur.filter((x) => x !== p.slug));
+                                  }}
+                                  aria-label={`Retirer ${p.title}`}
+                                  className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[#7A808C] hover:bg-white cursor-pointer"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              )}
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
 
                 {/* Récapitulatif des Prix */}
                 <div className="p-5 rounded-[28px] bg-white border border-[#E3E7EE] shadow-xs space-y-2.5 text-xs">
@@ -1067,22 +1174,47 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     </div>
                   )}
 
+                  {chosenExtras.map((p) => (
+                    <div key={p.slug} className="flex items-center justify-between text-[#3F4654]">
+                      <span className="truncate pr-2">+ {p.title} :</span>
+                      <span className="font-semibold text-[#201D1D]">
+                        {formatFCFA(p.bundlePrice)}
+                      </span>
+                    </div>
+                  ))}
+
                   <div className="flex items-center justify-between text-[#3F4654]">
                     <span>Frais de livraison à Dakar :</span>
                     <span className="font-semibold text-[#201D1D]">
-                      {deliveryFee === 0 ? (
+                      {orderDeliveryFee === 0 ? (
                         <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">
                           Gratuit
                         </span>
                       ) : (
-                        `+${formatFCFA(deliveryFee)}`
+                        `+${formatFCFA(orderDeliveryFee)}`
                       )}
                     </span>
                   </div>
 
+                  {promoDiscount > 0 && (
+                    <div className="flex items-center justify-between text-emerald-600 font-bold">
+                      <span>Code {promo?.code} :</span>
+                      <span>-{formatFCFA(promoDiscount)}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-1">
+                    <PromoCodeField
+                      request={promoRequest}
+                      signature={promoSignature}
+                      applied={promo}
+                      onChange={setPromo}
+                    />
+                  </div>
+
                   <div className="pt-2 border-t border-[#F1F3F6] flex items-center justify-between">
                     <span className="text-sm font-black text-[#201D1D]">Total net à régler :</span>
-                    <span className="text-xl font-black text-[#235BF7]">
+                    <span className="text-xl font-black text-[var(--accent,#235BF7)]">
                       {formatFCFA(totalAmount)}
                     </span>
                   </div>
@@ -1091,17 +1223,17 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 {/* Garanties et réassurance */}
                 <div className="grid grid-cols-3 gap-3 p-4 rounded-[28px] bg-[#F1F3F6]/60 border border-[#E3E7EE] text-center text-[11px] text-[#3F4654]">
                   <div className="space-y-1">
-                    <ShieldCheck className="w-4 h-4 text-[#235BF7] mx-auto" />
+                    <ShieldCheck className="w-4 h-4 text-[var(--accent,#235BF7)] mx-auto" />
                     <span className="font-bold block text-[#201D1D]">Inspection libre</span>
                     <span className="text-[10px] text-[#7A808C]">Vérifiez avant de payer</span>
                   </div>
                   <div className="space-y-1 border-x border-[#D5DAE2]/60 px-1">
-                    <Truck className="w-4 h-4 text-[#235BF7] mx-auto" />
+                    <Truck className="w-4 h-4 text-[var(--accent,#235BF7)] mx-auto" />
                     <span className="font-bold block text-[#201D1D]">Livraison rapide</span>
                     <span className="text-[10px] text-[#7A808C]">Sous 2 à 4h à Dakar</span>
                   </div>
                   <div className="space-y-1">
-                    <RotateCcw className="w-4 h-4 text-[#235BF7] mx-auto" />
+                    <RotateCcw className="w-4 h-4 text-[var(--accent,#235BF7)] mx-auto" />
                     <span className="font-bold block text-[#201D1D]">Échange 48h</span>
                     <span className="text-[10px] text-[#7A808C]">Garantie satisfaction</span>
                   </div>
@@ -1152,7 +1284,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                             onClick={() => setPaymentChoice('online')}
                             className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
                               paymentChoice === 'online'
-                                ? 'border-[#235BF7] bg-[#235BF7] text-white'
+                                ? 'border-[var(--accent,#235BF7)] bg-[var(--accent,#235BF7)] text-white'
                                 : 'border-[#E3E7EE] bg-[#F6F7F9] text-[#3F4654] hover:bg-white'
                             }`}
                           >
@@ -1194,7 +1326,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   {/* Nom complet */}
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-[#201D1D] flex items-center gap-1">
-                      <User className="w-3.5 h-3.5 text-[#235BF7]" />
+                      <User className="w-3.5 h-3.5 text-[var(--accent,#235BF7)]" />
                       Nom et prénom *
                     </label>
                     <input
@@ -1203,7 +1335,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="Ex : Fatou Diop"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-semibold text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-semibold text-[#201D1D] focus:outline-none focus:border-[var(--accent,#235BF7)] focus:bg-white transition-all"
                     />
                   </div>
 
@@ -1223,7 +1355,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
                         placeholder="77 000 00 00"
-                        className="flex-1 px-3.5 py-2.5 rounded-r-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-semibold text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white transition-all"
+                        className="flex-1 px-3.5 py-2.5 rounded-r-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-semibold text-[#201D1D] focus:outline-none focus:border-[var(--accent,#235BF7)] focus:bg-white transition-all"
                       />
                     </div>
                     <span className="text-[10px] text-[#7A808C]">
@@ -1237,7 +1369,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       htmlFor="checkout-address"
                       className="text-xs font-bold text-[#201D1D] flex items-center gap-1"
                     >
-                      <MapPin className="w-3.5 h-3.5 text-[#235BF7]" />
+                      <MapPin className="w-3.5 h-3.5 text-[var(--accent,#235BF7)]" />
                       Votre adresse (quartier, ville) *
                     </label>
                     <input
@@ -1248,7 +1380,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       onChange={(e) => setNeighborhood(e.target.value)}
                       placeholder="Ex : Sacré-Cœur 3, Dakar"
                       autoComplete="street-address"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-semibold text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-semibold text-[#201D1D] focus:outline-none focus:border-[var(--accent,#235BF7)] focus:bg-white transition-all"
                     />
                   </div>
 
@@ -1264,7 +1396,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           onClick={() => setAddressInputMode('text')}
                           className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                             addressInputMode === 'text'
-                              ? 'bg-white text-[#235BF7] shadow-xs'
+                              ? 'bg-white text-[var(--accent,#235BF7)] shadow-xs'
                               : 'text-[#7A808C]'
                           }`}
                         >
@@ -1275,7 +1407,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           onClick={() => setAddressInputMode('voice')}
                           className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                             addressInputMode === 'voice'
-                              ? 'bg-[#235BF7] text-white shadow-xs'
+                              ? 'bg-[var(--accent,#235BF7)] text-white shadow-xs'
                               : 'text-[#7A808C]'
                           }`}
                         >
@@ -1291,17 +1423,17 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                         value={deliveryAddress}
                         onChange={(e) => setDeliveryAddress(e.target.value)}
                         placeholder="Ex : En face de la pharmacie, Immeuble bleu, 2ème étage..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-medium text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#D5DAE2] bg-[#F6F7F9] text-xs font-medium text-[#201D1D] focus:outline-none focus:border-[var(--accent,#235BF7)] focus:bg-white transition-all"
                       />
                     ) : (
                       /* Enregistreur Vocal Interactif Max 2 min */
-                      <div className="p-3.5 rounded-2xl bg-[#EEF3FF] border border-[#BFDBFE] space-y-2.5">
+                      <div className="p-3.5 rounded-2xl bg-[var(--accent-soft,#EEF3FF)] border border-[#BFDBFE] space-y-2.5">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-[#235BF7] flex items-center gap-1.5">
+                          <span className="font-bold text-[var(--accent,#235BF7)] flex items-center gap-1.5">
                             <Mic className="w-4 h-4" />
                             Note vocale pour le livreur (max 2 min)
                           </span>
-                          <span className="font-mono font-bold text-[#235BF7]">
+                          <span className="font-mono font-bold text-[var(--accent,#235BF7)]">
                             {formatTimer(recordingSeconds)} / 02:00
                           </span>
                         </div>
@@ -1310,7 +1442,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           <button
                             type="button"
                             onClick={startVoiceRecording}
-                            className="w-full py-2.5 px-3 rounded-xl bg-[#235BF7] hover:bg-[#1A4AD6] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                            className="w-full py-2.5 px-3 rounded-xl bg-[var(--accent,#235BF7)] hover:bg-[var(--accent-hover,#1A4AD6)] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
                           >
                             <Mic className="w-4 h-4" />
                             <span>Démarrer l'enregistrement vocal</span>
@@ -1338,7 +1470,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                                 <button
                                   type="button"
                                   onClick={resumeVoiceRecording}
-                                  className="py-2 px-3 rounded-xl bg-[#235BF7] text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                                  className="py-2 px-3 rounded-xl bg-[var(--accent,#235BF7)] text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                                 >
                                   <Play className="w-3.5 h-3.5 fill-current" />
                                   <span>Reprendre</span>
@@ -1434,6 +1566,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
 
   return (
     <div
+      style={accentStyle}
       className={`relative w-full bg-[#F6F7F9] text-[#201D1D] flex flex-col ${displayFont.className} select-none ${
         isInsideMockup ? 'h-full overflow-y-auto' : 'min-h-screen'
       }`}
@@ -1444,6 +1577,10 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
         onEnded={() => setPlayingProofAudioId(null)}
         className="hidden"
       />
+
+      {!isInsideMockup && (
+        <AnnouncementBar bar={config.storeAnnouncement} accent={config.storeAccent ?? '#201D1D'} />
+      )}
 
       {/* ======================================================== */}
       {/* STORE HEADER: merchant logo + store name, centered       */}
@@ -1461,7 +1598,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-cover border border-[#ECEFF4] bg-white shrink-0"
               />
             ) : (
-              <span className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-[#235BF7] text-white flex items-center justify-center font-extrabold text-sm shrink-0">
+              <span className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-[var(--accent,#235BF7)] text-white flex items-center justify-center font-extrabold text-sm shrink-0">
                 {storeInitials}
               </span>
             )}
@@ -1578,7 +1715,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     onClick={() => setCurrentMediaIndex(0)}
                     className={`h-20 rounded-2xl overflow-hidden border-2 relative cursor-pointer transition-all ${
                       currentMediaIndex === 0
-                        ? 'border-[#235BF7] ring-2 ring-[#235BF7]/20 scale-102'
+                        ? 'border-[var(--accent,#235BF7)] ring-2 ring-[var(--accent,#235BF7)]/20 scale-102'
                         : 'border-[#E3E7EE] opacity-70 hover:opacity-100'
                     }`}
                   >
@@ -1597,7 +1734,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                       onClick={() => setCurrentMediaIndex(slideIdx)}
                       className={`h-20 rounded-2xl overflow-hidden border-2 cursor-pointer transition-all ${
                         currentMediaIndex === slideIdx
-                          ? 'border-[#235BF7] ring-2 ring-[#235BF7]/20 scale-102'
+                          ? 'border-[var(--accent,#235BF7)] ring-2 ring-[var(--accent,#235BF7)]/20 scale-102'
                           : 'border-[#E3E7EE] opacity-70 hover:opacity-100'
                       }`}
                     >
@@ -1634,13 +1771,13 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               </h1>
 
               <div className="flex flex-wrap items-baseline gap-2.5 sm:gap-3.5 pt-1">
-                <span className="text-2xl sm:text-3xl font-black text-[#235BF7] tracking-tight whitespace-nowrap">
+                <span className="text-2xl sm:text-3xl font-black text-[var(--accent,#235BF7)] tracking-tight whitespace-nowrap">
                   {formatFCFA(config.price)}
                 </span>
                 <span className="text-sm font-semibold text-[#9AA0AB] line-through whitespace-nowrap">
                   {formatFCFA(config.originalPrice)}
                 </span>
-                <span className="text-xs font-extrabold text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-lg border border-[#BFDBFE] whitespace-nowrap">
+                <span className="text-xs font-extrabold text-[var(--accent,#235BF7)] bg-[var(--accent-soft,#EEF3FF)] px-2.5 py-0.5 rounded-lg border border-[#BFDBFE] whitespace-nowrap">
                   {config.discountPercent || `-${discountPercent}% RÉDUCTION`}
                 </span>
               </div>
@@ -1686,7 +1823,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E3E7EE] shadow-xs space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold uppercase tracking-wider text-[#7A808C] flex items-center gap-1.5">
-                    <Palette className="w-3.5 h-3.5 text-[#235BF7]" />
+                    <Palette className="w-3.5 h-3.5 text-[var(--accent,#235BF7)]" />
                     Couleur :{' '}
                     <strong className="text-[#201D1D]">
                       {selectedColor || config.availableColors[0]?.name}
@@ -1734,7 +1871,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 <button
                   type="button"
                   onClick={() => handleOpenCheckout('order')}
-                  className="w-full py-4 px-4 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-[15px] tracking-tight flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+                  className="w-full py-4 px-4 rounded-2xl bg-[var(--accent,#235BF7)] hover:bg-[var(--accent-hover,#1A4AD6)] active:scale-[0.98] text-white font-black text-[15px] tracking-tight flex items-center justify-center gap-2.5 transition-all cursor-pointer"
                 >
                   <ShoppingCart className="w-4 h-4 text-white" />
                   <span>Commander maintenant</span>
@@ -1771,7 +1908,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             {/* ======================================================== */}
             <div className="rounded-2xl bg-white border border-[#ECEFF4] divide-y divide-[#F1F3F6]">
               <div className="p-4 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[var(--accent-soft,#EEF3FF)] text-[var(--accent,#235BF7)] flex items-center justify-center shrink-0">
                   <Truck className="w-[18px] h-[18px]" />
                 </div>
                 <div className="space-y-0.5">
@@ -1829,7 +1966,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     key={index}
                     className="flex items-start gap-3 p-4 @3xl/page:p-5 rounded-2xl bg-white border border-[#ECEFF4] hover:border-[#D5DAE2] transition-colors"
                   >
-                    <div className="w-7 h-7 rounded-full bg-[#235BF7] text-white flex items-center justify-center flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-[var(--accent,#235BF7)] text-white flex items-center justify-center flex-shrink-0">
                       <Check className="w-4 h-4 stroke-[3]" />
                     </div>
                     <p className="pt-0.5 text-[16px] @3xl/page:text-[17px] font-medium text-[#201D1D] leading-relaxed">
@@ -1968,7 +2105,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <div className="w-12 h-12 rounded-full bg-white/90 text-[#235BF7] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                          <div className="w-12 h-12 rounded-full bg-white/90 text-[var(--accent,#235BF7)] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                             <Play className="w-5 h-5 fill-current ml-0.5" />
                           </div>
                         </div>
@@ -2041,7 +2178,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
               <button
                 type="button"
                 onClick={() => setIsReviewModalOpen(true)}
-                className="h-11 px-5 rounded-xl bg-[#235BF7] hover:bg-[#1A4AD6] text-white text-[15px] font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
+                className="h-11 px-5 rounded-xl bg-[var(--accent,#235BF7)] hover:bg-[var(--accent-hover,#1A4AD6)] text-white text-[15px] font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <Send className="w-4 h-4" />
                 <span>Laisser un avis</span>
@@ -2064,7 +2201,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                   className="p-4 @3xl/page:p-5 rounded-2xl bg-white border border-[#E3E7EE] space-y-2.5"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#235BF7]/10 text-[#235BF7] font-bold text-[16px] flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[var(--accent,#235BF7)]/10 text-[var(--accent,#235BF7)] font-bold text-[16px] flex items-center justify-center shrink-0">
                       {rev.authorName.charAt(0)}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -2113,7 +2250,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             <button
               type="button"
               onClick={() => handleOpenCheckout('order')}
-              className="py-3.5 px-3 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="py-3.5 px-3 rounded-2xl bg-[var(--accent,#235BF7)] hover:bg-[var(--accent-hover,#1A4AD6)] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <ShoppingCart className="w-4 h-4 text-white" />
               <span className="truncate">Commander maintenant</span>
@@ -2138,7 +2275,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
             <button
               type="button"
               onClick={() => handleOpenCheckout('order')}
-              className="py-3.5 px-3 rounded-2xl bg-[#235BF7] hover:bg-[#1A4AD6] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="py-3.5 px-3 rounded-2xl bg-[var(--accent,#235BF7)] hover:bg-[var(--accent-hover,#1A4AD6)] active:scale-[0.98] text-white font-black text-xs tracking-tight flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <ShoppingCart className="w-4 h-4 text-white" />
               <span className="truncate">Commander maintenant</span>
@@ -2233,7 +2370,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     value={newReviewAuthor}
                     onChange={(e) => setNewReviewAuthor(e.target.value)}
                     placeholder="Ex: Cheikh Sow"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E3E7EE] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E3E7EE] text-xs text-[#201D1D] focus:outline-none focus:border-[var(--accent,#235BF7)]"
                   />
                 </div>
 
@@ -2247,7 +2384,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     value={newReviewCity}
                     onChange={(e) => setNewReviewCity(e.target.value)}
                     placeholder="Ex: Mermoz, Dakar"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E3E7EE] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E3E7EE] text-xs text-[#201D1D] focus:outline-none focus:border-[var(--accent,#235BF7)]"
                   />
                 </div>
 
@@ -2262,7 +2399,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                     value={newReviewComment}
                     onChange={(e) => setNewReviewComment(e.target.value)}
                     placeholder="Partagez votre expérience : délai de livraison, état du colis, satisfaction..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E3E7EE] text-xs text-[#201D1D] focus:outline-none focus:border-[#235BF7] resize-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E3E7EE] text-xs text-[#201D1D] focus:outline-none focus:border-[var(--accent,#235BF7)] resize-none"
                   />
                 </div>
 

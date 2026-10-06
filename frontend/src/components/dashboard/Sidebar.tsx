@@ -12,6 +12,7 @@ import {
   Store,
   Users,
   Wallet,
+  Megaphone,
 } from 'lucide-react';
 import { JuulaLogo } from '@/components/brand/JuulaLogo';
 import { LogoutConfirmDialog } from '@/components/dashboard/LogoutConfirmDialog';
@@ -49,7 +50,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     { title: 'Finances', items: [{ id: 'wallet', label: 'Juula Pay & retraits', icon: Wallet }] },
-    { title: 'Analyses', items: [{ id: 'analytics', label: 'Performances', icon: BarChart3 }] },
+    {
+      title: 'Croissance',
+      items: [
+        { id: 'marketing', label: 'Marketing', icon: Megaphone },
+        { id: 'analytics', label: 'Performances', icon: BarChart3 },
+      ],
+    },
   ];
 
   const NavButton = ({ item }: { item: Item }) => {

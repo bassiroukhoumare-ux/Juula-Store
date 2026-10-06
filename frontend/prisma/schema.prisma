@@ -45,6 +45,8 @@ model User {
   store              Store?
   products           Product[]
   storeOrders        StoreOrder[]
+  promoCodes         PromoCode[]
+  partners           Partner[]
   notificationStates NotificationState[]
 
   // Multi-tenancy is opt-in per project: by default no resource is org-scoped.
@@ -369,6 +371,7 @@ model Store {
   displayCurrency       String       @default("XOF") // XOF | EUR | USD — display only, charges stay in XOF
   facebookPixelId       String?
   tiktokPixelId         String?
+  googleTagId           String? // Google tag / GA4 measurement id (G-XXXXXXX)
   orderCounter          Int          @default(0) // last allocated StoreOrder.number
   welcomeEmailSentAt    DateTime? // set once when the welcome email is claimed
   plan                  String       @default("FREE") // "FREE" | "PRO"
@@ -387,6 +390,7 @@ model Store {
   storeBanners          Json? // [{ id, imageUrl, title, badge, buttonLabel, category }]
   storeSections         Json? // [{ id, type: products|testimonials, title, subtitle, placement, productSlugs, images }]
   storeFaq              Json? // [{ id, question, answer }] — FAQ shown just before the shop footer
+  announcementBar       Json? // { enabled, text, link, style, countdown: { enabled, endsAt, daily } } — top bar of the shop
   // Checkout options. COD, direct links and WhatsApp only apply to Pro stores.
   codEnabled            Boolean      @default(true)
   whatsappOrderEnabled  Boolean      @default(false)
@@ -497,6 +501,13 @@ model StoreOrder {
   amount            Int // subtotal after quantity discount
   deliveryFee       Int      @default(0)
   totalAmount       Int
+  /// Promo code applied by the customer (uppercase) and what it took off totalAmount.
+  promoCode         String?
+  discountAmount    Int      @default(0)
+  /// Affiliate link (?ref=) that brought the order, and the commission it earns (FCFA).
+  partnerId         String?
+  partner           Partner? @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  partnerCommission Int      @default(0)
   currency          String   @default("FCFA")
   customerName      String
   phone             String
@@ -540,4 +551,65 @@ model NotificationState {
   createdAt DateTime  @default(now())
 
   @@unique([userId, key])
+}
+
+// Marketing → codes promo of a merchant. Applied on product-page and shop
+// orders; the discount is computed on the server and taken off totalAmount.
+model PromoCode {
+  id         String    @id @default(cuid())
+  merchantId String
+  merchant   User      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  code       String // uppercase, e.g. WELCOME10
+  type       String // percent | fixed | free_shipping
+  value      Int       @default(0) // percent (1-100) or FCFA amount
+  minAmount  Int? // minimum subtotal in FCFA
+  maxUses    Int? // total uses allowed
+  usedCount  Int       @default(0)
+  expiresAt  DateTime?
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([merchantId, code])
+  @@index([merchantId])
+}
+
+// Marketing → liens & partenaires. An influencer shares
+// https://<shop>.juula.store?ref=<slug>; orders placed within 7 days of a
+// click on an active link earn a commission. The influencer follows the
+// results on /partner/<id>?token=<token> (read-only, no account).
+model Partner {
+  id              String         @id @default(cuid())
+  merchantId      String
+  merchant        User           @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  name            String
+  slug            String // lowercase, used as ?ref=<slug>
+  startsAt        DateTime?
+  expiresAt       DateTime
+  commissionType  String // percent | fixed
+  commissionValue Int // percent (1-100) or FCFA per item sold
+  productSlug     String? // null = every product
+  token           String         @unique // secret of the influencer dashboard
+  suspended       Boolean        @default(false)
+  paidAmount      Int            @default(0) // commissions already paid out
+  paidAt          DateTime?
+  paidVia         String? // wave | orange_money | other
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  visits          PartnerVisit[]
+  orders          StoreOrder[]
+
+  @@unique([merchantId, slug])
+  @@index([merchantId])
+}
+
+// One row per visitor who came through a partner link (unique clicks).
+model PartnerVisit {
+  id        String   @id @default(cuid())
+  partnerId String
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  visitorId String
+  createdAt DateTime @default(now())
+
+  @@unique([partnerId, visitorId])
 }

@@ -48,6 +48,7 @@ const TITLES: Record<DashboardTab, string> = {
   wizard: 'Pages produits',
   customers: 'Clients',
   analytics: 'Performances des ventes',
+  marketing: 'Marketing',
   settings: 'Paramètres',
 };
 

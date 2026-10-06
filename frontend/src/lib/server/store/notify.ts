@@ -438,6 +438,14 @@ export function newOrderEmail(order: StoreOrder): RenderedEmail {
         rows: [
           { label: 'Sous-total', value: fcfa(order.amount) },
           { label: 'Livraison', value: order.deliveryFee ? fcfa(order.deliveryFee) : 'Offerte' },
+          ...(order.promoCode
+            ? [
+                {
+                  label: `Code promo ${escapeHtml(order.promoCode)}`,
+                  value: `-${fcfa(order.discountAmount)}`,
+                },
+              ]
+            : []),
           {
             label: 'Mode de paiement',
             value: escapeHtml(paymentLabel(order)),

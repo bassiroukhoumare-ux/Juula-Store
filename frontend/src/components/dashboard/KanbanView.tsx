@@ -1,6 +1,7 @@
 'use client';
 
 import { Dropdown } from '@/components/ui/Dropdown';
+import { FilterBar } from '@/components/ui/FilterBar';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
@@ -10,11 +11,11 @@ import {
   MapPin,
   Package,
   PhoneCall,
-  Search,
   Volume2,
+  Tag,
+  Handshake,
 } from 'lucide-react';
 import { OrderLead, OrderStatus } from '@/types/juula';
-import { Input } from '@/components/ui/Input';
 import { formatFCFA } from '@/lib/orderUtils';
 
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
@@ -35,6 +36,14 @@ interface KanbanViewProps {
   onConfirmDirectPayment?: (reference: string) => void;
 }
 
+/** How the customer pays (online covers every JuulaPay method). */
+function paymentKind(o: OrderLead): 'online' | 'cod' | 'whatsapp' | 'direct' {
+  if (o.paymentType.startsWith('online_')) return 'online';
+  if (o.paymentType === 'whatsapp') return 'whatsapp';
+  if (o.paymentType === 'direct') return 'direct';
+  return 'cod';
+}
+
 export const KanbanView: React.FC<KanbanViewProps> = ({
   orders,
   onOrdersChange,
@@ -44,7 +53,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState(externalSearch);
   useEffect(() => setSearchQuery(externalSearch), [externalSearch]);
-  const [paymentFilter, setPaymentFilter] = useState<'all' | 'online' | 'cod'>('all');
+  const [paymentFilter, setPaymentFilter] = useState<
+    'all' | 'online' | 'cod' | 'whatsapp' | 'direct'
+  >('all');
   const [mobileStatusTab, setMobileStatusTab] = useState<'all' | OrderStatus>('all');
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
   // Day folders: today's orders stay in the main list; each finished day
@@ -87,20 +98,13 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
       order.phone.includes(searchQuery) ||
       order.id.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesPayment =
-      paymentFilter === 'all'
-        ? true
-        : paymentFilter === 'online'
-          ? order.paymentType === 'online_wave' || order.paymentType === 'online_orange'
-          : order.paymentType === 'cod';
+    const matchesPayment = paymentFilter === 'all' || paymentKind(order) === paymentFilter;
 
     return matchesQuery && matchesPayment;
   });
 
-  const onlineOrdersCount = orders.filter(
-    (o) => o.paymentType === 'online_wave' || o.paymentType === 'online_orange',
-  ).length;
-  const codOrdersCount = orders.filter((o) => o.paymentType === 'cod').length;
+  const paymentCount = (k: ReturnType<typeof paymentKind>) =>
+    orders.filter((o) => paymentKind(o) === k).length;
 
   const searching = searchQuery.trim().length > 0;
   const today = todayKey();
@@ -160,104 +164,38 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
     <div className="space-y-5 animate-in fade-in duration-200">
       {/* Hidden audio player for list/table view playback */}
 
-      {/* ======================================================== */}
-      {/* 1. TOP HEADER & KPI FILTERS (ÉPURÉ, CONTEMPORAIN)        */}
-      {/* ======================================================== */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 sm:p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] font-bold uppercase tracking-wider text-[#235BF7] bg-[#EEF3FF] px-2.5 py-0.5 rounded-md">
-              Pipeline Logistique
-            </span>
-            <span className="text-[13px] text-[#7A808C] font-semibold">
-              {orders.length} commandes enregistrées
-            </span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black text-[#201D1D] tracking-tight mt-1">
-            Commandes Cash on Delivery & En Ligne
-          </h2>
-          <p className="text-[13px] text-[#7A808C] mt-0.5">
-            Suivi des expéditions Dakar, contact client instantané & encaissements.
-          </p>
-        </div>
-
-        {/* Filter counters (Toutes / En Ligne / COD) */}
-        <div className="grid grid-cols-3 sm:flex items-center gap-2 w-full lg:w-auto">
-          <button
-            type="button"
-            onClick={() => setPaymentFilter('all')}
-            className={`flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 px-3 py-2 rounded-2xl border text-left transition-all cursor-pointer ${
-              paymentFilter === 'all'
-                ? 'bg-white border-[#235BF7] ring-2 ring-[#235BF7]/15 shadow-xs text-[#235BF7]'
-                : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#7A808C] hover:bg-white'
-            }`}
-          >
-            <span className="text-xs uppercase font-bold tracking-wider">Toutes</span>
-            <span
-              className={`text-[13px] font-black px-2 py-0.5 rounded-full ${
-                paymentFilter === 'all' ? 'bg-[#235BF7] text-white' : 'bg-[#E2E8F0] text-[#201D1D]'
-              }`}
-            >
-              {orders.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setPaymentFilter('online')}
-            className={`flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 px-3 py-2 rounded-2xl border text-left transition-all cursor-pointer ${
-              paymentFilter === 'online'
-                ? 'bg-[#EEF3FF] border-[#235BF7] ring-2 ring-[#235BF7]/15 shadow-xs text-[#235BF7]'
-                : 'bg-white border-[#E2E8F0] text-[#7A808C] hover:bg-[#F8FAFC]'
-            }`}
-          >
-            <span className="text-xs uppercase font-bold tracking-wider">En Ligne</span>
-            <span
-              className={`text-[13px] font-black px-2 py-0.5 rounded-full ${
-                paymentFilter === 'online'
-                  ? 'bg-[#235BF7] text-white'
-                  : 'bg-[#EEF3FF] text-[#235BF7]'
-              }`}
-            >
-              {onlineOrdersCount}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setPaymentFilter('cod')}
-            className={`flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 px-3 py-2 rounded-2xl border text-left transition-all cursor-pointer ${
-              paymentFilter === 'cod'
-                ? 'bg-white border-[#201D1D] ring-2 ring-[#201D1D]/15 shadow-xs text-[#201D1D]'
-                : 'bg-white border-[#E2E8F0] text-[#7A808C] hover:bg-[#F8FAFC]'
-            }`}
-          >
-            <span className="text-xs uppercase font-bold tracking-wider truncate">Espèces</span>
-            <span
-              className={`text-[13px] font-black px-2 py-0.5 rounded-full ${
-                paymentFilter === 'cod' ? 'bg-[#201D1D] text-white' : 'bg-[#F1F5F9] text-[#334155]'
-              }`}
-            >
-              {codOrdersCount}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* ======================================================== */}
-      {/* 2. RECHERCHE, SECTEURS ET SÉLECTEUR DE DISPOSITION       */}
-      {/* (COLONNES KANBAN / LISTE LOGISTIQUE / TABLEAU CRM)       */}
-      {/* ======================================================== */}
-      <div className="flex items-center gap-3">
-        <div className="w-full sm:max-w-md">
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher un client, un téléphone, une adresse…"
-            icon={<Search className="w-4 h-4 text-[#94A3B8]" />}
-          />
-        </div>
-      </div>
+      {/* Recherche (loupe animée) + un seul bouton « Filtrer » */}
+      <FilterBar
+        search={{
+          value: searchQuery,
+          onChange: setSearchQuery,
+          placeholder: 'Client, téléphone, adresse, produit…',
+        }}
+        groups={[
+          {
+            id: 'payment',
+            label: 'Paiement',
+            value: paymentFilter,
+            defaultValue: 'all',
+            onChange: (v) => setPaymentFilter(v as typeof paymentFilter),
+            options: [
+              { value: 'all', label: 'Tous', count: orders.length },
+              { value: 'online', label: 'Payé en ligne', count: paymentCount('online') },
+              { value: 'cod', label: 'À la livraison', count: paymentCount('cod') },
+              { value: 'whatsapp', label: 'WhatsApp', count: paymentCount('whatsapp') },
+              { value: 'direct', label: 'Paiement direct', count: paymentCount('direct') },
+            ].filter((o) => o.value === 'all' || o.value === paymentFilter || o.count > 0),
+          },
+          {
+            id: 'status',
+            label: 'Statut',
+            value: mobileStatusTab,
+            defaultValue: 'all',
+            onChange: (v) => setMobileStatusTab(v as typeof mobileStatusTab),
+            options: statusTabs.map((t) => ({ value: t.id, label: t.label, count: t.count })),
+          },
+        ]}
+      />
 
       {/* ======================================================== */}
       {/* 3. LISTE DES COMMANDES (MÊME AFFICHAGE MOBILE / ORDINATEUR) */}
@@ -283,41 +221,6 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             {searching ? 'Résultats de la recherche' : `Aujourd’hui · ${dayLabel(today)}`}
           </h3>
         )}
-
-        {/* Filtre par statut : liste déroulante sur téléphone, onglets ensuite */}
-        <Dropdown
-          className="sm:hidden"
-          label="Filtrer les commandes"
-          caption="Afficher"
-          value={mobileStatusTab}
-          onChange={setMobileStatusTab}
-          options={statusTabs.map((t) => ({ value: t.id, label: `${t.label} (${t.count})` }))}
-        />
-        <div className="flex flex-wrap items-center gap-1.5 max-sm:hidden">
-          {statusTabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setMobileStatusTab(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-[13px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                mobileStatusTab === tab.id
-                  ? 'bg-[#235BF7] text-white shadow-xs'
-                  : 'bg-white border border-[#E2E8F0] text-[#7A808C]'
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span
-                className={`text-xs px-1.5 py-0.2 rounded-full ${
-                  mobileStatusTab === tab.id
-                    ? 'bg-white/20 text-white'
-                    : 'bg-[#F1F5F9] text-[#201D1D]'
-                }`}
-              >
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
 
         {/* Lignes de commandes mobile */}
         <div className="space-y-2">
@@ -386,9 +289,21 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                           {order.customerName}
                         </h4>
                         <span className="text-[13px] font-black text-[#201D1D] whitespace-nowrap">
-                          {formatFCFA(order.totalAmount || order.amount + (order.deliveryFee || 0))}
+                          {formatFCFA(order.totalAmount ?? order.amount + (order.deliveryFee || 0))}
                         </span>
                       </div>
+                      {order.partnerName && (
+                        <p className="mt-0.5 inline-flex items-center gap-1 mr-3 text-[12px] font-semibold text-[#7C3AED]">
+                          <Handshake className="w-3 h-3" /> Via {order.partnerName} · commission{' '}
+                          {formatFCFA(order.partnerCommission ?? 0)}
+                        </p>
+                      )}
+                      {order.promoCode && (
+                        <p className="mt-0.5 inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-700">
+                          <Tag className="w-3 h-3" /> Code {order.promoCode} : -
+                          {formatFCFA(order.discountAmount ?? 0)}
+                        </p>
+                      )}
 
                       <div className="flex items-center gap-1.5 text-[13px] text-[#7A808C] mt-0.5 min-w-0">
                         <MapPin className="w-3 h-3 text-[#235BF7] shrink-0" />

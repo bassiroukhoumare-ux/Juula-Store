@@ -14,6 +14,7 @@ import {
   toStorefrontSettings,
 } from '@/lib/server/store/storefront';
 import { computeDeliveryFee } from '@/lib/store/pricing';
+import { parseCrossSell } from '@/lib/store/marketing';
 import { storeOrigin, subdomainFromHost } from '@/lib/store/subdomain';
 import type { ShopProduct } from '@/components/storefront/types';
 
@@ -68,5 +69,6 @@ export function toShopProducts(rows: Product[], base: string): ShopProduct[] {
       colors: (config.availableColors ?? []).map((c) => ({ name: c.name, hex: c.hex })),
       deliveryNotice: config.deliveryNotice ?? '',
       createdAt: product.createdAt.toISOString(),
+      crossSell: parseCrossSell(config.crossSell),
     }));
 }

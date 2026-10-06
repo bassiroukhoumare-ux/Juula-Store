@@ -17,10 +17,14 @@ import { makeRequestContext, withRequestContext } from '@/lib/server/observabili
 import { prisma } from '@/lib/server/prisma';
 import { productConfig } from '@/lib/server/store/products';
 import { nextOrderNumber, publicOrderRateLimit } from '@/lib/server/store/orders';
-import { computeOrderPricing } from '@/lib/store/pricing';
 import { sendNewOrderEmail } from '@/lib/server/store/notify';
 import { formatOrderId, getStoreCode } from '@/lib/orderUtils';
 import { decidePayment } from '@/lib/server/store/checkout';
+import { priceProductOrder } from '@/lib/server/store/order-pricing';
+import { activePartner } from '@/lib/server/store/partners';
+import { computeCommission } from '@/lib/store/partners';
+import { checkPromo, consumePromo, PromoExhaustedError } from '@/lib/server/store/promo';
+import type { Prisma } from '@prisma/client';
 import { isStoreLive } from '@/lib/server/store/storefront';
 import { clearCheckoutDraft } from '@/lib/server/store/analytics';
 
@@ -43,6 +47,15 @@ const Body = z.object({
     .string()
     .regex(/^[A-Za-z0-9_-]{8,64}$/)
     .optional(),
+  /** « Souvent acheté avec » items the customer ticked (1 of each). */
+  extras: z
+    .array(
+      z.object({ slug: z.string().min(1).max(120), color: z.string().trim().max(60).optional() }),
+    )
+    .max(3)
+    .optional(),
+  promoCode: z.string().trim().max(40).optional(),
+  partnerRef: z.string().trim().max(60).optional(),
 });
 
 export async function POST(
@@ -119,10 +132,44 @@ export async function POST(
       );
     }
 
-    const pricing = computeOrderPricing(config, input.quantity);
+    const priced = await priceProductOrder(
+      product,
+      input.quantity,
+      input.selectedColor,
+      input.extras ?? [],
+    );
+    if (!priced.ok) {
+      return NextResponse.json(
+        { error: priced.error, message: priced.message },
+        { status: priced.status, headers },
+      );
+    }
+    const hasExtras = priced.items.length > 1;
+
+    // Promo code: checked here (clear error), counted inside the order transaction.
+    let promo: { id: string; code: string; discount: number } | null = null;
+    if (input.promoCode) {
+      const checked = await checkPromo(
+        prisma,
+        product.userId,
+        input.promoCode,
+        priced.amount,
+        priced.deliveryFee,
+      );
+      if (!checked.ok) {
+        return NextResponse.json(
+          { error: checked.error, message: checked.message },
+          { status: 400, headers },
+        );
+      }
+      promo = { id: checked.id, code: checked.code, discount: checked.discount };
+    }
     const storeCode = config.storeCode || getStoreCode(config.storeName || 'Juula Store');
-    const productName =
+    const mainName =
       input.quantity > 1 ? `${config.productTitle} (×${input.quantity})` : config.productTitle;
+    const productName = hasExtras
+      ? `${mainName} + ${priced.items.length - 1} article${priced.items.length > 2 ? 's' : ''} suggéré${priced.items.length > 2 ? 's' : ''}`
+      : mainName;
     const colorValid = (config.availableColors ?? []).some((c) => c.name === input.selectedColor);
     // Senegal numbers: accept "77 123 45 67" or "221771234567".
     const digits = input.whatsappNumber;
@@ -131,35 +178,59 @@ export async function POST(
       input.deliveryAddress ||
       `[Note vocale envoyée par le client] ${input.neighborhood ?? ''}`.trim();
 
-    const order = await prisma.$transaction(async (tx) => {
-      const number = await nextOrderNumber(tx, product.userId);
-      return tx.storeOrder.create({
-        data: {
-          merchantId: product.userId,
-          productId: product.id,
-          number,
-          reference: formatOrderId(storeCode, number),
-          productName,
-          productImage: config.mediaItems.find((m) => m.type === 'image')?.url ?? null,
-          quantity: input.quantity,
-          selectedColor: colorValid ? (input.selectedColor ?? null) : null,
-          amount: pricing.amount,
-          deliveryFee: pricing.deliveryFee,
-          totalAmount: pricing.total,
-          currency: config.currency || 'FCFA',
-          customerName: input.customerName,
-          phone: `+221 ${localNumber}`,
-          whatsappNumber: `221${localNumber}`,
-          neighborhood: input.neighborhood ?? null,
-          city: 'Dakar',
-          deliveryAddress: address,
-          deliveryNotes: payment.deliveryNotes,
-          paymentType: input.paymentType,
-          paymentStatus: payment.paymentStatus,
-          paymentMethodName: payment.paymentMethodName,
-        },
+    // Affiliate: only while the campaign is active; commission on products only.
+    const partner = await activePartner(prisma, product.userId, input.partnerRef);
+    const partnerCommission = partner ? computeCommission(priced.items, partner) : 0;
+
+    let order;
+    try {
+      order = await prisma.$transaction(async (tx) => {
+        if (promo && !(await consumePromo(tx, promo.id))) throw new PromoExhaustedError();
+        const number = await nextOrderNumber(tx, product.userId);
+        return tx.storeOrder.create({
+          data: {
+            merchantId: product.userId,
+            productId: product.id,
+            number,
+            reference: formatOrderId(storeCode, number),
+            productName,
+            productImage: config.mediaItems.find((m) => m.type === 'image')?.url ?? null,
+            quantity: priced.quantity,
+            selectedColor: colorValid ? (input.selectedColor ?? null) : null,
+            amount: priced.amount,
+            deliveryFee: priced.deliveryFee,
+            totalAmount: priced.amount + priced.deliveryFee - (promo?.discount ?? 0),
+            promoCode: promo?.code ?? null,
+            discountAmount: promo?.discount ?? 0,
+            partnerId: partner?.id ?? null,
+            partnerCommission,
+            ...(hasExtras ? { items: priced.items as unknown as Prisma.InputJsonValue } : {}),
+            currency: config.currency || 'FCFA',
+            customerName: input.customerName,
+            phone: `+221 ${localNumber}`,
+            whatsappNumber: `221${localNumber}`,
+            neighborhood: input.neighborhood ?? null,
+            city: 'Dakar',
+            deliveryAddress: address,
+            deliveryNotes: payment.deliveryNotes,
+            paymentType: input.paymentType,
+            paymentStatus: payment.paymentStatus,
+            paymentMethodName: payment.paymentMethodName,
+          },
+        });
       });
-    });
+    } catch (err) {
+      if (err instanceof PromoExhaustedError) {
+        return NextResponse.json(
+          {
+            error: 'PROMO_EXHAUSTED',
+            message: 'Ce code promo a déjà été utilisé le nombre de fois prévu.',
+          },
+          { status: 409, headers },
+        );
+      }
+      throw err;
+    }
 
     // Email the merchant once the response is sent (never blocks the customer).
     after(() => sendNewOrderEmail(order.id));
@@ -176,6 +247,8 @@ export async function POST(
           amount: order.amount,
           deliveryFee: order.deliveryFee,
           totalAmount: order.totalAmount,
+          discountAmount: order.discountAmount,
+          promoCode: order.promoCode,
           currency: order.currency,
         },
       },

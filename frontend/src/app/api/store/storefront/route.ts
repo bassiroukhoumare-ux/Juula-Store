@@ -53,6 +53,17 @@ const Body = z
     banners: z.array(Banner).max(5),
     sections: z.array(Section).max(20),
     faq: z.array(Faq).max(30),
+    announcement: z.object({
+      enabled: z.boolean(),
+      text: z.string().max(160),
+      link: z.string().max(160),
+      style: z.enum(['dark', 'accent', 'red']),
+      countdown: z.object({
+        enabled: z.boolean(),
+        endsAt: z.string().max(40).nullable(),
+        daily: z.boolean(),
+      }),
+    }),
     codEnabled: z.boolean(),
     onlinePaymentsEnabled: z.boolean(),
     setupDone: z.boolean(),
