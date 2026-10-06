@@ -1,3 +1,4 @@
+import type { FaqItem, ProductComparison } from '@/lib/store/product-content';
 import type { DirectPaymentMethod } from '@/lib/store/storefront-types';
 
 export type DashboardTab =
@@ -231,6 +232,12 @@ export interface FunnelPageConfig {
   featured?: boolean | undefined;
   deliveryNotice: string;
   benefits: string[];
+  /** Long description (≤ 2 000 words): **gras**, « - » lists, blank line = paragraph. */
+  description?: string | undefined;
+  /** Optional FAQ shown as an accordion (empty → hidden). */
+  faqItems?: FaqItem[] | undefined;
+  /** Optional « Nous vs Les autres » table. */
+  comparison?: ProductComparison | undefined;
   ctaButtonText: string;
   codEnabled: boolean;
   mobileMoneyEnabled: boolean;

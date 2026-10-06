@@ -93,7 +93,7 @@ export const SloganSuggester: React.FC<SloganSuggesterProps> = ({ storeName, onP
         )}
       </div>
       {ideas.length > 0 && (
-        <ul className="grid gap-2">
+        <ul className="grid grid-cols-1 gap-2">
           {ideas.map((idea) => (
             <li key={idea}>
               <button

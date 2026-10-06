@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Dropdown } from '@/components/ui/Dropdown';
 
 export interface SectionItem<T extends string> {
   id: T;
@@ -17,8 +18,8 @@ interface SectionLayoutProps<T extends string> {
 }
 
 /**
- * Settings-style page with the section menu always on the LEFT:
- * a labelled column from 768px, a narrow icon rail on phones.
+ * Settings-style page: the section menu sits on the LEFT from 768px, and
+ * becomes one « Section » dropdown at the top on phones.
  */
 export function SectionLayout<T extends string>({
   sections,
@@ -26,11 +27,35 @@ export function SectionLayout<T extends string>({
   onChange,
   children,
 }: SectionLayoutProps<T>) {
+  const go = (id: T) => {
+    onChange(id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const index = sections.findIndex((s) => s.id === active);
+
   return (
-    <div className="grid grid-cols-[68px_minmax(0,1fr)] md:grid-cols-[230px_minmax(0,1fr)] gap-3 md:gap-6 items-start">
+    <div className="md:grid md:grid-cols-[230px_minmax(0,1fr)] md:gap-6 md:items-start">
+      {/* Phones: one dropdown */}
+      <div className="md:hidden mb-4">
+        <Dropdown
+          size="large"
+          label="Choisir une section"
+          caption={`Section ${index + 1} sur ${sections.length}`}
+          value={active}
+          onChange={go}
+          options={sections.map((s) => ({
+            value: s.id,
+            label: s.label,
+            icon: s.icon,
+            ...(s.hint ? { hint: s.hint } : {}),
+          }))}
+        />
+      </div>
+
+      {/* From 768px: menu on the left */}
       <nav
         aria-label="Sections"
-        className="sticky top-24 md:top-28 flex flex-col gap-1 p-1.5 md:p-2 rounded-[20px] md:rounded-[22px] bg-white border border-[#ECEFF4]"
+        className="hidden md:flex sticky top-28 flex-col gap-1 p-2 rounded-[22px] bg-white border border-[#ECEFF4]"
       >
         {sections.map((s) => {
           const on = s.id === active;
@@ -38,20 +63,14 @@ export function SectionLayout<T extends string>({
             <button
               key={s.id}
               type="button"
-              onClick={() => {
-                onChange(s.id);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onClick={() => go(s.id)}
               aria-current={on ? 'page' : undefined}
-              title={s.label}
-              className={`flex flex-col md:flex-row items-center gap-1 md:gap-2.5 py-2 md:py-0 md:h-11 px-1 md:px-3.5 rounded-xl text-center md:text-left transition-colors cursor-pointer ${
+              className={`flex items-center gap-2.5 h-11 px-3.5 rounded-xl text-left transition-colors cursor-pointer ${
                 on ? 'bg-[#EEF3FF] text-[#235BF7]' : 'text-[#3F4654] hover:bg-[#F6F7F9]'
               }`}
             >
-              <span className="shrink-0 [&>svg]:w-5 [&>svg]:h-5 md:[&>svg]:w-4 md:[&>svg]:h-4">
-                {s.icon}
-              </span>
-              <span className="text-[10.5px] leading-tight font-semibold md:text-[14px] md:whitespace-nowrap line-clamp-2">
+              <span className="shrink-0 [&>svg]:w-4 [&>svg]:h-4">{s.icon}</span>
+              <span className="text-[14px] font-semibold whitespace-nowrap truncate">
                 {s.label}
               </span>
             </button>

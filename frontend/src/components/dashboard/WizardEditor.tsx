@@ -39,6 +39,7 @@ import {
   QuantityDiscountTier,
   ProductColorOption,
 } from '@/types/juula';
+import { ProductContentEditor } from '@/components/dashboard/ProductContentEditor';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
@@ -433,8 +434,8 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
     },
     {
       num: 3 as const,
-      label: 'Bénéfices & Arguments',
-      subtitle: 'Points forts du produit',
+      label: 'Description & FAQ',
+      subtitle: 'Arguments, FAQ, comparatif',
       icon: ListOrdered,
     },
     {
@@ -1453,7 +1454,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
             <div className="p-6 sm:p-8 rounded-[28px] bg-white border border-[#ECEFF4] shadow-xs space-y-6">
               <div>
                 <h3 className="text-xl font-black text-[#201D1D] tracking-tight">
-                  Étape 3 : Bénéfices & Arguments de Vente
+                  Étape 3 : Description, arguments & FAQ
                 </h3>
                 <p className="text-[13px] text-[#7A808C] mt-0.5">
                   Présentez les 3 à 5 atouts majeurs qui rassurent et déclenchent l'achat chez le
@@ -1502,6 +1503,15 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="pt-6 border-t border-[#F1F5F9]">
+                <ProductContentEditor
+                  description={config.description}
+                  faqItems={config.faqItems}
+                  comparison={config.comparison}
+                  onChange={(patch) => setConfig((c) => ({ ...c, ...patch }))}
+                />
               </div>
 
               {/* Prev / Next buttons */}

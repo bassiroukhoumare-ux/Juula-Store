@@ -52,7 +52,7 @@ export const CurrencyCard: React.FC<CurrencyCardProps> = ({ profile, onSaved }) 
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {DISPLAY_CURRENCIES.map((c) => {
           const active = c.id === current;
           return (

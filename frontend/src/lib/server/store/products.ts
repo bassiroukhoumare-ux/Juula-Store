@@ -4,6 +4,7 @@ import 'server-only';
 import type { Prisma, Product } from '@prisma/client';
 import { z } from 'zod';
 import type { FunnelPageConfig, FunnelPageItem, FunnelPageStatus } from '@/types/juula';
+import { cleanComparison, cleanDescription, cleanFaq } from '@/lib/store/product-content';
 
 export { pickStoreWide } from '@/lib/store/store-fields';
 
@@ -73,6 +74,11 @@ export function sanitizeConfig(config: FunnelPageConfig): FunnelPageConfig {
       .filter((p) => isHttpUrl(p.url))
       .map((p) => ({ ...p, thumbnailUrl: isHttpUrl(p.thumbnailUrl) ? p.thumbnailUrl : undefined })),
     proofScreenshots: (config.proofScreenshots ?? []).filter(isHttpUrl),
+    // Long-form content: capped, and empty FAQ entries / comparison rows dropped
+    // so the public page never shows a blank block.
+    description: cleanDescription(config.description),
+    faqItems: cleanFaq(config.faqItems),
+    comparison: cleanComparison(config.comparison),
   };
 }
 

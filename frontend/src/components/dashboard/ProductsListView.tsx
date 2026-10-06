@@ -1,5 +1,6 @@
 'use client';
 
+import { Dropdown } from '@/components/ui/Dropdown';
 import { SkeletonStats } from '@/components/ui/Skeleton';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -178,29 +179,39 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
 
       {/* Status filter */}
       {pages.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {FILTERS.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setFilter(f.id)}
-              className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-semibold border transition-colors cursor-pointer ${
-                filter === f.id
-                  ? 'bg-[#201D1D] text-white border-[#201D1D]'
-                  : 'bg-white text-[#3F4654] border-[#E3E7EE] hover:bg-[#F6F7F9]'
-              }`}
-            >
-              {f.label}
-              <span
-                className={`text-xs font-bold px-1.5 rounded-md ${
-                  filter === f.id ? 'bg-white/15' : 'bg-[#F1F3F6] text-[#7A808C]'
+        <>
+          <Dropdown
+            className="sm:hidden"
+            label="Filtrer les produits"
+            caption="Afficher"
+            value={filter}
+            onChange={setFilter}
+            options={FILTERS.map((f) => ({ value: f.id, label: `${f.label} (${counts[f.id]})` }))}
+          />
+          <div className="hidden sm:flex flex-wrap gap-2">
+            {FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFilter(f.id)}
+                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[14px] font-semibold border transition-colors cursor-pointer ${
+                  filter === f.id
+                    ? 'bg-[#201D1D] text-white border-[#201D1D]'
+                    : 'bg-white text-[#3F4654] border-[#E3E7EE] hover:bg-[#F6F7F9]'
                 }`}
               >
-                {counts[f.id]}
-              </span>
-            </button>
-          ))}
-        </div>
+                {f.label}
+                <span
+                  className={`text-xs font-bold px-1.5 rounded-md ${
+                    filter === f.id ? 'bg-white/15' : 'bg-[#F1F3F6] text-[#7A808C]'
+                  }`}
+                >
+                  {counts[f.id]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {/* List */}

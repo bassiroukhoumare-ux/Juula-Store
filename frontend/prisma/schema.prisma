@@ -386,6 +386,7 @@ model Store {
   storeAccent           String? // hex colour of buttons/badges (#RRGGBB)
   storeBanners          Json? // [{ id, imageUrl, title, badge, buttonLabel, category }]
   storeSections         Json? // [{ id, type: products|testimonials, title, subtitle, placement, productSlugs, images }]
+  storeFaq              Json? // [{ id, question, answer }] — FAQ shown just before the shop footer
   // Checkout options. COD, direct links and WhatsApp only apply to Pro stores.
   codEnabled            Boolean      @default(true)
   whatsappOrderEnabled  Boolean      @default(false)

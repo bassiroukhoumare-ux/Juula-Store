@@ -1,5 +1,7 @@
 'use client';
 
+import { FaqList } from '@/components/showcase/ProductLongContent';
+import type { FaqItem } from '@/lib/store/product-content';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -17,7 +19,6 @@ import type {
   StoreBanner,
   StoreSection,
 } from '@/lib/store/storefront-types';
-import { CartDrawer } from './CartDrawer';
 import { ProductCard } from './ProductCard';
 import { ProductSheet } from './ProductSheet';
 import { useCart } from './useCart';
@@ -38,19 +39,22 @@ export interface StorefrontViewProps {
   displayCurrency: string;
   /** Owner viewing an unpublished shop. */
   isPreview: boolean;
+  /** URL prefix of the shop ('' on its subdomain): /panier, /commande live under it. */
+  base: string;
+  /** Shop FAQ, shown just before the footer. */
+  faq: FaqItem[];
 }
 
 const NEW_COUNT = 4;
 
 export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
-  const { shop, storeName, tagline, logoUrl, coverUrl, accent, banners, sections, options } = props;
+  const { shop, storeName, tagline, logoUrl, coverUrl, accent, banners, sections } = props;
   const allProducts = props.products;
   // « Nos articles », nouveautés, sélection: catalogue products only.
   const products = useMemo(() => allProducts.filter((p) => p.inCatalogue), [allProducts]);
   const bySlug = useMemo(() => new Map(allProducts.map((p) => [p.slug, p])), [allProducts]);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const cart = useCart(shop);
-  const [cartOpen, setCartOpen] = useState(false);
   const [category, setCategory] = useState('');
   // Banner « collection » (e.g. a promotion): only its products are listed.
   const [collection, setCollection] = useState<StoreBanner | null>(null);
@@ -122,37 +126,8 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
     sections
       .filter((x) => x.placement === placement)
       .map((x) => {
-        if (x.type === 'testimonials') {
-          if (x.images.length === 0) return null;
-          return (
-            <section key={x.id} className="max-w-7xl mx-auto px-4 sm:px-6 pt-16">
-              <SectionTitle
-                eyebrow="Ils nous font confiance"
-                title={x.title}
-                subtitle={x.subtitle}
-              />
-              {/* Same grid and size as the product cards: 2 per row on phones, 4 on computers. */}
-              <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6 sm:gap-x-6">
-                {x.images.map((src, i) => (
-                  <button
-                    key={src + i}
-                    type="button"
-                    onClick={() => setLightbox(src)}
-                    aria-label={`Agrandir le témoignage ${i + 1}`}
-                    className="block w-full aspect-[4/5] rounded-[20px] overflow-hidden bg-white border border-black/5 cursor-zoom-in"
-                  >
-                    <img
-                      src={src}
-                      alt={`Témoignage client ${i + 1}`}
-                      loading="lazy"
-                      className="w-full h-full object-cover object-top"
-                    />
-                  </button>
-                ))}
-              </div>
-            </section>
-          );
-        }
+        // Testimonials are grouped at the end of the page, just before the FAQ.
+        if (x.type === 'testimonials') return null;
         const list = x.productSlugs
           .map((slug) => bySlug.get(slug))
           .filter(Boolean) as ShopProduct[];
@@ -173,6 +148,35 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
           </section>
         );
       });
+
+  // Testimonials: all grouped at the end of the page, right before the FAQ.
+  const renderTestimonials = () =>
+    sections
+      .filter((x) => x.type === 'testimonials' && x.images.length > 0)
+      .map((x) => (
+        <section key={x.id} className="max-w-7xl mx-auto px-4 sm:px-6 pt-16">
+          <SectionTitle eyebrow="Ils nous font confiance" title={x.title} subtitle={x.subtitle} />
+          {/* Same grid and size as the product cards: 2 per row on phones, 4 on computers. */}
+          <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6 sm:gap-x-6">
+            {x.images.map((src, i) => (
+              <button
+                key={src + i}
+                type="button"
+                onClick={() => setLightbox(src)}
+                aria-label={`Agrandir le témoignage ${i + 1}`}
+                className="block w-full aspect-[4/5] rounded-[20px] overflow-hidden bg-white border border-black/5 cursor-zoom-in"
+              >
+                <img
+                  src={src}
+                  alt={`Témoignage client ${i + 1}`}
+                  loading="lazy"
+                  className="w-full h-full object-cover object-top"
+                />
+              </button>
+            ))}
+          </div>
+        </section>
+      ));
 
   const renderBanners = (placement: BannerPlacement) => {
     const list = banners.filter((b) => b.placement === placement);
@@ -267,9 +271,8 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
               </button>
             )}
           </nav>
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
+          <a
+            href={`${props.base}/panier`}
             aria-label={`Panier (${cart.count} article${cart.count > 1 ? 's' : ''})`}
             className={`relative w-11 h-11 rounded-full bg-white border border-black/5 flex items-center justify-center cursor-pointer transition-transform ${bump ? 'scale-110' : ''}`}
           >
@@ -279,7 +282,7 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
                 {cart.count}
               </span>
             )}
-          </button>
+          </a>
         </div>
       </header>
 
@@ -464,6 +467,22 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
 
       {renderBanners('bottom')}
 
+      {renderTestimonials()}
+
+      {/* FAQ: just before the footer (hidden without complete questions) */}
+      {props.faq.some((x) => x.question.trim() && x.answer.trim()) && (
+        <section className="@container/page max-w-3xl mx-auto px-4 sm:px-6 pt-16">
+          <SectionTitle
+            eyebrow="Questions fréquentes"
+            title="Vous avez des questions ?"
+            subtitle="Les réponses aux questions qu’on nous pose le plus."
+          />
+          <div className="mt-8">
+            <FaqList items={props.faq} />
+          </div>
+        </section>
+      )}
+
       {/* Footer */}
       <footer className="mt-24 bg-[var(--accent)] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row sm:items-start justify-between gap-6">
@@ -506,15 +525,14 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
       </footer>
 
       {/* Floating cart (phones) */}
-      {cart.count > 0 && !cartOpen && (
-        <button
-          type="button"
-          onClick={() => setCartOpen(true)}
+      {cart.count > 0 && (
+        <a
+          href={`${props.base}/panier`}
           className="md:hidden fixed bottom-4 inset-x-4 z-40 h-14 rounded-full bg-[var(--accent)] text-white font-semibold flex items-center justify-center gap-2 shadow-[0_14px_30px_-12px_rgba(0,0,0,0.45)] cursor-pointer"
         >
           <ShoppingBag className="w-5 h-5" /> Voir le panier ({cart.count}) ·{' '}
           {formatMoney(cart.subtotal)}
-        </button>
+        </a>
       )}
 
       {lightbox && (
@@ -537,17 +555,6 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
         product={sheet}
         onClose={() => setSheet(null)}
         onAdd={(p, quantity, color) => addToCart(p, quantity, color)}
-      />
-
-      <CartDrawer
-        open={cartOpen}
-        onClose={() => setCartOpen(false)}
-        shop={shop}
-        storeName={storeName}
-        cart={cart}
-        products={products}
-        options={options}
-        isPreview={props.isPreview}
       />
     </div>
   );

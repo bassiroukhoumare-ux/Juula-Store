@@ -262,7 +262,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
               </label>
 
               {!onlineOnly && (
-                <div className="grid gap-3 sm:grid-cols-[1fr_160px]">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_160px]">
                   <div>
                     <label
                       htmlFor="store-address"

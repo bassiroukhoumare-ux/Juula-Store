@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  ComparisonTable,
+  FaqAccordion,
+  ProductDescription,
+  PageSection,
+} from '@/components/showcase/ProductLongContent';
 import { displayFont } from '@/app/fonts';
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -1611,7 +1617,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
           {/* RIGHT COLUMN: CONTENT STRICTEMENT SELON VOS CONSIGNES    */}
           {/* ======================================================== */}
           <div
-            className={`${isInsideMockup ? 'w-full px-4 pt-1 pb-24 space-y-4' : 'lg:col-span-6 px-5 lg:px-0 pt-3 lg:pt-0 pb-28 lg:pb-12 space-y-5 -mt-4 lg:mt-0'} relative z-10`}
+            className={`${isInsideMockup ? 'w-full px-4 pt-1 space-y-4' : 'lg:col-span-6 px-5 lg:px-0 pt-3 lg:pt-0 space-y-5 -mt-4 lg:mt-0'} relative z-10`}
           >
             {/* 1. Guarantee badge */}
             <div className="flex items-center">
@@ -1792,292 +1798,307 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* ======================================================== */}
-            {/* 6. AVANTAGES & CARACTÉRISTIQUES                           */}
-            {/* ======================================================== */}
-            {config.benefits.length > 0 && (
-              <div className="space-y-2.5 pt-1">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#7A808C]">
-                  Avantages & Caractéristiques :
-                </h3>
-
-                <div className="space-y-2">
-                  {config.benefits.map((benefit, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-[#ECEFF4] shadow-xs hover:border-[#D5DAE2] transition-colors"
-                    >
-                      <div className="w-5 h-5 rounded-full bg-[#235BF7] text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
-                        <Check className="w-3 h-3 stroke-[3]" />
-                      </div>
-                      <p className="text-xs font-medium text-[#201D1D] leading-relaxed">
-                        {benefit}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ======================================================== */}
-            {/* 7. PREUVES CLIENTS REÇUES : PHOTOS, VIDÉOS & VOCAUX      */}
-            {/* (NOUVELLE ICÔNE + 3 TYPES DE PREUVES REÇUES - AUDIO 3)   */}
-            {/* ======================================================== */}
-            {allProofItems.length > 0 && (
-              <div className="pt-2 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-base font-extrabold text-[#201D1D] flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center">
-                      <ShieldCheck className="w-4 h-4" />
-                    </span>
-                    <span>Preuves clients</span>
-                  </h3>
-
-                  {allProofItems.length > 1 && (
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => scrollSlider('left')}
-                        aria-label="Précédent"
-                        className="w-9 h-9 rounded-full bg-white border border-[#E3E7EE] flex items-center justify-center text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer transition-colors"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => scrollSlider('right')}
-                        aria-label="Suivant"
-                        className="w-9 h-9 rounded-full bg-white border border-[#E3E7EE] flex items-center justify-center text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer transition-colors"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Slider Carrousel de droite à gauche */}
-                <div
-                  ref={sliderRef}
-                  className="flex gap-3 overflow-x-auto pb-2 pt-1 scroll-smooth snap-x snap-mandatory no-scrollbar"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
-                  {allProofItems.map((item) => (
-                    <div key={item.id} className="snap-start flex-shrink-0">
-                      {/* TYPE 1: NOTE VOCALE WHATSAPP */}
-                      {item.type === 'audio' && (
-                        <div className="w-64 h-64 rounded-2xl bg-gradient-to-br from-[#201D1D] to-[#2A2626] p-4 text-white flex flex-col justify-between border border-neutral-800 shadow-sm relative overflow-hidden group">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-xs">
-                                <WhatsAppIcon className="w-4 h-4" />
-                              </div>
-                              <div>
-                                <span className="text-xs font-bold block leading-tight">
-                                  {item.authorName}
-                                </span>
-                                <span className="text-[10px] text-[#25D366] font-medium flex items-center gap-1">
-                                  <CheckCheck className="w-3 h-3" /> {item.city}
-                                </span>
-                              </div>
-                            </div>
-                            <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full text-white/80">
-                              Vocal
-                            </span>
-                          </div>
-
-                          {/* Player waveform */}
-                          <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
-                            <div className="flex items-center gap-3">
-                              <button
-                                type="button"
-                                onClick={() => handleToggleProofAudio(item)}
-                                className="w-10 h-10 rounded-full bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center justify-center shadow-md cursor-pointer transition-transform active:scale-95 flex-shrink-0"
-                              >
-                                {playingProofAudioId === item.id ? (
-                                  <Pause className="w-4 h-4 fill-current" />
-                                ) : (
-                                  <Play className="w-4 h-4 fill-current ml-0.5" />
-                                )}
-                              </button>
-
-                              <div className="flex-1 space-y-1">
-                                {/* Audio wave bars animation */}
-                                <div className="flex items-center gap-0.5 h-6">
-                                  {[
-                                    14, 22, 10, 24, 18, 26, 12, 20, 24, 16, 22, 12, 18, 24, 14, 20,
-                                    16, 22, 10,
-                                  ].map((h, idx) => (
-                                    <span
-                                      key={idx}
-                                      style={{ height: `${h}px` }}
-                                      className={`w-1 rounded-full transition-all duration-200 ${
-                                        playingProofAudioId === item.id
-                                          ? 'bg-[#25D366] animate-pulse'
-                                          : 'bg-white/30'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                                <div className="flex justify-between text-[10px] text-white/60">
-                                  <span>
-                                    {playingProofAudioId === item.id
-                                      ? 'Lecture...'
-                                      : 'Message audio'}
-                                  </span>
-                                  <span>{item.duration || '0:38'}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="text-[11px] text-white/80 italic bg-black/20 p-2 rounded-xl">
-                            "{item.title}"
-                          </div>
-                        </div>
-                      )}
-
-                      {/* TYPE 2: VIDÉO DÉBALLAGE */}
-                      {item.type === 'video' && (
-                        <div
-                          onClick={() => setSelectedProofModalItem(item)}
-                          className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E3E7EE] shadow-xs hover:shadow-md transition-all"
-                        >
-                          <img
-                            src={item.thumbnailUrl || images[0]?.url || undefined}
-                            alt={item.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="w-12 h-12 rounded-full bg-white/90 text-[#235BF7] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                              <Play className="w-5 h-5 fill-current ml-0.5" />
-                            </div>
-                          </div>
-                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2.5 text-white">
-                            <span className="text-[10px] font-bold block truncate">
-                              {item.title}
-                            </span>
-                            <span className="text-[9px] text-white/70">
-                              {item.authorName} &bull; {item.city} ({item.duration || '0:18'})
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* TYPE 3: PHOTO REÇUE / CAPTURE */}
-                      {item.type === 'image' && (
-                        <div
-                          onClick={() => setSelectedProofModalItem(item)}
-                          className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E3E7EE] shadow-xs hover:shadow-md transition-all"
-                        >
-                          <img
-                            src={item.url || undefined}
-                            alt={item.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-2.5 text-white">
-                            <span className="text-[10px] font-bold flex items-center gap-1">
-                              <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
-                              {item.authorName}
-                            </span>
-                            <span className="text-[9px] text-white/80">
-                              {item.title} &bull; {item.city}
-                            </span>
-                          </div>
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 backdrop-blur-xs flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Maximize2 className="w-3 h-3" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ======================================================== */}
-            {/* 8. SECTION AVIS CLIENTS & BOUTON "LAISSER UN AVIS"        */}
-            {/* ======================================================== */}
-            <div className="pt-2 space-y-3.5 border-t border-[#E3E7EE]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-extrabold text-[#201D1D]">
-                    Avis clients ({reviewsList.length})
-                  </h3>
-                  {reviewsList.length > 0 ? (
-                    <div className="flex items-center gap-1.5 text-amber-500 mt-0.5">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-3.5 h-3.5 ${i < Math.round(reviewAverage) ? 'fill-current' : 'text-[#D5DAE2]'}`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-[13px] font-bold text-[#201D1D]">
-                        {reviewAverage.toFixed(1).replace('.', ',')}/5
-                      </span>
-                    </div>
-                  ) : (
-                    <p className="text-[13px] text-[#7A808C] mt-0.5">
-                      Soyez le premier à donner votre avis.
-                    </p>
-                  )}
-                </div>
-
-                {/* Bouton demandé : "Laisser un avis sur cette page" */}
-                <button
-                  type="button"
-                  onClick={() => setIsReviewModalOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-[#235BF7] hover:bg-[#1A4AD6] text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                >
-                  <Send className="w-3 h-3" />
-                  <span>Laisser un avis</span>
-                </button>
-              </div>
-
-              {/* Reviews List */}
-              <div className="space-y-2.5">
-                {reviewsList.map((rev) => (
+      {/* ======================================================== */}
+      {/* SECTIONS PLEINE LARGEUR (après « Zéro risque ») : avantages,  */}
+      {/* description, comparatif, preuves, avis, FAQ — comme un site.  */}
+      {/* ======================================================== */}
+      <div className="@container/page w-full">
+        <div
+          className={
+            isInsideMockup
+              ? 'w-full px-4 pt-6 pb-24 space-y-10'
+              : 'w-full max-w-6xl mx-auto px-5 sm:px-6 lg:px-8 pt-8 lg:pt-16 pb-28 lg:pb-20 space-y-12 lg:space-y-20'
+          }
+        >
+          {/* ======================================================== */}
+          {/* 6. AVANTAGES & CARACTÉRISTIQUES                           */}
+          {/* ======================================================== */}
+          {config.benefits.length > 0 && (
+            <PageSection
+              id="adv-title"
+              title="Avantages & caractéristiques"
+              intro="Ce qui fait la différence au quotidien."
+            >
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-2.5 @3xl:gap-3">
+                {config.benefits.map((benefit, index) => (
                   <div
-                    key={rev.id}
-                    className="p-3.5 rounded-2xl bg-white border border-[#E3E7EE] shadow-xs space-y-1.5"
+                    key={index}
+                    className="flex items-start gap-3 p-4 @3xl/page:p-5 rounded-2xl bg-white border border-[#ECEFF4] hover:border-[#D5DAE2] transition-colors"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-[#235BF7]/10 text-[#235BF7] font-bold text-xs flex items-center justify-center">
-                          {rev.authorName.charAt(0)}
-                        </div>
-                        <div>
-                          <span className="text-xs font-bold text-[#201D1D] block leading-tight">
-                            {rev.authorName}
+                    <div className="w-7 h-7 rounded-full bg-[#235BF7] text-white flex items-center justify-center flex-shrink-0">
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </div>
+                    <p className="pt-0.5 text-[16px] @3xl/page:text-[17px] font-medium text-[#201D1D] leading-relaxed">
+                      {benefit}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </PageSection>
+          )}
+
+          {/* 6b. Description longue + tableau « Nous vs Les autres » (masqués si vides) */}
+          <ProductDescription text={config.description} />
+          <ComparisonTable comparison={config.comparison} />
+
+          {/* ======================================================== */}
+          {/* 7. PREUVES CLIENTS REÇUES : PHOTOS, VIDÉOS & VOCAUX      */}
+          {/* (NOUVELLE ICÔNE + 3 TYPES DE PREUVES REÇUES - AUDIO 3)   */}
+          {/* ======================================================== */}
+          {allProofItems.length > 0 && (
+            <PageSection
+              id="proofs-title"
+              title="Preuves clients"
+              intro="Photos, vidéos et vocaux envoyés par nos clients."
+              aside={
+                allProofItems.length > 1 ? (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => scrollSlider('left')}
+                      aria-label="Précédent"
+                      className="w-9 h-9 rounded-full bg-white border border-[#E3E7EE] flex items-center justify-center text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => scrollSlider('right')}
+                      aria-label="Suivant"
+                      className="w-9 h-9 rounded-full bg-white border border-[#E3E7EE] flex items-center justify-center text-[#7A808C] hover:text-[#201D1D] hover:bg-[#F1F3F6] cursor-pointer transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : undefined
+              }
+            >
+              {/* Slider Carrousel de droite à gauche */}
+              <div
+                ref={sliderRef}
+                className="flex gap-3 overflow-x-auto pb-2 pt-1 scroll-smooth snap-x snap-mandatory no-scrollbar"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {allProofItems.map((item) => (
+                  <div key={item.id} className="snap-start flex-shrink-0">
+                    {/* TYPE 1: NOTE VOCALE WHATSAPP */}
+                    {item.type === 'audio' && (
+                      <div className="w-64 h-64 rounded-2xl bg-gradient-to-br from-[#201D1D] to-[#2A2626] p-4 text-white flex flex-col justify-between border border-neutral-800 shadow-sm relative overflow-hidden group">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center font-bold text-xs">
+                              <WhatsAppIcon className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold block leading-tight">
+                                {item.authorName}
+                              </span>
+                              <span className="text-[10px] text-[#25D366] font-medium flex items-center gap-1">
+                                <CheckCheck className="w-3 h-3" /> {item.city}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full text-white/80">
+                            Vocal
                           </span>
-                          <span className="text-[10px] text-[#7A808C]">
-                            {rev.city || 'Dakar'} &bull; {rev.date}
+                        </div>
+
+                        {/* Player waveform */}
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleProofAudio(item)}
+                              className="w-10 h-10 rounded-full bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center justify-center shadow-md cursor-pointer transition-transform active:scale-95 flex-shrink-0"
+                            >
+                              {playingProofAudioId === item.id ? (
+                                <Pause className="w-4 h-4 fill-current" />
+                              ) : (
+                                <Play className="w-4 h-4 fill-current ml-0.5" />
+                              )}
+                            </button>
+
+                            <div className="flex-1 space-y-1">
+                              {/* Audio wave bars animation */}
+                              <div className="flex items-center gap-0.5 h-6">
+                                {[
+                                  14, 22, 10, 24, 18, 26, 12, 20, 24, 16, 22, 12, 18, 24, 14, 20,
+                                  16, 22, 10,
+                                ].map((h, idx) => (
+                                  <span
+                                    key={idx}
+                                    style={{ height: `${h}px` }}
+                                    className={`w-1 rounded-full transition-all duration-200 ${
+                                      playingProofAudioId === item.id
+                                        ? 'bg-[#25D366] animate-pulse'
+                                        : 'bg-white/30'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex justify-between text-[10px] text-white/60">
+                                <span>
+                                  {playingProofAudioId === item.id ? 'Lecture...' : 'Message audio'}
+                                </span>
+                                <span>{item.duration || '0:38'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-[11px] text-white/80 italic bg-black/20 p-2 rounded-xl">
+                          "{item.title}"
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TYPE 2: VIDÉO DÉBALLAGE */}
+                    {item.type === 'video' && (
+                      <div
+                        onClick={() => setSelectedProofModalItem(item)}
+                        className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E3E7EE] shadow-xs hover:shadow-md transition-all"
+                      >
+                        <img
+                          src={item.thumbnailUrl || images[0]?.url || undefined}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-white/90 text-[#235BF7] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                            <Play className="w-5 h-5 fill-current ml-0.5" />
+                          </div>
+                        </div>
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2.5 text-white">
+                          <span className="text-[10px] font-bold block truncate">{item.title}</span>
+                          <span className="text-[9px] text-white/70">
+                            {item.authorName} &bull; {item.city} ({item.duration || '0:18'})
                           </span>
                         </div>
                       </div>
+                    )}
 
-                      <div className="flex items-center gap-1">
+                    {/* TYPE 3: PHOTO REÇUE / CAPTURE */}
+                    {item.type === 'image' && (
+                      <div
+                        onClick={() => setSelectedProofModalItem(item)}
+                        className="w-52 h-64 rounded-2xl overflow-hidden bg-black flex-shrink-0 relative group cursor-pointer border border-[#E3E7EE] shadow-xs hover:shadow-md transition-all"
+                      >
+                        <img
+                          src={item.url || undefined}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-2.5 text-white">
+                          <span className="text-[10px] font-bold flex items-center gap-1">
+                            <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                            {item.authorName}
+                          </span>
+                          <span className="text-[9px] text-white/80">
+                            {item.title} &bull; {item.city}
+                          </span>
+                        </div>
+                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 backdrop-blur-xs flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Maximize2 className="w-3 h-3" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </PageSection>
+          )}
+
+          {/* ======================================================== */}
+          {/* 8. SECTION AVIS CLIENTS & BOUTON "LAISSER UN AVIS"        */}
+          {/* ======================================================== */}
+          <PageSection
+            id="reviews-title"
+            title={`Avis clients (${reviewsList.length})`}
+            intro={
+              reviewsList.length > 0 ? (
+                <span className="flex items-center gap-2 text-amber-500">
+                  <span className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-5 h-5 ${i < Math.round(reviewAverage) ? 'fill-current' : 'text-[#D5DAE2]'}`}
+                      />
+                    ))}
+                  </span>
+                  <span className="text-[16px] font-bold text-[#201D1D]">
+                    {reviewAverage.toFixed(1).replace('.', ',')}/5
+                  </span>
+                </span>
+              ) : (
+                'Votre expérience aide les autres clients à choisir.'
+              )
+            }
+            aside={
+              <button
+                type="button"
+                onClick={() => setIsReviewModalOpen(true)}
+                className="h-11 px-5 rounded-xl bg-[#235BF7] hover:bg-[#1A4AD6] text-white text-[15px] font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Send className="w-4 h-4" />
+                <span>Laisser un avis</span>
+              </button>
+            }
+          >
+            {reviewsList.length === 0 && (
+              <div className="p-6 @3xl:p-8 rounded-2xl border-2 border-dashed border-[#D5DAE2] text-center">
+                <p className="text-[16px] font-bold text-[#201D1D]">Aucun avis pour le moment</p>
+                <p className="mt-1 text-[15px] text-[#7A808C]">
+                  Soyez le premier à donner votre avis.
+                </p>
+              </div>
+            )}
+            {/* Reviews List */}
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] gap-3">
+              {reviewsList.map((rev) => (
+                <div
+                  key={rev.id}
+                  className="p-4 @3xl/page:p-5 rounded-2xl bg-white border border-[#E3E7EE] space-y-2.5"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#235BF7]/10 text-[#235BF7] font-bold text-[16px] flex items-center justify-center shrink-0">
+                      {rev.authorName.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[15px] font-bold text-[#201D1D] block leading-tight truncate">
+                        {rev.authorName}
+                      </span>
+                      <span className="block text-[13px] text-[#7A808C] whitespace-nowrap truncate">
+                        {rev.city || 'Dakar'} &bull; {rev.date}
+                      </span>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
                         <div className="flex text-amber-500">
                           {[...Array(rev.rating)].map((_, i) => (
-                            <Star key={i} className="w-3 h-3 fill-current" />
+                            <Star key={i} className="w-4 h-4 fill-current" />
                           ))}
                         </div>
                         {rev.verified && (
-                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 whitespace-nowrap">
                             Achat vérifié
                           </span>
                         )}
                       </div>
                     </div>
-
-                    <p className="text-xs text-[#3F4654] leading-relaxed">"{rev.comment}"</p>
                   </div>
-                ))}
-              </div>
+
+                  <p className="text-[15px] @3xl/page:text-[16px] text-[#3F4654] leading-relaxed">
+                    "{rev.comment}"
+                  </p>
+                </div>
+              ))}
             </div>
-          </div>
+          </PageSection>
+
+          {/* 9. FAQ (accordéon, masquée si aucune question) */}
+          <FaqAccordion items={config.faqItems} />
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { Dropdown } from '@/components/ui/Dropdown';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
@@ -131,6 +132,30 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
     mobileStatusTab === 'all' ? true : o.status === mobileStatusTab,
   );
 
+  const statusTabs = [
+    { id: 'all' as const, label: 'Toutes', count: scopedOrders.length },
+    {
+      id: 'new' as const,
+      label: 'Nouvelles',
+      count: scopedOrders.filter((o) => o.status === 'new').length,
+    },
+    {
+      id: 'confirmed' as const,
+      label: 'En route',
+      count: scopedOrders.filter((o) => o.status === 'confirmed').length,
+    },
+    {
+      id: 'delivered' as const,
+      label: 'Livrées',
+      count: scopedOrders.filter((o) => o.status === 'delivered').length,
+    },
+    {
+      id: 'cancelled' as const,
+      label: 'Annulées',
+      count: scopedOrders.filter((o) => o.status === 'cancelled').length,
+    },
+  ];
+
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
       {/* Hidden audio player for list/table view playback */}
@@ -259,31 +284,17 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
           </h3>
         )}
 
-        {/* Filtre par statut */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {[
-            { id: 'all' as const, label: 'Toutes', count: scopedOrders.length },
-            {
-              id: 'new' as const,
-              label: 'Nouvelles',
-              count: scopedOrders.filter((o) => o.status === 'new').length,
-            },
-            {
-              id: 'confirmed' as const,
-              label: 'En route',
-              count: scopedOrders.filter((o) => o.status === 'confirmed').length,
-            },
-            {
-              id: 'delivered' as const,
-              label: 'Livrées',
-              count: scopedOrders.filter((o) => o.status === 'delivered').length,
-            },
-            {
-              id: 'cancelled' as const,
-              label: 'Annulées',
-              count: scopedOrders.filter((o) => o.status === 'cancelled').length,
-            },
-          ].map((tab) => (
+        {/* Filtre par statut : liste déroulante sur téléphone, onglets ensuite */}
+        <Dropdown
+          className="sm:hidden"
+          label="Filtrer les commandes"
+          caption="Afficher"
+          value={mobileStatusTab}
+          onChange={setMobileStatusTab}
+          options={statusTabs.map((t) => ({ value: t.id, label: `${t.label} (${t.count})` }))}
+        />
+        <div className="flex flex-wrap items-center gap-1.5 max-sm:hidden">
+          {statusTabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
@@ -542,19 +553,17 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
                       {/* Changement rapide de statut */}
                       <div className="pt-1">
-                        <select
-                          value={order.status}
-                          onChange={(e) =>
-                            handleMoveStatus(order.id, e.target.value as OrderStatus)
-                          }
-                          aria-label="Statut de la commande"
-                          className="w-full bg-white border border-[#CBD5E1] rounded-xl py-2 px-3 text-[13px] font-bold text-[#201D1D] cursor-pointer"
-                        >
-                          <option value="new">Étape 1 : Nouvelle demande</option>
-                          <option value="confirmed">Étape 2 : Confirmé (En route)</option>
-                          <option value="delivered">Étape 3 : Livré & Payé</option>
-                          <option value="cancelled">Étape 4 : Annulé</option>
-                        </select>
+                        <Dropdown
+                          label="Statut de la commande"
+                          value={order.status as OrderStatus}
+                          onChange={(status) => handleMoveStatus(order.id, status)}
+                          options={[
+                            { value: 'new', label: 'Nouvelle demande' },
+                            { value: 'confirmed', label: 'Confirmée (en route)' },
+                            { value: 'delivered', label: 'Livrée & payée' },
+                            { value: 'cancelled', label: 'Annulée' },
+                          ]}
+                        />
                       </div>
                     </div>
                   )}

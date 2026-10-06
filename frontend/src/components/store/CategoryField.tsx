@@ -1,5 +1,6 @@
 'use client';
 
+import { Dropdown } from '@/components/ui/Dropdown';
 import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
 
@@ -75,23 +76,20 @@ export const CategoryField: React.FC<CategoryFieldProps> = ({
   }
 
   return (
-    <select
+    <Dropdown
+      className="w-full sm:w-48"
+      label={label}
       value={value}
-      aria-label={label}
-      onChange={(e) => {
-        if (e.target.value === '__other__') setCustom('');
-        else onChange(e.target.value);
+      onChange={(v) => {
+        if (v === '__other__') setCustom('');
+        else onChange(v);
       }}
-      className="w-40 h-10 px-3 rounded-xl border border-[#E3E7EE] bg-[#F6F7F9] text-[14px] text-[#201D1D] focus:outline-none focus:border-[#235BF7] cursor-pointer"
-    >
-      <option value="">Sans catégorie</option>
-      {options.map((c) => (
-        <option key={c} value={c}>
-          {c}
-        </option>
-      ))}
-      {value && !options.includes(value) && <option value={value}>{value}</option>}
-      <option value="__other__">Autre…</option>
-    </select>
+      options={[
+        { value: '', label: 'Sans catégorie' },
+        ...options.map((c) => ({ value: c, label: c })),
+        ...(value && !options.includes(value) ? [{ value, label: value }] : []),
+        { value: '__other__', label: 'Autre…' },
+      ]}
+    />
   );
 };

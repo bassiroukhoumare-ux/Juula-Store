@@ -4,6 +4,7 @@ import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   LayoutList,
+  HelpCircle,
   MessageSquareQuote,
   ArrowDown,
   ArrowUp,
@@ -27,7 +28,6 @@ import { storeOrigin } from '@/lib/store/subdomain';
 import {
   ACCENT_PRESETS,
   BANNER_PLACEMENTS,
-  type BannerPlacement,
   type DirectPaymentMethod,
   type StoreBanner,
   type StoreSection,
@@ -40,14 +40,24 @@ import { CategoryField } from '@/components/store/CategoryField';
 import { ProductPicker } from '@/components/dashboard/ProductPicker';
 import { TestimonialImages } from '@/components/store/TestimonialImages';
 import { SectionLayout, type SectionItem } from '@/components/dashboard/SectionLayout';
+import { FaqEditor } from '@/components/dashboard/ProductContentEditor';
+import { Dropdown } from '@/components/ui/Dropdown';
 
-type BoutiqueSection = 'apercu' | 'identite' | 'bannieres' | 'articles' | 'sections' | 'paiements';
+type BoutiqueSection =
+  | 'apercu'
+  | 'identite'
+  | 'bannieres'
+  | 'articles'
+  | 'sections'
+  | 'faq'
+  | 'paiements';
 
 const SECTIONS: SectionItem<BoutiqueSection>[] = [
   { id: 'identite', label: 'Couverture & identité', icon: <ImageIcon /> },
   { id: 'bannieres', label: 'Bannières', icon: <Star /> },
   { id: 'articles', label: 'Articles', icon: <Package /> },
   { id: 'sections', label: 'Sections', icon: <LayoutList /> },
+  { id: 'faq', label: 'FAQ', icon: <HelpCircle /> },
   { id: 'paiements', label: 'Paiements', icon: <Wallet /> },
   { id: 'apercu', label: 'Aperçu & publication', icon: <Globe /> },
 ];
@@ -58,6 +68,7 @@ const STEP_HINTS: Record<BoutiqueSection, string> = {
   bannieres: 'Mettez en avant une promotion ou une nouveauté (facultatif).',
   articles: 'Choisissez les produits visibles dans votre boutique et leur catégorie.',
   sections: 'Ajoutez des sections de produits ou des témoignages clients (facultatif).',
+  faq: 'Répondez aux questions que vos clients posent souvent (facultatif).',
   paiements: 'Choisissez comment vos clients vous paient.',
   apercu: 'Vérifiez le rendu puis mettez votre boutique en ligne.',
 };
@@ -180,7 +191,9 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
           text:
             err instanceof ApiError && typeof err.body.message === 'string'
               ? err.body.message
-              : 'L’enregistrement automatique a échoué. Vérifiez votre connexion.',
+              : err instanceof ApiError && err.status >= 500
+                ? 'Le serveur n’a pas pu enregistrer vos modifications. Réessayez dans un instant.'
+                : 'L’enregistrement automatique a échoué. Vérifiez votre connexion.',
         });
       }
     }, 900);
@@ -350,79 +363,84 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
 
         {/* Status + link */}
         {section === 'apercu' && (
-          <div className="p-5 sm:p-6 rounded-[28px] bg-white border border-[#ECEFF4] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
+          <div className="p-5 sm:p-6 rounded-[28px] bg-white border border-[#ECEFF4] space-y-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
                 <h2 className="text-xl font-extrabold text-[#201D1D]">Ma boutique</h2>
-                <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded-md border ${
-                    settings.published
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : 'bg-amber-50 text-amber-700 border-amber-200'
-                  }`}
-                >
-                  {settings.published ? 'En ligne' : 'Brouillon'}
-                </span>
-              </div>
-              {url && (
-                <p className="mt-1 text-[15px] font-semibold text-[#235BF7] truncate">
-                  {url.replace(/^https?:\/\//, '')}
+                <p className="mt-0.5 text-[14px] text-[#7A808C]">
+                  {published.length} produit{published.length > 1 ? 's' : ''} visible
+                  {published.length > 1 ? 's' : ''} dans la boutique
                 </p>
-              )}
-              <p className="text-[13px] text-[#7A808C]">
-                {published.length} produit{published.length > 1 ? 's' : ''} publié
-                {published.length > 1 ? 's' : ''} visible
-                {published.length > 1 ? 's' : ''} dans la boutique
-              </p>
+              </div>
+              <span
+                className={`shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] font-bold ${
+                  settings.published
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-amber-50 text-amber-700'
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${settings.published ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                />
+                {settings.published ? 'En ligne' : 'Brouillon'}
+              </span>
             </div>
-            <div className="flex flex-wrap gap-2">
+
+            {url && (
+              <div className="flex items-center gap-2 h-12 pl-3.5 pr-1.5 rounded-2xl bg-[#F6F7F9] border border-[#E3E7EE]">
+                <Globe className="w-4 h-4 shrink-0 text-[#235BF7]" />
+                <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-[#201D1D]">
+                  {url.replace(/^https?:\/\//, '')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(url).then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1600);
+                    });
+                  }}
+                  className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white border border-[#E3E7EE] text-[13px] font-semibold text-[#201D1D] hover:bg-[#F6F7F9] cursor-pointer"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                  {copied ? 'Copié' : 'Copier'}
+                </button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
               {previewHref && (
                 <a
                   href={previewHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[#E3E7EE] text-[14px] font-semibold text-[#201D1D] hover:bg-[#F6F7F9]"
+                  className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl border border-[#E3E7EE] bg-white text-[14px] font-semibold text-[#201D1D] hover:bg-[#F6F7F9] transition-colors cursor-pointer"
                 >
                   <Eye className="w-4 h-4 text-[#235BF7]" /> Aperçu
                 </a>
               )}
               {url && settings.published && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard?.writeText(url).then(() => {
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 1600);
-                      });
-                    }}
-                    className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[#E3E7EE] text-[14px] font-semibold text-[#201D1D] hover:bg-[#F6F7F9] cursor-pointer"
-                  >
-                    {copied ? (
-                      <Check className="w-4 h-4 text-emerald-600" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                    {copied ? 'Lien copié' : 'Copier le lien'}
-                  </button>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[#E3E7EE] text-[14px] font-semibold text-[#201D1D] hover:bg-[#F6F7F9]"
-                  >
-                    <ExternalLink className="w-4 h-4" /> Ouvrir
-                  </a>
-                </>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl border border-[#E3E7EE] bg-white text-[14px] font-semibold text-[#201D1D] hover:bg-[#F6F7F9] transition-colors cursor-pointer"
+                >
+                  <ExternalLink className="w-4 h-4 text-[#235BF7]" /> Ouvrir
+                </a>
               )}
               {settings.published ? (
                 <button
                   type="button"
                   disabled={saving}
                   onClick={() => void patch({ published: false }, 'Boutique dépubliée.')}
-                  className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-[#E3E7EE] text-[14px] font-semibold text-[#3F4654] hover:bg-[#F6F7F9] cursor-pointer"
+                  className="col-span-2 sm:ml-auto inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl border border-[#E3E7EE] bg-white text-[14px] font-semibold text-[#B91C1C] hover:bg-[#FEF2F2] transition-colors cursor-pointer"
                 >
-                  <EyeOff className="w-4 h-4" /> Dépublier
+                  <EyeOff className="w-4 h-4" /> Mettre hors ligne
                 </button>
               ) : (
                 <button
@@ -434,7 +452,7 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
                       () => void patch({ published: true }, 'Votre boutique est en ligne !'),
                     )
                   }
-                  className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[14px] font-semibold cursor-pointer"
+                  className="col-span-2 sm:ml-auto inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[14px] font-semibold cursor-pointer"
                 >
                   <Rocket className="w-4 h-4" /> Publier en ligne
                 </button>
@@ -591,21 +609,14 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
                   <span className="text-[14px] font-semibold text-[#201D1D]">
                     Emplacement sur la boutique
                   </span>
-                  <select
+                  <Dropdown
+                    label="Emplacement sur la boutique"
                     value={b.placement}
-                    onChange={(e) =>
-                      setBanner(b.id, { placement: e.target.value as BannerPlacement })
-                    }
-                    className={INPUT}
-                  >
-                    {BANNER_PLACEMENTS.map((pl) => (
-                      <option key={pl.id} value={pl.id}>
-                        {pl.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(placement) => setBanner(b.id, { placement })}
+                    options={BANNER_PLACEMENTS.map((pl) => ({ value: pl.id, label: pl.label }))}
+                  />
                 </label>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <input
                     value={b.badge}
                     maxLength={40}
@@ -628,18 +639,15 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
                     className={INPUT}
                   />
                   {b.productSlugs.length === 0 && (
-                    <select
+                    <Dropdown
+                      label="Ce que le bouton affiche"
                       value={b.category}
-                      onChange={(e) => setBanner(b.id, { category: e.target.value })}
-                      className={INPUT}
-                    >
-                      <option value="">Le bouton affiche : tous les articles</option>
-                      {categories.map((c) => (
-                        <option key={c} value={c}>
-                          Le bouton affiche : {c}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(category) => setBanner(b.id, { category })}
+                      options={[
+                        { value: '', label: 'Le bouton affiche : tous les articles' },
+                        ...categories.map((c) => ({ value: c, label: `Le bouton affiche : ${c}` })),
+                      ]}
+                    />
                   )}
                 </div>
                 <div className="space-y-2">
@@ -862,7 +870,7 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
                     </button>
                   </span>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
                   <input
                     value={x.title}
                     maxLength={80}
@@ -871,20 +879,18 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
                     aria-label="Titre de la section"
                     className={INPUT}
                   />
-                  <select
-                    value={x.placement}
-                    onChange={(e) =>
-                      setSectionField(x.id, { placement: e.target.value as BannerPlacement })
-                    }
-                    aria-label="Emplacement de la section"
-                    className={INPUT}
-                  >
-                    {BANNER_PLACEMENTS.map((pl) => (
-                      <option key={pl.id} value={pl.id}>
-                        {pl.label}
-                      </option>
-                    ))}
-                  </select>
+                  {x.type === 'testimonials' ? (
+                    <p className="flex items-center px-3.5 min-h-11 rounded-xl bg-[#F6F7F9] text-[13px] text-[#7A808C]">
+                      Affichée en bas de la boutique, juste avant la FAQ.
+                    </p>
+                  ) : (
+                    <Dropdown
+                      label="Emplacement de la section"
+                      value={x.placement}
+                      onChange={(placement) => setSectionField(x.id, { placement })}
+                      options={BANNER_PLACEMENTS.map((pl) => ({ value: pl.id, label: pl.label }))}
+                    />
+                  )}
                   <input
                     value={x.subtitle}
                     maxLength={160}
@@ -919,6 +925,17 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
                 )}
               </div>
             ))}
+          </Section>
+        )}
+
+        {/* FAQ */}
+        {section === 'faq' && (
+          <Section
+            title="Questions fréquentes"
+            icon={<HelpCircle className="w-4 h-4" />}
+            hint="Affichées en accordéon tout en bas de votre boutique, juste avant le pied de page. Ajoutez-en autant que vous voulez."
+          >
+            <FaqEditor items={settings.faq} onChange={(faq) => set({ faq })} />
           </Section>
         )}
 
@@ -1250,6 +1267,7 @@ function fullPayloadOf(next: StorefrontSettings): Partial<StorefrontSettings> {
     accent: next.accent,
     banners: next.banners.filter((b) => b.imageUrl && b.title),
     sections: next.sections.filter((x) => x.title.trim()),
+    faq: next.faq,
     codEnabled: next.codEnabled,
     onlinePaymentsEnabled: next.onlinePaymentsEnabled,
     directPaymentMethods: next.directPaymentMethods.filter((m) => m.name && (m.url || m.qrUrl)),

@@ -32,6 +32,11 @@ const Section = z.object({
   productSlugs: z.array(z.string().max(120)).max(40),
   images: z.array(z.string().max(500)).max(30),
 });
+const Faq = z.object({
+  id: z.string().max(40),
+  question: z.string().max(200),
+  answer: z.string().max(2000),
+});
 const Method = z.object({
   id: z.string().max(40),
   name: z.string().max(40),
@@ -47,6 +52,7 @@ const Body = z
     accent: z.string().max(7),
     banners: z.array(Banner).max(5),
     sections: z.array(Section).max(20),
+    faq: z.array(Faq).max(30),
     codEnabled: z.boolean(),
     onlinePaymentsEnabled: z.boolean(),
     setupDone: z.boolean(),

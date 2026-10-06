@@ -79,7 +79,7 @@ export const ProductPicker: React.FC<ProductPickerProps> = ({
         ))}
 
       {pages.length > 0 && (
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {pages.map((p) => {
             const slug = p.config.slug;
             const on = selected.includes(slug);
@@ -93,7 +93,7 @@ export const ProductPicker: React.FC<ProductPickerProps> = ({
                 onClick={() =>
                   onChange(on ? selected.filter((x) => x !== slug) : [...selected, slug])
                 }
-                className={`flex items-center gap-3 p-2 rounded-xl border-2 text-left cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`min-w-0 flex items-center gap-3 p-2 rounded-xl border-2 text-left cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                   on ? 'border-[#235BF7] bg-[#F7F9FF]' : 'border-[#ECEFF4] hover:bg-[#F6F7F9]'
                 }`}
               >

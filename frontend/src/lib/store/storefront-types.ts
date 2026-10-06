@@ -1,3 +1,4 @@
+import type { FaqItem } from '@/lib/store/product-content';
 // Storefront settings shared by the dashboard, the public shop and the API.
 
 export interface StoreBanner {
@@ -58,6 +59,8 @@ export interface StorefrontSettings {
   accent: string;
   banners: StoreBanner[];
   sections: StoreSection[];
+  /** Shop FAQ, shown just before the footer (incomplete entries are hidden). */
+  faq: FaqItem[];
   codEnabled: boolean;
   /** JuulaPay online payments (optional, 7,5 % per payment). */
   onlinePaymentsEnabled: boolean;

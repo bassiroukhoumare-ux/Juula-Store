@@ -103,7 +103,7 @@ export const PayoutAccountsCard: React.FC<PayoutAccountsCardProps> = ({ pinRequi
         <div className="space-y-3" role="status" aria-label="Chargement">
           <Skeleton className="h-4 w-1/3" />
           <Skeleton className="h-11 w-full" />
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Skeleton className="h-16" />
             <Skeleton className="h-16" />
           </div>
@@ -132,7 +132,7 @@ export const PayoutAccountsCard: React.FC<PayoutAccountsCardProps> = ({ pinRequi
             <p className="text-[14px] font-semibold text-[#201D1D]">
               Où recevoir vos retraits ? (un ou les deux)
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {METHODS.map((m) => {
                 const on = enabled[m.id];
                 return (

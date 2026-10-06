@@ -112,7 +112,73 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
 
       {/* Customers Table / Cards */}
       <div className="bg-white rounded-[28px] border border-[#ECEFF4] shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Phones: one card per customer */}
+        <ul className="md:hidden divide-y divide-[#F1F5F9]">
+          {filtered.length === 0 ? (
+            <li className="py-12 px-6 text-center">
+              <Users className="mx-auto w-8 h-8 text-[#CBD5E1]" />
+              <p className="mt-2 text-[15px] font-bold text-[#7A808C]">
+                Aucun client enregistré pour le moment
+              </p>
+            </li>
+          ) : (
+            filtered.map((customer, idx) => {
+              const initials = customer.name
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
+              const waMessage = encodeURIComponent(
+                `Bonjour ${customer.name} ! C'est ${storeName}. Nous espérons que votre commande vous apporte entière satisfaction ! Avez-vous besoin d'une assistance ou d'un conseil ?`,
+              );
+              return (
+                <li key={idx} className="p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#235BF7] to-[#60A5FA] text-white font-extrabold flex items-center justify-center shrink-0 text-[14px]">
+                      {initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-extrabold text-[15px] text-[#201D1D] truncate">
+                        {customer.name}
+                      </p>
+                      <p className="text-[13px] text-[#7A808C] truncate">
+                        {customer.phone} · {customer.neighborhood}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-extrabold text-[15px] text-[#201D1D]">
+                        {formatFCFA(customer.totalSpent)}
+                      </p>
+                      <p className="text-[12px] text-[#7A808C]">
+                        {customer.orderCount} commande{customer.orderCount > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href={`https://wa.me/${customer.whatsappNumber}?text=${waMessage}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 h-11 rounded-xl bg-[#25D366] text-white font-bold text-[14px]"
+                    >
+                      <WhatsAppIcon className="w-4 h-4" /> WhatsApp
+                    </a>
+                    <a
+                      href={`tel:${customer.phone.replace(/[^0-9+]/g, '')}`}
+                      className="inline-flex items-center justify-center gap-1.5 h-11 rounded-xl bg-[#235BF7] text-white font-bold text-[14px]"
+                    >
+                      <PhoneCall className="w-4 h-4" /> Appeler
+                    </a>
+                  </div>
+                </li>
+              );
+            })
+          )}
+        </ul>
+
+        {/* From 768px: table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead className="bg-[#F8FAFC] border-b border-[#ECEFF4] text-[#7A808C] font-bold uppercase text-xs tracking-wider">
               <tr>
