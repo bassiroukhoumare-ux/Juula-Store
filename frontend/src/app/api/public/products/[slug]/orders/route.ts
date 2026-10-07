@@ -10,6 +10,7 @@
 //     as `pending_online` until a payment webhook confirms them.
 export const runtime = 'nodejs';
 
+import { pushNewOrder } from '@/lib/server/push';
 import 'server-only';
 import { after, NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -234,6 +235,8 @@ export async function POST(
 
     // Email the merchant once the response is sent (never blocks the customer).
     after(() => sendNewOrderEmail(order.id));
+    // Instant push to the merchant's phone / browser (if subscribed).
+    after(() => pushNewOrder(order.id));
     if (input.visitorId) {
       const visitorId = input.visitorId;
       after(() => clearCheckoutDraft(product.id, visitorId));

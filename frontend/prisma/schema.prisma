@@ -49,6 +49,7 @@ model User {
   promoCodes         PromoCode[]
   partners           Partner[]
   notificationStates NotificationState[]
+  pushSubscriptions  PushSubscription[]
 
   // Multi-tenancy is opt-in per project: by default no resource is org-scoped.
   // Apps that need it (marketplace, B2B SaaS, classifieds) wire owner relations
@@ -691,4 +692,23 @@ model ReportMessage {
   createdAt      DateTime  @default(now())
 
   @@index([reportId, createdAt])
+}
+
+// Web Push subscriptions (one per browser / installed PWA). Upserted by
+// endpoint; removed automatically when the push service answers 404 / 410.
+model PushSubscription {
+  id         String    @id @default(cuid())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint   String    @unique
+  keysP256dh String
+  keysAuth   String
+  userAgent  String?
+  device     String? // android | ios | desktop
+  lastSentAt DateTime?
+  failures   Int       @default(0) // consecutive non-fatal errors
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([userId])
 }

@@ -36,9 +36,9 @@ export const CSRF_COOKIE_NAME = `${COOKIE_PREFIX}-csrf`;
 const CSRF_HEADER_NAME = 'x-csrf-token';
 
 const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '7d';
+const REFRESH_TOKEN_EXPIRY = '60d'; // sliding: re-minted on every refresh (installed app stays signed in)
 const ACCESS_COOKIE_MAX_AGE = 15 * 60; // 15 min in seconds (Next.js cookies API)
-const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
+const REFRESH_COOKIE_MAX_AGE = 60 * 24 * 60 * 60; // 60 days in seconds
 const CSRF_COOKIE_MAX_AGE = REFRESH_COOKIE_MAX_AGE;
 
 function isProd(): boolean {

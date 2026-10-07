@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/Sidebar';
+import { PushPrompt } from '@/components/dashboard/PushNotifications';
 import { useDashboardTheme } from '@/lib/theme';
 import { Header, HeaderWidgetsState } from '@/components/dashboard/Header';
 import { CockpitView } from '@/components/dashboard/CockpitView';
@@ -154,7 +155,9 @@ export default function JuulaStoreApp() {
       if (err instanceof ApiError && err.status === 401) {
         // Come back to the same place (e.g. a specific order) after login.
         const back = window.location.pathname + window.location.search;
-        router.replace(`/login?next=${encodeURIComponent(back)}`);
+        // expired=1: the server refused the session, so the middleware must not
+        // bounce /login straight back here.
+        router.replace(`/login?expired=1&next=${encodeURIComponent(back)}`);
         return;
       }
       setLoadError(
@@ -188,6 +191,13 @@ export default function JuulaStoreApp() {
       } else {
         toast('Commande introuvable sur cette boutique.', 'error');
       }
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    // Deep link from a push notification: /dashboard?tab=wallet
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    const TABS: DashboardTab[] = ['cockpit', 'kanban', 'wallet', 'products', 'notifications'];
+    if (tab && (TABS as string[]).includes(tab)) {
+      setActiveTab(tab as DashboardTab);
       window.history.replaceState(null, '', window.location.pathname);
     }
     setSession('ready');
@@ -640,7 +650,7 @@ export default function JuulaStoreApp() {
       // Cookies may already be gone; continue to the login page.
     }
     clearCsrfToken();
-    router.replace('/login');
+    router.replace('/login?expired=1');
   };
 
   // Recharging credits
@@ -770,6 +780,18 @@ export default function JuulaStoreApp() {
                 setActiveTab('kanban');
               }}
             />
+
+            {/* Invite to turn push notifications on (until enabled or dismissed) */}
+            {activeTab === 'cockpit' && (
+              <div className="lg:px-8 max-w-7xl w-full mx-auto">
+                <PushPrompt
+                  onOpenSettings={() => {
+                    setActiveTab('settings');
+                    setSettingsSection('notifications');
+                  }}
+                />
+              </div>
+            )}
 
             {/* Dynamic Content View */}
             <main className="flex-1 p-4 sm:p-8 pb-28 lg:pb-8 max-w-7xl w-full mx-auto motion-safe:animate-[rise_600ms_cubic-bezier(.2,.75,.2,1)]">

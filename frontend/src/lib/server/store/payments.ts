@@ -10,6 +10,7 @@
 // session from the Moneriz API with our secret key. Webhook bodies and
 // browser callbacks are just hints to go and check — a forged webhook or
 // postMessage can never credit a wallet.
+import { pushPaymentReceived } from '@/lib/server/push';
 import 'server-only';
 import type { Prisma, PrismaClient, StoreOrder } from '@prisma/client';
 import { prisma } from '@/lib/server/prisma';
@@ -126,6 +127,9 @@ export async function verifyOrderPayment(orderId: string): Promise<PaymentCheckR
     });
     sendPaymentConfirmedEmail(order.id).catch((err) =>
       log.error('store.payment.email_failed', { orderId, error: String(err) }),
+    );
+    pushPaymentReceived(order.id).catch((err) =>
+      log.error('store.payment.push_failed', { orderId, error: String(err) }),
     );
   }
   const fresh = await prisma.storeOrder.findUniqueOrThrow({ where: { id: order.id } });

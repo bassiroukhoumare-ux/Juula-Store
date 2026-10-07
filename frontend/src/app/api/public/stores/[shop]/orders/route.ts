@@ -7,6 +7,7 @@
 // payment options enforced from the merchant's plan.
 export const runtime = 'nodejs';
 
+import { pushNewOrder } from '@/lib/server/push';
 import 'server-only';
 import { after, NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -166,6 +167,8 @@ export async function POST(
     }
 
     after(() => sendNewOrderEmail(order.id));
+    // Instant push to the merchant's phone / browser (if subscribed).
+    after(() => pushNewOrder(order.id));
 
     return NextResponse.json(
       {

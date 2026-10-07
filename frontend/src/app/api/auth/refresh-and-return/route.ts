@@ -22,6 +22,8 @@ import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import {
   REFRESH_COOKIE_NAME,
+  clearAuthCookies,
+  clearCsrfCookie,
   createAccessToken,
   createRefreshToken,
   setAuthCookies,
@@ -43,11 +45,21 @@ function safeNext(raw: string | null): string {
   return raw;
 }
 
-function loginRedirect(req: NextRequest, next: string): NextResponse {
+/** Dead session: wipe every auth cookie (incl. the CSRF "session hint" the
+ *  middleware reads) and land on the login page. `expired=1` tells the
+ *  middleware not to bounce /login back here — no redirect loop possible. */
+async function loginRedirect(req: NextRequest, next: string): Promise<NextResponse> {
+  await clearAuthCookies();
+  await clearCsrfCookie();
   const url = req.nextUrl.clone();
   url.pathname = process.env.AUTH_LOGIN_PATH || '/login';
-  url.search = `?next=${encodeURIComponent(next)}`;
+  url.search = new URLSearchParams({ next, expired: '1' }).toString();
   return NextResponse.redirect(url, 303);
+}
+
+/** `next` keeps its query string (e.g. /dashboard?commande=CMD-…). */
+function redirectToNext(req: NextRequest, next: string): NextResponse {
+  return NextResponse.redirect(new URL(next, req.nextUrl.origin), 303);
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -56,27 +68,24 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const next = safeNext(req.nextUrl.searchParams.get('next'));
 
     const refreshCookie = req.cookies.get(REFRESH_COOKIE_NAME)?.value;
-    if (!refreshCookie) return loginRedirect(req, next);
+    if (!refreshCookie) return await loginRedirect(req, next);
 
     const payload = await verifyRefreshToken(refreshCookie);
-    if (!payload) return loginRedirect(req, next);
+    if (!payload) return await loginRedirect(req, next);
 
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
       select: { id: true, email: true, tokenVersion: true, status: true },
     });
     if (!user || user.tokenVersion !== payload.tokenVersion || user.status === 'SUSPENDED') {
-      return loginRedirect(req, next);
+      return await loginRedirect(req, next);
     }
 
     const release = await acquireRefreshLock(user.id);
     if (!release) {
       // Another tab is rotating. Bounce back to `next` — the in-flight
       // rotation will land cookies before the user's next request.
-      const url = req.nextUrl.clone();
-      url.pathname = next;
-      url.search = '';
-      return NextResponse.redirect(url, 303);
+      return redirectToNext(req, next);
     }
 
     try {
@@ -92,10 +101,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       await release();
     }
 
-    const target = req.nextUrl.clone();
-    target.pathname = next;
-    target.search = '';
-    const res = NextResponse.redirect(target, 303);
+    const res = redirectToNext(req, next);
     res.headers.set('x-request-id', ctx.requestId);
     return res;
   });

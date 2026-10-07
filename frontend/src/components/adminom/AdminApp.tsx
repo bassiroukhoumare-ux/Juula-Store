@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Bell,
+  BellRing,
   Flag,
   MessageSquareReply,
   CreditCard,
@@ -39,6 +40,7 @@ import {
 } from './Moderation';
 import { ReportsPanel, type ReportFilter } from './Reports';
 import { TabBar } from './TabBar';
+import { PushPanel } from './PushPanel';
 
 interface AdminNotifications {
   items: {
@@ -63,7 +65,8 @@ type Tab =
   | 'orders'
   | 'disputes'
   | 'subscriptions'
-  | 'marketing';
+  | 'marketing'
+  | 'push';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Tableau de bord', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -74,6 +77,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'disputes', label: 'Litiges', icon: <ShieldAlert className="w-4 h-4" /> },
   { id: 'subscriptions', label: 'Abonnements', icon: <CreditCard className="w-4 h-4" /> },
   { id: 'marketing', label: 'Marketing', icon: <Megaphone className="w-4 h-4" /> },
+  { id: 'push', label: 'Notifications', icon: <BellRing className="w-4 h-4" /> },
 ];
 
 const SUB_FILTERS: { id: SubFilter; label: string }[] = [
@@ -474,6 +478,7 @@ export const AdminApp: React.FC = () => {
         )}
         {tab === 'orders' && <OrdersTab period={period} status={orderFilter} tick={tick} />}
         {tab === 'marketing' && <MarketingTab tick={tick} />}
+        {tab === 'push' && <PushPanel tick={tick} onChanged={changed} />}
       </main>
 
       {grantFor && (

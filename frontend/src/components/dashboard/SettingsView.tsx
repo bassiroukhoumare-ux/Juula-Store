@@ -15,10 +15,12 @@ import {
   Wallet,
   Crown,
   Palette,
+  BellRing,
 } from 'lucide-react';
 import { FunnelPageConfig } from '@/types/juula';
 import type { ThemePref } from '@/lib/theme';
 import { ThemeChooser } from './ThemeControls';
+import { PushNotificationsCard } from './PushNotifications';
 import { SectionLayout, type SectionItem } from './SectionLayout';
 import { PayoutAccountsCard } from '@/components/store/PayoutAccountsCard';
 import { SubscriptionCard } from '@/components/store/SubscriptionCard';
@@ -35,6 +37,7 @@ export type SettingsSection =
   | 'retraits'
   | 'securite'
   | 'abonnement'
+  | 'notifications'
   | 'apparence';
 
 const SECTIONS: SectionItem<SettingsSection>[] = [
@@ -45,6 +48,7 @@ const SECTIONS: SectionItem<SettingsSection>[] = [
   { id: 'retraits', label: 'Moyens de retrait', icon: <Wallet /> },
   { id: 'securite', label: 'Sécurité des virements', icon: <KeyRound /> },
   { id: 'abonnement', label: 'Abonnement', icon: <Crown /> },
+  { id: 'notifications', label: 'Notifications', icon: <BellRing /> },
   { id: 'apparence', label: 'Apparence', icon: <Palette /> },
 ];
 
@@ -136,6 +140,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       )}
 
       {section === 'retraits' && <PayoutAccountsCard pinRequired={payoutSecurity.isPinSet} />}
+
+      {section === 'notifications' && <PushNotificationsCard />}
 
       {section === 'apparence' && theme && onThemeChange && (
         <ThemeChooser pref={theme} onChange={onThemeChange} />
