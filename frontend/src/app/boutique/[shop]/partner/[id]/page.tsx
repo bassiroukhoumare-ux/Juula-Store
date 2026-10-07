@@ -4,7 +4,7 @@ import { displayFont } from '@/app/fonts';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/server/prisma';
-import { loadStoreBySubdomain } from '@/lib/server/store/public';
+import { loadStoreBySubdomainCached as loadStoreBySubdomain } from '@/lib/server/store/public';
 import { toStorefrontSettings } from '@/lib/server/store/storefront';
 import { partnerStats, productTitles, tokenMatches } from '@/lib/server/store/partners';
 import { storeOrigin } from '@/lib/store/subdomain';

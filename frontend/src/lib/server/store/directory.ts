@@ -36,20 +36,45 @@ function eligible(now: Date): Prisma.StoreWhereInput {
   };
 }
 
-function productInfo(config: Prisma.JsonValue, fallback: string) {
-  const c = (config ?? {}) as {
-    productTitle?: unknown;
-    mediaItems?: { type?: string; url?: string; isPrimary?: boolean }[];
-  };
-  const media = Array.isArray(c.mediaItems) ? c.mediaItems : [];
-  const photo =
-    media.find((m) => m?.isPrimary && m.type !== 'video' && typeof m.url === 'string')?.url ??
-    media.find((m) => m?.type !== 'video' && typeof m?.url === 'string')?.url ??
-    null;
-  return {
-    title: typeof c.productTitle === 'string' && c.productTitle ? c.productTitle : fallback,
-    photo,
-  };
+const PRODUCTS_PER_STORE = 40;
+
+/**
+ * Title + first photo of the published products of the given merchants.
+ * Read in SQL (jsonb) so the full product configs — long descriptions, FAQ,
+ * reviews… — never leave the database: the directory stays light whatever the
+ * size of the catalogues.
+ */
+async function productSummaries(
+  merchantIds: string[],
+): Promise<Map<string, { title: string; photo: string | null }[]>> {
+  const out = new Map<string, { title: string; photo: string | null }[]>();
+  if (merchantIds.length === 0) return out;
+  const rows = await prisma.$queryRaw<
+    { userId: string; title: string | null; internalName: string; photo: string | null }[]
+  >`
+    SELECT p."userId",
+           p."internalName",
+           NULLIF(p.config->>'productTitle', '') AS title,
+           (SELECT m->>'url'
+              FROM jsonb_array_elements(
+                     CASE WHEN jsonb_typeof(p.config->'mediaItems') = 'array'
+                          THEN p.config->'mediaItems' ELSE '[]'::jsonb END) AS m
+             WHERE COALESCE(m->>'type', 'image') <> 'video' AND m->>'url' IS NOT NULL
+             ORDER BY (m->>'isPrimary') = 'true' DESC
+             LIMIT 1) AS photo
+      FROM "Product" p
+     WHERE p."userId" = ANY(${merchantIds})
+       AND p.status = 'published'
+       AND p."adminDisabledAt" IS NULL
+     ORDER BY p."updatedAt" DESC`;
+  for (const r of rows) {
+    const list = out.get(r.userId) ?? [];
+    if (list.length < PRODUCTS_PER_STORE) {
+      list.push({ title: r.title ?? r.internalName, photo: r.photo });
+      out.set(r.userId, list);
+    }
+  }
+  return out;
 }
 
 /** Every listed shop, best first (sales of the last 30 days, then catalogue size). */
@@ -68,33 +93,27 @@ export async function directoryStores(limit = 500): Promise<DirectoryStore[]> {
       storeTagline: true,
       storeAccent: true,
       storeCategory: true,
-      user: {
-        select: {
-          products: {
-            where: { status: 'published', adminDisabledAt: null },
-            orderBy: { updatedAt: 'desc' },
-            take: 40,
-            select: { internalName: true, config: true },
-          },
-        },
-      },
     },
   });
   if (stores.length === 0) return [];
-  const sales = await prisma.storeOrder.groupBy({
-    by: ['merchantId'],
-    where: {
-      merchantId: { in: stores.map((s) => s.userId) },
-      createdAt: { gte: new Date(now.getTime() - 30 * 86_400_000) },
-      status: { not: 'cancelled' },
-    },
-    _count: { _all: true },
-  });
+  const merchantIds = stores.map((s) => s.userId);
+  const [summaries, sales] = await Promise.all([
+    productSummaries(merchantIds),
+    prisma.storeOrder.groupBy({
+      by: ['merchantId'],
+      where: {
+        merchantId: { in: merchantIds },
+        createdAt: { gte: new Date(now.getTime() - 30 * 86_400_000) },
+        status: { not: 'cancelled' },
+      },
+      _count: { _all: true },
+    }),
+  ]);
   const salesOf = new Map(sales.map((s) => [s.merchantId, s._count._all]));
 
   return stores
     .map((s) => {
-      const items = s.user.products.map((p) => productInfo(p.config, p.internalName));
+      const items = summaries.get(s.userId) ?? [];
       const category = isStoreCategory(s.storeCategory) ? s.storeCategory : null;
       return {
         score: (salesOf.get(s.userId) ?? 0) * 10 + items.length + (s.storeCoverUrl ? 3 : 0),

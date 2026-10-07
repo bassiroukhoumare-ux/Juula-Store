@@ -1,8 +1,8 @@
 import 'server-only';
 // Render-time marketing data of a product page: the shop announcement bar
 // and the « souvent acheté avec » products (with their bundle price).
+import { cachedProductsBySlugs } from '@/lib/server/store/public-cache';
 import type { Store } from '@prisma/client';
-import { prisma } from '@/lib/server/prisma';
 import { productConfig } from '@/lib/server/store/products';
 import { toStorefrontSettings } from '@/lib/server/store/storefront';
 import { bundlePrice, parseCrossSell } from '@/lib/store/marketing';
@@ -18,9 +18,7 @@ export async function withMarketing(
   const crossSell = parseCrossSell(config.crossSell);
   let crossSellProducts: FunnelPageConfig['crossSellProducts'] = [];
   if (crossSell.slugs.length > 0) {
-    const rows = await prisma.product.findMany({
-      where: { slug: { in: crossSell.slugs }, userId: merchantId, status: { not: 'inactive' } },
-    });
+    const rows = await cachedProductsBySlugs(merchantId, crossSell.slugs);
     crossSellProducts = crossSell.slugs
       .map((slug) => rows.find((r) => r.slug === slug))
       .filter((r): r is NonNullable<typeof r> => Boolean(r))

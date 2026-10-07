@@ -26,15 +26,26 @@ function secret(): Uint8Array {
   return new TextEncoder().encode(s);
 }
 
+/**
+ * SHA-256 (hex) of the master code, from ADMIN_ACCESS_CODE_HASH only — the code
+ * itself never lives in the repository. Tolerates quotes / spaces / a trailing
+ * newline pasted into the hosting dashboard.
+ */
+function configuredHash(): string | null {
+  const v = (process.env.ADMIN_ACCESS_CODE_HASH ?? '').trim().replace(/^["']|["']$/g, '');
+  return /^[a-f0-9]{64}$/i.test(v) ? v.toLowerCase() : null;
+}
+
 export function isAdminomConfigured(): boolean {
-  return /^[a-f0-9]{64}$/i.test(process.env.ADMIN_ACCESS_CODE_HASH ?? '');
+  return configuredHash() !== null;
 }
 
 /** Constant-time comparison of the code's SHA-256 with the configured one. */
 export function checkAccessCode(code: string): boolean {
-  if (!isAdminomConfigured()) return false;
-  const expected = Buffer.from(process.env.ADMIN_ACCESS_CODE_HASH!.toLowerCase(), 'hex');
-  const given = createHash('sha256').update(code, 'utf8').digest();
+  const hash = configuredHash();
+  if (!hash) return false;
+  const expected = Buffer.from(hash, 'hex');
+  const given = createHash('sha256').update(code.trim(), 'utf8').digest();
   return expected.length === given.length && timingSafeEqual(expected, given);
 }
 

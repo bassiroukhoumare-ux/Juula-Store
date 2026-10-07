@@ -5,7 +5,11 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { productConfig, withStoreBranding } from '@/lib/server/store/products';
-import { loadProductBySlug, pixelsOf, productMetadata } from '@/lib/server/store/public';
+import {
+  loadProductBySlugCached as loadProductBySlug,
+  pixelsOf,
+  productMetadata,
+} from '@/lib/server/store/public';
 import { PublicProductView } from '@/components/showcase/PublicProductView';
 import { storeProductUrl } from '@/lib/store/subdomain';
 import { isStoreLive, withCheckoutOptions } from '@/lib/server/store/storefront';

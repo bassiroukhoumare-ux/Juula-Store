@@ -4,10 +4,10 @@ import 'server-only';
 import type { Product } from '@prisma/client';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { prisma } from '@/lib/server/prisma';
 import { optionalAuth } from '@/lib/server/middleware';
 import { productConfig } from '@/lib/server/store/products';
-import { loadStoreBySubdomain } from '@/lib/server/store/public';
+import { loadStoreBySubdomainCached as loadStoreBySubdomain } from '@/lib/server/store/public';
+import { cachedShopProducts } from '@/lib/server/store/public-cache';
 import {
   isStoreLive,
   shopSellableSlugs,
@@ -33,12 +33,9 @@ export async function loadShop(shop: string) {
   // Shop products: visible in the catalogue, or placed in a banner / section
   // (their own sales page may be active or not); never deactivated ones.
   const inCollections = shopSellableSlugs(store);
-  const rows = (
-    await prisma.product.findMany({
-      where: { userId: store.userId, status: { not: 'inactive' } },
-      orderBy: { updatedAt: 'desc' },
-    })
-  ).filter((p) => productConfig(p).showInStore === true || inCollections.has(p.slug));
+  const rows = (await cachedShopProducts(store.userId)).filter(
+    (p) => productConfig(p).showInStore === true || inCollections.has(p.slug),
+  );
   return { store, settings, products: rows, isPreview };
 }
 

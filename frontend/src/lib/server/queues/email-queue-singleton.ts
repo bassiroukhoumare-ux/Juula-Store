@@ -13,6 +13,7 @@
 // `createMailer({ RESEND_API_KEY, EMAIL_FROM })` from `lib/server/email.ts`
 // (Phase 1+ canon). We use that — keeps the surface DRY and benefits from
 // its built-in List-Unsubscribe header support.
+import { redisEnv } from '@/lib/server/redis';
 import 'server-only';
 import { EmailQueue } from './email-queue';
 import { prisma } from '../prisma';
@@ -35,8 +36,9 @@ let _initialized = false;
 export function getEmailQueue(): EmailQueue | null {
   if (_initialized) return _queue;
 
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? '';
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? '';
+  const env = redisEnv();
+  const url = env.url ?? '';
+  const token = env.token ?? '';
   const resendKey = process.env.RESEND_API_KEY ?? '';
   const emailFrom = process.env.EMAIL_FROM ?? '';
 

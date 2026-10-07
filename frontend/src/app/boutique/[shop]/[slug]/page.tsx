@@ -4,8 +4,8 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { productConfig, withStoreBranding } from '@/lib/server/store/products';
 import {
-  loadProductBySlug,
-  loadStoreBySubdomain,
+  loadProductBySlugCached as loadProductBySlug,
+  loadStoreBySubdomainCached as loadStoreBySubdomain,
   pixelsOf,
   productMetadata,
 } from '@/lib/server/store/public';

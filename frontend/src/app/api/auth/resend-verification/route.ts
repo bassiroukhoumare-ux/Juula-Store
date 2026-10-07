@@ -25,7 +25,6 @@ import { createEmailLimiter } from '@/lib/server/middleware/rate-limit-by-email'
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
 import { log } from '@/lib/server/observability/log';
 import { generateVerificationCode } from '@/lib/server/auth';
-import { enqueueOutbox } from '@/lib/server/outbox';
 import { safeAfter, sendVerificationEmail } from '@/lib/server/store/notify';
 
 const VERIFICATION_TTL_MS = Number(process.env.AUTH_VERIFICATION_TTL_MIN ?? 15) * 60 * 1000;
@@ -49,7 +48,6 @@ function formatIssues(err: z.ZodError) {
 export async function POST(req: NextRequest): Promise<Response> {
   const ctx = makeRequestContext(req.headers);
   return withRequestContext(ctx, async () => {
-
     const json = await req.json().catch(() => null);
     const parsed = Body.safeParse(json);
     if (!parsed.success) {
@@ -81,14 +79,6 @@ export async function POST(req: NextRequest): Promise<Response> {
             code,
             type: 'EMAIL_VERIFY',
             expiresAt,
-          },
-        });
-        await enqueueOutbox(tx, {
-          kind: 'email.verification_code',
-          payload: {
-            to: user.email,
-            code,
-            expiresAt: expiresAt.toISOString(),
           },
         });
       });

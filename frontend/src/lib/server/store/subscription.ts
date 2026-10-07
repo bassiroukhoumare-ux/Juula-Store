@@ -1,4 +1,5 @@
 // Juula Store — Pro Subscription Service (3 900 FCFA / month)
+import { invalidateStorefront } from '@/lib/server/store/public-cache';
 import 'server-only';
 import { prisma } from '@/lib/server/prisma';
 import {
@@ -207,6 +208,8 @@ export async function verifyStoreSubscription(
     }),
   ]);
 
+  // The shop goes online at once (cached pages refreshed).
+  invalidateStorefront({ userId: sub.userId });
   log.info('store.subscription.activated', {
     storeId: sub.storeId,
     userId: sub.userId,

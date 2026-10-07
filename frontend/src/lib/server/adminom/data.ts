@@ -1,5 +1,6 @@
 import 'server-only';
 // Figures and lists of the /adminom back-office.
+import { invalidateStorefront } from '@/lib/server/store/public-cache';
 import type { Prisma, StoreSubscription } from '@prisma/client';
 import { prisma } from '@/lib/server/prisma';
 import { logAdminAction } from '@/lib/server/admin/audit';
@@ -17,10 +18,11 @@ const DAY = 86_400_000;
 /** A checkout still unpaid after 1 h is considered abandoned. */
 const ABANDON_AFTER_MS = 3600_000;
 
-/** Moneriz commission on subscription payments (MONERIZ_FEE_PERCENT, default 15 %). */
+/** Moneriz commission on subscription payments (MONERIZ_FEE_PERCENT, default 5 %). */
 export function monerizFeePercent(): number {
-  const v = Number(process.env.MONERIZ_FEE_PERCENT);
-  return Number.isFinite(v) && v >= 0 && v < 100 ? v : 15;
+  const raw = process.env.MONERIZ_FEE_PERCENT?.trim();
+  const v = raw ? Number(raw.replace(',', '.')) : NaN;
+  return Number.isFinite(v) && v >= 0 && v < 100 ? v : 5;
 }
 const fee = (gross: number) => Math.round((gross * monerizFeePercent()) / 100);
 
@@ -500,6 +502,7 @@ export async function grantPro(
       ...(meta.userAgent ? { userAgent: meta.userAgent } : {}),
     });
   });
+  invalidateStorefront({ userId: input.userId });
   return {
     ok: true,
     storeName: store.name ?? store.subdomain ?? '',

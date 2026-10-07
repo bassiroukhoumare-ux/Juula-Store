@@ -1,5 +1,6 @@
 // Store identity: display name, public subdomain (<sub>.juula.store), logo,
 // WhatsApp number and physical address (or "online only").
+import { invalidateStorefront } from '@/lib/server/store/public-cache';
 import 'server-only';
 import { Prisma, type Store } from '@prisma/client';
 import { prisma } from '@/lib/server/prisma';
@@ -178,48 +179,53 @@ export async function updateStoreProfile(
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      if (store.subdomain && store.subdomain !== nextSub) {
-        // Keep the old address for redirects.
-        await tx.storeAlias.upsert({
-          where: { subdomain: store.subdomain },
-          create: { subdomain: store.subdomain, storeId: store.id },
-          update: { storeId: store.id },
-        });
-      }
-      await tx.storeAlias.deleteMany({ where: { subdomain: nextSub, storeId: store.id } });
-      await tx.store.update({
-        where: { id: store.id },
-        data: {
-          subdomain: nextSub,
-          name,
-          logoUrl,
-          whatsapp,
-          onlineOnly,
-          address: onlineOnly ? null : address,
-          city,
-          ...(input.displayCurrency ? { displayCurrency: input.displayCurrency } : {}),
-        },
-      });
-
-      if (input.name !== undefined || input.whatsapp !== undefined) {
-        const products = await tx.product.findMany({ where: { userId } });
-        for (const p of products) {
-          const config = productConfig(p);
-          await tx.product.update({
-            where: { id: p.id },
-            data: {
-              config: configToJson({
-                ...config,
-                storeName: name,
-                storeCode: getStoreCode(name),
-                ...(whatsapp ? { whatsappSupportNumber: formatWhatsapp(whatsapp) } : {}),
-              }),
-            },
+    await prisma.$transaction(
+      async (tx) => {
+        if (store.subdomain && store.subdomain !== nextSub) {
+          // Keep the old address for redirects.
+          await tx.storeAlias.upsert({
+            where: { subdomain: store.subdomain },
+            create: { subdomain: store.subdomain, storeId: store.id },
+            update: { storeId: store.id },
           });
         }
-      }
-    });
+        await tx.storeAlias.deleteMany({ where: { subdomain: nextSub, storeId: store.id } });
+        await tx.store.update({
+          where: { id: store.id },
+          data: {
+            subdomain: nextSub,
+            name,
+            logoUrl,
+            whatsapp,
+            onlineOnly,
+            address: onlineOnly ? null : address,
+            city,
+            ...(input.displayCurrency ? { displayCurrency: input.displayCurrency } : {}),
+          },
+        });
+
+        if (input.name !== undefined || input.whatsapp !== undefined) {
+          const products = await tx.product.findMany({ where: { userId } });
+          for (const p of products) {
+            const config = productConfig(p);
+            await tx.product.update({
+              where: { id: p.id },
+              data: {
+                config: configToJson({
+                  ...config,
+                  storeName: name,
+                  storeCode: getStoreCode(name),
+                  ...(whatsapp ? { whatsappSupportNumber: formatWhatsapp(whatsapp) } : {}),
+                }),
+              },
+            });
+          }
+        }
+        // Renaming rewrites every product page: the default 5 s would fail on a
+        // large catalogue.
+      },
+      { timeout: 60_000, maxWait: 10_000 },
+    );
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       return fail(409, 'TAKEN', SUBDOMAIN_MESSAGES.TAKEN);
@@ -227,6 +233,13 @@ export async function updateStoreProfile(
     throw err;
   }
 
+  // Name / logo / WhatsApp / address show on every page of the shop.
+  const slugs = await prisma.product.findMany({ where: { userId }, select: { slug: true } });
+  invalidateStorefront({
+    userId,
+    slugs: slugs.map((p) => p.slug),
+    subdomains: [store.subdomain, nextSub],
+  });
   const fresh = await prisma.store.findUnique({ where: { id: store.id } });
   return { ok: true, profile: toStoreProfile(fresh), firstSetup };
 }

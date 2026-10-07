@@ -37,7 +37,7 @@ export async function buildNotificationFeed(userId: string): Promise<{
   unread: number;
 }> {
   const since = new Date(Date.now() - WINDOW_DAYS * 86_400_000);
-  const [orders, withdrawals, states, disputes] = await Promise.all([
+  const [orders, withdrawals, disputes] = await Promise.all([
     prisma.storeOrder.findMany({
       where: { merchantId: userId, createdAt: { gte: since } },
       orderBy: { createdAt: 'desc' },
@@ -48,7 +48,6 @@ export async function buildNotificationFeed(userId: string): Promise<{
       orderBy: { requestedAt: 'desc' },
       take: 50,
     }),
-    prisma.notificationState.findMany({ where: { userId } }),
     // Disputes handled by the administration (any age while open).
     prisma.storeOrder.findMany({
       where: {
@@ -176,6 +175,11 @@ export async function buildNotificationFeed(userId: string): Promise<{
     });
   }
 
+  // Read / dismissed flags of the items shown only (the whole history grows
+  // with every notification ever opened; the feed is polled every minute).
+  const states = await prisma.notificationState.findMany({
+    where: { userId, key: { in: all.map((n) => n.key) } },
+  });
   const state = new Map(states.map((s) => [s.key, s]));
   const items = all
     .filter((n) => !state.get(n.key)?.deletedAt)

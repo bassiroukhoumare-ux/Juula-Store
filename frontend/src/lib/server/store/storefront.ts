@@ -1,4 +1,5 @@
 import { capFaq } from '@/lib/store/product-content';
+import { invalidateStorefront } from '@/lib/server/store/public-cache';
 import { isStoreCategory } from '@/lib/store/categories';
 import { parseAnnouncement } from '@/lib/store/marketing';
 import 'server-only';
@@ -253,6 +254,7 @@ export async function saveStorefrontSettings(
   }
 
   const updated = await prisma.store.update({ where: { id: store.id }, data });
+  invalidateStorefront({ userId });
   return { ok: true, settings: toStorefrontSettings(updated) };
 }
 

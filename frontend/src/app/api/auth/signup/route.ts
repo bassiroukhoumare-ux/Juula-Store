@@ -24,7 +24,6 @@ import { hashPassword, generateVerificationCode } from '@/lib/server/auth';
 import { isBanned } from '@/lib/server/auth/banned-passwords';
 import { isPwned } from '@/lib/server/auth/hibp';
 import { dummyBcryptCompare } from '@/lib/server/auth/dummy-bcrypt';
-import { enqueueOutbox } from '@/lib/server/outbox';
 
 const PASSWORD_MIN = Number(process.env.AUTH_PASSWORD_MIN_LENGTH ?? 10);
 const VERIFICATION_TTL_MS = Number(process.env.AUTH_VERIFICATION_TTL_MIN ?? 15) * 60 * 1000;
@@ -132,16 +131,10 @@ export async function POST(req: NextRequest): Promise<Response> {
           expiresAt,
         },
       });
-      await enqueueOutbox(tx, {
-        kind: 'email.verification_code',
-        payload: {
-          to: email,
-          code,
-          expiresAt: expiresAt.toISOString(),
-        },
-      });
     });
 
+    // Sent right after the response. Not also queued in the outbox: the daily
+    // drain would deliver a second copy with an already-expired code.
     safeAfter(() => sendVerificationEmail(email, code, expiresAt));
 
     log.info('signup new user');

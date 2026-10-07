@@ -1,5 +1,10 @@
 // Loaders + metadata shared by the public pages: legacy /p/[slug] links and
 // the store subdomains (<shop>.juula.store and <shop>.juula.store/<slug>).
+import {
+  cachedProductBySlug,
+  cachedStoreBySubdomain,
+  cachedStoreByUserId,
+} from '@/lib/server/store/public-cache';
 import 'server-only';
 import type { Metadata } from 'next';
 import type { Product, Store } from '@prisma/client';
@@ -57,6 +62,24 @@ export const loadStoreBySubdomain = cache(async (subdomain: string): Promise<Sto
   });
   if (alias?.store.subdomain) return { kind: 'moved', subdomain: alias.store.subdomain };
   return { kind: 'none' };
+});
+
+/**
+ * Same lookups for the PUBLIC PAGES, served from the storefront data cache
+ * (public-cache.ts). API routes (orders, promo, partners) keep the direct ones.
+ */
+export const loadStoreBySubdomainCached = cache(
+  (subdomain: string): Promise<StoreLookup> => cachedStoreBySubdomain(subdomain),
+);
+
+export const loadProductBySlugCached = cache(async (slug: string) => {
+  const product = await cachedProductBySlug(slug);
+  if (!product) return null;
+  const store = await cachedStoreByUserId(product.userId);
+  if (product.status === 'published') return { product, store, isPreview: false };
+  const viewer = await optionalAuth();
+  if (viewer?.user.sub === product.userId) return { product, store, isPreview: true };
+  return null;
 });
 
 /** Canonical public URL of a product: its store subdomain when there is one. */

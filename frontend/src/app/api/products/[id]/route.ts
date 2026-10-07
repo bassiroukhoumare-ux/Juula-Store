@@ -5,6 +5,7 @@
 // 403, so product IDs can't be probed.
 export const runtime = 'nodejs';
 
+import { invalidateStorefront } from '@/lib/server/store/public-cache';
 import { isStorePro } from '@/lib/store/plans';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
@@ -131,6 +132,7 @@ export async function PATCH(
     }
 
     const product = await prisma.product.update({ where: { id: existing.id }, data });
+    invalidateStorefront({ userId: auth.user.sub, slugs: [existing.slug] });
     return NextResponse.json(
       { product: toFunnelPageItem(product) },
       { headers: { 'x-request-id': ctx.requestId } },
@@ -150,8 +152,13 @@ export async function DELETE(
     if (auth instanceof NextResponse) return auth;
     const { id } = await routeCtx.params;
 
+    const target = await prisma.product.findFirst({
+      where: { id, userId: auth.user.sub },
+      select: { slug: true },
+    });
     const deleted = await prisma.product.deleteMany({ where: { id, userId: auth.user.sub } });
     if (deleted.count === 0) return notFound(ctx.requestId);
+    invalidateStorefront({ userId: auth.user.sub, slugs: [target?.slug] });
     return NextResponse.json({ ok: true }, { headers: { 'x-request-id': ctx.requestId } });
   });
 }

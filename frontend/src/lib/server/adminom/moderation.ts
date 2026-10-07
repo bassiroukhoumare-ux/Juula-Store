@@ -2,6 +2,7 @@ import 'server-only';
 // /adminom super-administration: product moderation, shop / account
 // sanctions, escrow (frozen payments) and dispute resolution. Every write is
 // recorded in the audit log (AdminAction) inside the same transaction.
+import { invalidateStorefront } from '@/lib/server/store/public-cache';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/server/prisma';
 import { logAdminAction } from '@/lib/server/admin/audit';
@@ -154,6 +155,7 @@ export async function setProductDisabled(
       previousStatus: product.status,
     });
   });
+  invalidateStorefront({ userId: product.userId, slugs: [product.slug] });
   return { ok: true };
 }
 
@@ -174,6 +176,7 @@ export async function deleteProduct(
     // Past orders keep their snapshot (productId is set to null).
     await tx.product.delete({ where: { id: productId } });
   });
+  invalidateStorefront({ userId: product.userId, slugs: [product.slug] });
   return { ok: true };
 }
 
@@ -201,6 +204,7 @@ export async function setStoreSuspended(
       merchantId: store.userId,
     });
   });
+  invalidateStorefront({ userId: store.userId, subdomains: [store.subdomain] });
   return { ok: true };
 }
 
@@ -291,6 +295,7 @@ export async function deleteMerchant(
     await tx.withdrawal.deleteMany({ where: { userId } });
     await tx.user.delete({ where: { id: userId } });
   });
+  invalidateStorefront({ userId, subdomains: [user.store?.subdomain] });
   return { ok: true };
 }
 

@@ -2,6 +2,7 @@
 // PUT /api/store — save them. An empty string clears a pixel.
 export const runtime = 'nodejs';
 
+import { invalidateStorefront } from '@/lib/server/store/public-cache';
 import 'server-only';
 import { after, NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -128,6 +129,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       create: { userId: auth.user.sub, ...data },
       update: data,
     });
+    invalidateStorefront({ userId: auth.user.sub });
     const pixels: StorePixels = {
       facebookPixelId: saved.facebookPixelId,
       tiktokPixelId: saved.tiktokPixelId,

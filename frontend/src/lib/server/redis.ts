@@ -1,14 +1,27 @@
 import 'server-only';
 import { Redis } from '@upstash/redis';
 
+/**
+ * Upstash REST credentials. The Vercel Marketplace integration names them
+ * KV_REST_API_URL / KV_REST_API_TOKEN; the explicit UPSTASH_REDIS_REST_* names
+ * take precedence when both are set.
+ */
+export function redisEnv(): { url: string | undefined; token: string | undefined } {
+  return {
+    url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || undefined,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || undefined,
+  };
+}
+
 export interface CreateRedisClientOptions {
   url?: string;
   token?: string;
 }
 
 export function createRedisClient(options: CreateRedisClientOptions = {}): Redis {
-  const url = options.url ?? process.env.UPSTASH_REDIS_REST_URL;
-  const token = options.token ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+  const env = redisEnv();
+  const url = options.url ?? env.url;
+  const token = options.token ?? env.token;
 
   if (!url || !token) {
     throw new Error(
@@ -29,8 +42,7 @@ let _redis: Redis | null | undefined;
 
 export function getRedis(): Redis | null {
   if (_redis !== undefined) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const { url, token } = redisEnv();
   if (!url || !token) {
     _redis = null;
     return null;

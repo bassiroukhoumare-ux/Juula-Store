@@ -5,6 +5,7 @@
 // link shared on social networks keeps working after edits.
 export const runtime = 'nodejs';
 
+import { invalidateStorefront } from '@/lib/server/store/public-cache';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -130,6 +131,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     const product = await prisma.product.findUniqueOrThrow({ where: { id: createdId } });
+    invalidateStorefront({ userId, slugs: [product.slug] });
     return NextResponse.json(
       { product: toFunnelPageItem(product) },
       { status: 201, headers: { 'x-request-id': ctx.requestId } },

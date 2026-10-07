@@ -88,7 +88,8 @@ describe('GET /api/auth/oauth/google/start', () => {
     expect(pkceCookie).toBeDefined();
     expect(stateCookie!.options).toEqual(
       expect.objectContaining({
-        path: '/api/auth/oauth',
+        // Scoped to /api/auth: the Google callback lives at /api/auth/callback/google.
+        path: '/api/auth',
         maxAge: 300,
         httpOnly: true,
         sameSite: 'lax',
@@ -96,7 +97,8 @@ describe('GET /api/auth/oauth/google/start', () => {
     );
     expect(pkceCookie!.options).toEqual(
       expect.objectContaining({
-        path: '/api/auth/oauth',
+        // Scoped to /api/auth: the Google callback lives at /api/auth/callback/google.
+        path: '/api/auth',
         maxAge: 300,
         httpOnly: true,
         sameSite: 'lax',
@@ -124,7 +126,8 @@ describe('GET /api/auth/oauth/google/start', () => {
     expect(nextCookie!.value).toBe('https://app.example.test/dashboard');
     expect(nextCookie!.options).toEqual(
       expect.objectContaining({
-        path: '/api/auth/oauth',
+        // Scoped to /api/auth: the Google callback lives at /api/auth/callback/google.
+        path: '/api/auth',
         maxAge: 300,
         httpOnly: true,
         sameSite: 'lax',
