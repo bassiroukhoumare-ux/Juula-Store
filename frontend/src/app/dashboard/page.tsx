@@ -781,17 +781,13 @@ export default function JuulaStoreApp() {
               }}
             />
 
-            {/* Invite to turn push notifications on (until enabled or dismissed) */}
-            {activeTab === 'cockpit' && (
-              <div className="lg:px-8 max-w-7xl w-full mx-auto">
-                <PushPrompt
-                  onOpenSettings={() => {
-                    setActiveTab('settings');
-                    setSettingsSection('notifications');
-                  }}
-                />
-              </div>
-            )}
+            {/* Soft prompt for push notifications (floating, shown after a short delay) */}
+            <PushPrompt
+              onOpenSettings={() => {
+                setActiveTab('settings');
+                setSettingsSection('notifications');
+              }}
+            />
 
             {/* Dynamic Content View */}
             <main className="flex-1 p-4 sm:p-8 pb-28 lg:pb-8 max-w-7xl w-full mx-auto motion-safe:animate-[rise_600ms_cubic-bezier(.2,.75,.2,1)]">

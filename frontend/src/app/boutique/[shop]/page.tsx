@@ -11,6 +11,8 @@ import { loadShop, shopBase, toShopProducts } from '@/lib/server/store/shop-page
 import { PixelsInit } from '@/components/storefront/PixelsInit';
 import { ComingSoon } from '@/components/storefront/ComingSoon';
 import { StorefrontView } from '@/components/storefront/StorefrontView';
+import { JsonLd, storeLd } from '@/lib/seo/json-ld';
+import { storeOrigin, storeProductUrl } from '@/lib/store/subdomain';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,9 +48,25 @@ export default async function StorefrontPage({ params }: PageProps) {
   const base = await shopBase(store.subdomain!);
   const shopProducts = toShopProducts(products, base);
 
+  const name = store.name || store.subdomain!;
   return (
     <div className={displayFont.className}>
       {!isPreview && <PixelsInit pixels={pixelsOf(store)} />}
+      {!isPreview && (
+        <JsonLd
+          data={storeLd({
+            name,
+            url: storeOrigin(store.subdomain!),
+            logo: store.logoUrl,
+            image: settings.coverUrl,
+            description: settings.tagline || `${name} — boutique en ligne sur Juula.`,
+            products: shopProducts.map((p) => ({
+              title: p.title,
+              url: p.pageHref ? storeProductUrl(store.subdomain!, p.slug) : null,
+            })),
+          })}
+        />
+      )}
       <StorefrontView
         shop={store.subdomain!}
         storeName={store.name || store.subdomain!}

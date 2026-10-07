@@ -5,10 +5,10 @@ import { withSentryConfig } from '@sentry/nextjs';
 // Set via next.config.ts (not middleware.ts) so Vercel's edge can serve them
 // from the CDN cache without invoking a function — zero per-request latency.
 //
-// CSP is intentionally NOT included here. App Router pages need a per-request
-// nonce (server-rendered) for inline scripts; ship CSP via middleware.ts when
-// the first frontend page lands. For now, the API-only surface doesn't render
-// HTML and doesn't need CSP.
+// CSP: a baseline policy that blocks the classic injection vectors (<base>
+// hijacking, plugins, clickjacking, mixed content) without restricting
+// script origins — merchant storefronts load their own Facebook/TikTok pixels
+// and the Moneriz checkout, which a strict script-src would break.
 const securityHeaders = [
   {
     key: 'Strict-Transport-Security',
@@ -22,10 +22,16 @@ const securityHeaders = [
     value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
   },
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
+  {
+    key: 'Content-Security-Policy',
+    value: "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests",
+  },
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
 ];
 
 const config: NextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
   // Standalone output bundles a self-contained server.js + minimal node_modules
   // into .next/standalone — required by the Docker runtime image (frontend/Dockerfile).
   // Has no impact on `next dev` / `next start` workflows.

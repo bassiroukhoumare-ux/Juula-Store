@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Conditions d'utilisation — Juula Store",
   description:
     "Conditions générales d'utilisation de la plateforme Juula Store pour les marchands et leurs clients.",
+  alternates: { canonical: '/conditions' },
 };
 
 const linkCls = 'text-[#1E60F8] font-semibold hover:underline';

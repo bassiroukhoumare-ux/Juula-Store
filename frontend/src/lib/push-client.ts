@@ -84,7 +84,8 @@ export function usePushNotifications(): {
   state: PushState;
   busy: boolean;
   error: string | null;
-  enable: () => Promise<void>;
+  /** Native permission prompt + subscription; resolves with the new state. */
+  enable: () => Promise<PushState | null>;
   disable: () => Promise<void>;
 } {
   const [state, setState] = useState<PushState>('loading');
@@ -115,14 +116,15 @@ export function usePushNotifications(): {
     };
   }, []);
 
-  const enable = useCallback(async () => {
+  const enable = useCallback(async (): Promise<PushState | null> => {
     setBusy(true);
     setError(null);
     try {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        setState(permission === 'denied' ? 'denied' : 'off');
-        return;
+        const next = permission === 'denied' ? 'denied' : 'off';
+        setState(next);
+        return next;
       }
       const reg = (await registerServiceWorker()) ?? (await navigator.serviceWorker.ready);
       const existing = await reg.pushManager.getSubscription();
@@ -134,12 +136,14 @@ export function usePushNotifications(): {
         }));
       await saveSubscription(sub);
       setState('on');
+      return 'on';
     } catch (e) {
       setError(
         e instanceof Error && e.message
           ? `Activation impossible : ${e.message}`
           : 'Activation impossible. Réessayez.',
       );
+      return null;
     } finally {
       setBusy(false);
     }

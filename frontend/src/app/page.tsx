@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { displayFont as display } from '@/app/fonts';
 import { SiteHeader } from '@/components/site/SiteHeader';
+import { JsonLd, platformLd } from '@/lib/seo/json-ld';
 import { JuulaLogo } from '@/components/brand/JuulaLogo';
 import { HeroNetwork, JuulaMark } from '@/components/landing/HeroNetwork';
 import { IntegrationsFan } from '@/components/landing/IntegrationsFan';
@@ -43,6 +44,7 @@ export const metadata: Metadata = {
   description:
     'Créez votre page de vente pro, partagez-la et encaissez par Wave, Orange Money, carte bancaire ou à la livraison. Pixels Facebook & TikTok inclus.',
   ...(process.env.APP_URL ? { metadataBase: new URL(process.env.APP_URL) } : {}),
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     title: 'Juula — Votre boutique pro en un seul lien',
@@ -141,6 +143,7 @@ export default function LandingPage() {
     <div
       className={`${display.className} min-h-screen bg-[#EDEFF3] text-[#201D1D] overflow-x-hidden`}
     >
+      <JsonLd data={platformLd()} />
       {/* Without JS, never leave revealed content invisible. */}
       <noscript>
         <style>

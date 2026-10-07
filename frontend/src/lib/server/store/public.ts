@@ -91,20 +91,25 @@ export function canonicalProductUrl(
   return `${process.env.APP_URL || 'https://www.juula.store'}/p/${product.slug}`;
 }
 
+/** Search snippet of a product page (also reused by its JSON-LD). */
+export function productDescription(config: ReturnType<typeof productConfig>): string {
+  const lead =
+    config.benefits?.filter(Boolean).slice(0, 2).join(' · ') || config.deliveryNotice || '';
+  const shop = config.storeName ? ` Vendu par ${config.storeName}.` : '';
+  const text = `${lead ? `${lead}. ` : ''}Commandez en ligne : paiement à la livraison, Wave ou Orange Money.${shop}`;
+  return text.length > 300 ? `${text.slice(0, 297)}…` : text;
+}
+
 export function productMetadata(
   product: Product,
-  store: Pick<Store, 'subdomain'> | null,
+  store: Pick<Store, 'subdomain' | 'name'> | null,
   isPreview: boolean,
 ): Metadata {
   const config = productConfig(product);
   const image = config.mediaItems.find((m) => m.type === 'image')?.url;
-  const title = config.storeName
-    ? `${config.productTitle} — ${config.storeName}`
-    : config.productTitle;
-  const description =
-    config.benefits?.filter(Boolean).slice(0, 2).join(' · ') ||
-    config.deliveryNotice ||
-    'Commandez en ligne, paiement à la livraison.';
+  const shopName = config.storeName || store?.name || '';
+  const title = shopName ? `${config.productTitle} — ${shopName}` : config.productTitle;
+  const description = productDescription({ ...config, storeName: shopName });
   const url = canonicalProductUrl(product, store);
 
   return {
@@ -132,18 +137,29 @@ export function productMetadata(
 export function storeMetadata(store: Store, productCount: number, image?: string): Metadata {
   const name = store.name || store.subdomain || 'Boutique';
   const url = storeOrigin(store.subdomain!);
-  const description = `${name} — ${productCount} produit${productCount > 1 ? 's' : ''} disponible${productCount > 1 ? 's' : ''}. Commandez en ligne, paiement à la livraison ou par Wave / Orange Money.`;
+  const lead = store.storeTagline?.trim() ? `${store.storeTagline.trim()} · ` : '';
+  const description = `${lead}${name} — ${productCount} produit${productCount > 1 ? 's' : ''} disponible${productCount > 1 ? 's' : ''}. Commandez en ligne, paiement à la livraison ou par Wave / Orange Money.`;
+  const title = `${name} — Boutique en ligne`;
+  const picture = image ?? store.logoUrl ?? undefined;
   return {
-    title: name,
+    title,
     description,
     metadataBase: new URL(url),
     alternates: { canonical: url },
     openGraph: {
       type: 'website',
-      title: name,
+      title,
       description,
       url,
-      ...(image ? { images: [{ url: image }] } : {}),
+      siteName: name,
+      locale: 'fr_FR',
+      ...(picture ? { images: [{ url: picture }] } : {}),
+    },
+    twitter: {
+      card: picture ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      ...(picture ? { images: [picture] } : {}),
     },
   };
 }

@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: 'Politique de confidentialité — Juula Store',
   description:
     'Comment Juula Store collecte, utilise et protège les données des marchands et de leurs clients.',
+  alternates: { canonical: '/confidentialite' },
 };
 
 const contact = (

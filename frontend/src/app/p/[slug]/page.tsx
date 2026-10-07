@@ -7,11 +7,14 @@ import { redirect } from 'next/navigation';
 import { productConfig, withStoreBranding } from '@/lib/server/store/products';
 import {
   loadProductBySlugCached as loadProductBySlug,
+  canonicalProductUrl,
   pixelsOf,
+  productDescription,
   productMetadata,
 } from '@/lib/server/store/public';
 import { PublicProductView } from '@/components/showcase/PublicProductView';
 import { storeProductUrl } from '@/lib/store/subdomain';
+import { JsonLd, productLd } from '@/lib/seo/json-ld';
 import { isStoreLive, withCheckoutOptions } from '@/lib/server/store/storefront';
 import { withMarketing } from '@/lib/server/store/marketing';
 import { ComingSoon } from '@/components/storefront/ComingSoon';
@@ -27,8 +30,9 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const found = await loadProductBySlug(slug);
-  if (!found) return { title: 'Produit introuvable — Juula Store' };
-  return productMetadata(found.product, found.store, found.isPreview);
+  if (!found) return { title: 'Produit introuvable — Juula Store', robots: { index: false } };
+  const meta = productMetadata(found.product, found.store, found.isPreview);
+  return found.isPreview || isStoreLive(found.store) ? meta : { ...meta, robots: { index: false } };
 }
 
 export default async function PublicProductPage({ params, searchParams }: PageProps) {
@@ -60,11 +64,25 @@ export default async function PublicProductPage({ params, searchParams }: PagePr
   );
 
   return (
-    <PublicProductView
-      config={config}
-      pixels={pixelsOf(found.store)}
-      isPreview={found.isPreview}
-      displayCurrency={found.store?.displayCurrency}
-    />
+    <>
+      {!found.isPreview && (
+        <JsonLd
+          data={productLd({
+            config,
+            slug: found.product.slug,
+            url: canonicalProductUrl(found.product, found.store),
+            storeName: found.store?.name ?? null,
+            storeUrl: null,
+            description: productDescription(config),
+          })}
+        />
+      )}
+      <PublicProductView
+        config={config}
+        pixels={pixelsOf(found.store)}
+        isPreview={found.isPreview}
+        displayCurrency={found.store?.displayCurrency}
+      />
+    </>
   );
 }
