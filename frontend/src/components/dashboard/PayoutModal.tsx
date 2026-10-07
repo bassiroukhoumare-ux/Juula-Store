@@ -181,7 +181,7 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="77 412 89 30"
+                  placeholder="77 123 45 67"
                   className="w-full pl-16 pr-4 py-3 rounded-xl bg-white border border-[#E2E8F0] text-[15px] font-medium text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:ring-2 focus:ring-[#235BF7]/15"
                 />
               </div>

@@ -711,10 +711,7 @@ export const PayoutPageView: React.FC<PayoutPageViewProps> = ({
                 <div className="border-b border-[#E2E8F0] pb-3 space-y-1 text-[13px]">
                   <div className="flex justify-between text-[#7A808C]">
                     <span>
-                      De :{' '}
-                      <strong className="text-[#201D1D]">
-                        Sécurité Juula Pay &lt;securite@juula.store&gt;
-                      </strong>
+                      De : <strong className="text-[#201D1D]">Sécurité Juula Pay</strong>
                     </span>
                     <span className="text-xs">À l'instant</span>
                   </div>

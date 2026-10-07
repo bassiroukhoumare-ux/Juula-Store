@@ -10,19 +10,8 @@ export const metadata: Metadata = {
 
 const contact = (
   <>
-    par WhatsApp au{' '}
-    <a href={LEGAL.whatsappLink} className="text-[#1E60F8] font-semibold hover:underline">
-      {LEGAL.whatsapp}
-    </a>
-    {LEGAL.email && (
-      <>
-        {' '}
-        ou par e-mail à{' '}
-        <a href={`mailto:${LEGAL.email}`} className="text-[#1E60F8] font-semibold hover:underline">
-          {LEGAL.email}
-        </a>
-      </>
-    )}
+    via le formulaire « Signaler » présent sur chaque boutique (motif « Autre motif »), en précisant
+    votre demande : notre équipe vous répond par e-mail
   </>
 );
 
@@ -78,8 +67,15 @@ const sections: LegalSection[] = [
             irréversible (bcrypt) ; personne chez Juula ne peut le lire.
           </li>
           <li>
-            <strong>Identifiants de pixels publicitaires</strong> (Meta, TikTok) que vous choisissez
-            d&apos;ajouter.
+            <strong>Identifiants de pixels publicitaires</strong> (Meta, TikTok, Google) que vous
+            choisissez d&apos;ajouter.
+          </li>
+          <li>
+            <strong>Abonnement</strong> : historique des paiements de l&apos;Abonnement PRO et dates
+            de validité.
+          </li>
+          <li>
+            <strong>Préférences</strong> : par exemple le thème clair ou sombre du tableau de bord.
           </li>
         </ul>
       </>
@@ -109,6 +105,26 @@ const sections: LegalSection[] = [
     ),
   },
   {
+    id: 'signalements',
+    title: 'Les données des signalements',
+    body: (
+      <>
+        <p>
+          Lorsqu&apos;une personne signale une boutique ou un produit, nous collectons : son prénom,
+          son nom, son adresse e-mail, son numéro WhatsApp ou de téléphone, le motif, sa
+          description, jusqu&apos;à cinq photos, l&apos;adresse de la page concernée, la date,
+          l&apos;adresse IP et le navigateur utilisé. Les échanges par e-mail avec notre équipe
+          (réponses et pièces jointes) sont rattachés au dossier.
+        </p>
+        <p>
+          Ces données servent uniquement à traiter le signalement et à protéger les acheteurs. Elles
+          sont réservées à l&apos;équipe de sécurité de Juula Store et{' '}
+          <strong>ne sont jamais transmises au marchand signalé</strong>.
+        </p>
+      </>
+    ),
+  },
+  {
     id: 'finalites',
     title: 'Pourquoi nous utilisons ces données',
     body: (
@@ -126,7 +142,10 @@ const sections: LegalSection[] = [
           Prévenir la fraude, les abus et les faux paiements : limitation du nombre de requêtes,
           vérification de chaque paiement auprès du prestataire (intérêt légitime).
         </li>
-        <li>Vous assister lorsque vous contactez le support (intérêt légitime).</li>
+        <li>
+          Traiter les signalements, les litiges et les décisions de modération (intérêt légitime).
+        </li>
+        <li>Afficher les boutiques abonnées dans l&apos;annuaire public (exécution du contrat).</li>
         <li>
           Respecter nos obligations légales et répondre aux demandes des autorités compétentes.
         </li>
@@ -154,14 +173,14 @@ const sections: LegalSection[] = [
   },
   {
     id: 'pixels',
-    title: 'Pixels publicitaires Meta et TikTok',
+    title: 'Pixels publicitaires Meta, TikTok et Google',
     body: (
       <>
         <p>
-          Un marchand peut ajouter à sa boutique un Pixel Meta (Facebook / Instagram) et/ou un Pixel
-          TikTok. Sur ses pages produits, ces outils reçoivent alors des événements de navigation :
-          visite de la page, consultation du produit, ouverture du formulaire de commande et
-          commande validée (avec le montant et la référence de commande).
+          Un marchand peut ajouter à sa boutique un Pixel Meta (Facebook / Instagram), un Pixel
+          TikTok et/ou une balise Google. Sur ses pages produits, ces outils reçoivent alors des
+          événements de navigation : visite de la page, consultation du produit, ouverture du
+          formulaire de commande et commande validée (avec le montant et la référence de commande).
         </p>
         <p>
           Ces pixels sont activés{' '}
@@ -181,14 +200,19 @@ const sections: LegalSection[] = [
         <p>Nous ne vendons jamais vos données. Elles sont accessibles uniquement :</p>
         <ul>
           <li>au marchand concerné, pour les commandes passées sur ses pages ;</li>
-          <li>à l&apos;équipe Juula habilitée, pour le support et la lutte contre la fraude ;</li>
+          <li>
+            à l&apos;équipe Juula habilitée, pour le traitement des signalements et des litiges et
+            la lutte contre la fraude ;
+          </li>
           <li>
             à nos prestataires techniques, chacun limité à sa mission : <strong>Google</strong>{' '}
             (connexion),
             <strong> Neon</strong> (base de données), <strong>Vercel</strong> (hébergement de
             l&apos;application),
-            <strong> Cloudinary</strong> (stockage des images produits), <strong>Moneriz</strong>{' '}
-            (paiements en ligne et virements Mobile Money) ;
+            <strong> Cloudinary</strong> (stockage des images produits et des photos de
+            signalement), <strong>Moneriz</strong> (paiements en ligne et virements Mobile Money),{' '}
+            <strong>Resend</strong> (envoi et réception des e-mails), <strong>Upstash</strong>{' '}
+            (protection contre les abus) ;
           </li>
           <li>aux autorités, lorsque la loi nous y oblige.</li>
         </ul>
@@ -220,6 +244,10 @@ const sections: LegalSection[] = [
         <li>
           Commandes, paiements et retraits : 10 ans, durée de conservation des pièces comptables
           prévue par l&apos;Acte uniforme OHADA relatif au droit comptable.
+        </li>
+        <li>
+          Signalements et échanges associés : le temps du traitement du dossier, puis aussi
+          longtemps que nécessaire à la gestion d&apos;un éventuel litige.
         </li>
         <li>Sessions de connexion : 7 jours maximum.</li>
         <li>Journaux techniques des notifications de paiement : 90 jours.</li>
@@ -261,8 +289,8 @@ const sections: LegalSection[] = [
         </p>
         <p>
           Les clients d&apos;un marchand peuvent s&apos;adresser directement à ce marchand, ou à
-          nous : nous transmettrons leur demande. Vous pouvez également saisir la Commission de
-          Protection des Données Personnelles du Sénégal (CDP).
+          nous par le même formulaire : nous transmettrons leur demande. Vous pouvez également
+          saisir la Commission de Protection des Données Personnelles du Sénégal (CDP).
         </p>
       </>
     ),

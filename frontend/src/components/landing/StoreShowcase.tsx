@@ -1,6 +1,6 @@
 // Landing « Juula Creators »: 4 featured shops + link to the full directory.
 import Link from 'next/link';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Crown } from 'lucide-react';
 import { featuredStores } from '@/lib/server/store/directory';
 import { StoreCard } from '@/components/site/StoreCard';
 import { Reveal } from '@/components/landing/Reveal';
@@ -16,8 +16,11 @@ export async function StoreShowcase() {
       <div className="max-w-6xl mx-auto">
         <Reveal>
           <div className="text-center">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#ECEFF4] text-[13px] font-bold text-[#235BF7]">
-              <Sparkles className="w-3.5 h-3.5" /> Juula Creators
+            <span className="inline-flex items-center gap-2 pl-1 pr-3.5 py-1 rounded-full bg-white border border-[#E3E7EE] shadow-[0_8px_20px_-14px_rgba(35,91,247,0.6)] text-[13px] font-bold text-[#201D1D]">
+              <span className="w-6 h-6 rounded-full bg-gradient-to-br from-[#5B85FF] via-[#235BF7] to-[#1638B8] ring-2 ring-[#235BF7]/15 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+                <Crown className="w-3.5 h-3.5 text-white" strokeWidth={2.4} fill="currentColor" />
+              </span>
+              Juula Creators
             </span>
             <h2 className="mt-5 text-3xl sm:text-5xl font-extrabold tracking-[-0.03em]">
               Des boutiques qui vendent chaque jour sur Juula

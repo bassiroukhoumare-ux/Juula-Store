@@ -302,8 +302,6 @@ export function renderEmail(e: EmailLayout): string {
         <a href="${SITE}/conditions" style="color:${C.blue};text-decoration:none;font-weight:700;">Conditions d'utilisation</a>
         <span style="color:#C7CDD8;">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
         <a href="${SITE}/confidentialite" style="color:${C.blue};text-decoration:none;font-weight:700;">Politique de confidentialité</a>
-        <span style="color:#C7CDD8;">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
-        <a href="${LEGAL.whatsappLink}" style="color:${C.blue};text-decoration:none;font-weight:700;">Support</a>
       </td></tr>
       <tr><td style="padding-top:12px;font-size:11px;color:#9CA3AF;text-align:center;">© ${year} Juula Store · juula.store</td></tr>
     </table>
@@ -489,7 +487,7 @@ export function withdrawalSentEmail(w: Withdrawal): RenderedEmail {
         },
       ],
       cta: { label: 'Voir mon portefeuille', url: DASHBOARD_URL },
-      note: `<strong style="color:${C.ink};">Vous n’êtes pas à l’origine de ce retrait ?</strong> Contactez immédiatement le <a href="${LEGAL.whatsappLink}" style="color:${C.blue};">support WhatsApp</a>.`,
+      note: `<strong style="color:${C.ink};">Vous n’êtes pas à l’origine de ce retrait ?</strong> Changez immédiatement votre code PIN depuis votre <a href="${DASHBOARD_URL}" style="color:${C.blue};">tableau de bord</a> et sécurisez votre compte Google.`,
     }),
     text: `Votre retrait de ${fcfa(w.amount)} vers ${dest.method} ${dest.phone} est en route.\n${DASHBOARD_URL}`,
   };

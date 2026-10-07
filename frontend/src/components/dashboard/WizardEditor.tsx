@@ -1902,7 +1902,7 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                   label="Numéro WhatsApp de support boutique"
                   value={config.whatsappSupportNumber}
                   onChange={(e) => setConfig({ ...config, whatsappSupportNumber: e.target.value })}
-                  placeholder="+221 77 412 89 30"
+                  placeholder="+221 77 123 45 67"
                   icon={<Phone className="w-4 h-4 text-[#25D366]" />}
                   helperText="Les clients qui cliquent sur 'Discuter' ou 'Suivre ma livraison' seront dirigés vers ce numéro."
                 />

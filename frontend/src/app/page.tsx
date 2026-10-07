@@ -15,6 +15,7 @@ import {
   LayoutTemplate,
   Plug,
   Send,
+  ShieldAlert,
   Wallet,
   Workflow,
 } from 'lucide-react';
@@ -31,10 +32,8 @@ import {
   MastercardIcon,
   OrangeMoneyTile,
   TikTokIcon,
-  VisaWordmark,
   WaveTile,
 } from '@/components/landing/BrandIcons';
-import { LEGAL } from '@/lib/legal';
 
 // The featured shops change with subscriptions: refresh every 10 minutes.
 export const revalidate = 600;
@@ -485,7 +484,7 @@ export default function LandingPage() {
         <footer className="rounded-[36px] bg-[#F6F7F9] px-3 sm:px-6 pt-6 sm:pt-10 pb-3 sm:pb-6">
           <Reveal>
             <div className="max-w-6xl mx-auto rounded-[32px] bg-white border border-[#ECEFF4] overflow-hidden">
-              <div className="px-6 sm:px-12 pt-12 sm:pt-14 grid gap-10 md:grid-cols-[1.6fr_1fr_1fr]">
+              <div className="px-6 sm:px-12 py-12 sm:py-14 grid gap-10 md:grid-cols-[1.6fr_1fr_1fr]">
                 <div className="space-y-5">
                   <JuulaLogo height={40} />
                   <p className="text-xl font-bold tracking-tight max-w-xs leading-snug">
@@ -532,35 +531,22 @@ export default function LandingPage() {
                   </Link>
                 </nav>
               </div>
-
-              {/* Oversized faded Juula logo */}
-              <div
-                className="relative mt-12 sm:mt-16 px-4 sm:px-10 select-none pointer-events-none"
-                aria-hidden="true"
-              >
-                <img
-                  src="/logo-juula.svg"
-                  alt=""
-                  className="w-full h-auto opacity-[0.09] translate-y-[18%]"
-                  style={{
-                    maskImage: 'linear-gradient(to bottom, black 35%, transparent 95%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, black 35%, transparent 95%)',
-                  }}
-                />
-              </div>
             </div>
           </Reveal>
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 px-4 pt-5 text-xs text-[#7A808C]">
-            <span>
-              © {year} {LEGAL.companyName || 'Juula Store'} · Dakar, {LEGAL.country}
-            </span>
-            <span className="flex items-center gap-3">
-              <VisaWordmark className="text-sm" />
-              <MastercardIcon className="w-7 h-5" />
-              <WaveTile size="sm" />
-              <OrangeMoneyTile size="sm" />
-            </span>
-          </div>
+          {/* Off-platform payments warning (see /conditions#hors-plateforme) */}
+          <p className="max-w-6xl mx-auto mt-5 px-4 py-3 rounded-2xl bg-[#FFF7E6] border border-[#FCE7C3] text-center text-[13px] sm:text-[14px] text-[#92400E] leading-relaxed">
+            <ShieldAlert className="inline w-4 h-4 -mt-0.5 mr-1.5" aria-hidden="true" />
+            Les transactions hors plateforme ne sont couvertes par aucune garantie.{' '}
+            <Link
+              href="/conditions#hors-plateforme"
+              className="font-bold underline underline-offset-2"
+            >
+              En savoir plus
+            </Link>
+          </p>
+          <p className="max-w-6xl mx-auto px-4 pt-5 text-center text-xs text-[#7A808C]">
+            © {year} Juula
+          </p>
         </footer>
       </main>
     </div>

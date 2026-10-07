@@ -9,11 +9,7 @@ export const metadata: Metadata = {
     "Conditions générales d'utilisation de la plateforme Juula Store pour les marchands et leurs clients.",
 };
 
-const support = (
-  <a href={LEGAL.whatsappLink} className="text-[#1E60F8] font-semibold hover:underline">
-    support WhatsApp ({LEGAL.whatsapp})
-  </a>
-);
+const linkCls = 'text-[#1E60F8] font-semibold hover:underline';
 
 const sections: LegalSection[] = [
   {
@@ -23,8 +19,8 @@ const sections: LegalSection[] = [
       <p>
         Les présentes conditions générales d&apos;utilisation (« CGU ») encadrent l&apos;accès et
         l&apos;utilisation de Juula Store, plateforme en ligne éditée par {publisherName()}, qui
-        permet à des marchands de créer des pages de vente, de recevoir des commandes et
-        d&apos;encaisser des paiements.
+        permet à des marchands de créer une boutique en ligne et des pages de vente, de recevoir des
+        commandes et, s&apos;ils le souhaitent, d&apos;encaisser des paiements en ligne.
       </p>
     ),
   },
@@ -34,25 +30,39 @@ const sections: LegalSection[] = [
     body: (
       <ul>
         <li>
-          <strong>Plateforme</strong> : le site {LEGAL.siteUrl}, le tableau de bord et les pages
-          produits.
+          <strong>Plateforme</strong> : le site {LEGAL.siteUrl}, le tableau de bord, les boutiques
+          et les pages produits hébergées par Juula Store.
         </li>
         <li>
           <strong>Marchand</strong> : toute personne qui crée un compte pour vendre des produits.
         </li>
         <li>
-          <strong>Client</strong> : toute personne qui commande sur la page produit d&apos;un
+          <strong>Client</strong> : toute personne qui commande auprès d&apos;un Marchand via la
+          Plateforme.
+        </li>
+        <li>
+          <strong>Boutique</strong> : le site de vente du Marchand, accessible à l&apos;adresse
+          <em> nom-de-la-boutique</em>.juula.store.
+        </li>
+        <li>
+          <strong>Page produit</strong> : la page de vente publique d&apos;un produit, accessible
+          par un lien unique.
+        </li>
+        <li>
+          <strong>Abonnement PRO</strong> : l&apos;abonnement payant qui permet de mettre la
+          Boutique et les Pages produits en ligne.
+        </li>
+        <li>
+          <strong>JuulaPay</strong> : le service optionnel de paiement en ligne (Wave, Orange Money,
+          carte) proposé aux Marchands.
+        </li>
+        <li>
+          <strong>Portefeuille</strong> : le solde des ventes payées via JuulaPay revenant au
           Marchand.
         </li>
         <li>
-          <strong>Page produit</strong> : la page de vente publique créée par un Marchand,
-          accessible par un lien unique.
-        </li>
-        <li>
-          <strong>Portefeuille</strong> : le solde des ventes payées en ligne revenant au Marchand.
-        </li>
-        <li>
-          <strong>Crédit lead</strong> : unité consommée à la réception d&apos;une commande.
+          <strong>Transaction hors plateforme</strong> : tout paiement ou échange qui ne passe pas
+          par JuulaPay (voir l&apos;article « Transactions hors plateforme »).
         </li>
       </ul>
     ),
@@ -63,10 +73,10 @@ const sections: LegalSection[] = [
     body: (
       <p>
         En créant un compte, le Marchand accepte sans réserve les présentes CGU ainsi que la{' '}
-        <Link href="/confidentialite" className="text-[#1E60F8] font-semibold hover:underline">
+        <Link href="/confidentialite" className={linkCls}>
           politique de confidentialité
         </Link>
-        . En passant commande sur une Page produit, le Client accepte les articles qui le
+        . En passant commande ou en envoyant un signalement, le Client accepte les articles qui le
         concernent. Si vous n&apos;acceptez pas ces conditions, n&apos;utilisez pas la Plateforme.
       </p>
     ),
@@ -85,12 +95,12 @@ const sections: LegalSection[] = [
   },
   {
     id: 'inscription',
-    title: 'Inscription et connexion avec Google',
+    title: 'Inscription et connexion',
     body: (
       <p>
-        L&apos;inscription et la connexion se font exclusivement avec un compte Google dont
-        l&apos;adresse e-mail est vérifiée. Le Marchand garantit que les informations de son compte
-        Google sont exactes. Un même compte Google correspond à un seul compte Marchand.
+        L&apos;inscription et la connexion se font avec un compte Google dont l&apos;adresse e-mail
+        est vérifiée. Le Marchand garantit que les informations de son compte sont exactes. Un même
+        compte Google correspond à un seul compte Marchand.
       </p>
     ),
   },
@@ -100,9 +110,10 @@ const sections: LegalSection[] = [
     body: (
       <p>
         Le Marchand est responsable de la sécurité de son compte Google, de ses appareils et de son
-        code PIN de retrait, qu&apos;il ne doit communiquer à personne. Toute action réalisée depuis
-        son compte est réputée faite par lui. En cas d&apos;accès suspect, il doit prévenir
-        immédiatement le {support}.
+        code PIN de retrait, qu&apos;il ne doit communiquer à personne. Juula Store ne lui demandera
+        jamais son code PIN. Toute action réalisée depuis son compte est réputée faite par lui. En
+        cas d&apos;accès suspect, il doit modifier immédiatement son code PIN et sécuriser son
+        compte Google.
       </p>
     ),
   },
@@ -113,11 +124,22 @@ const sections: LegalSection[] = [
       <>
         <p>Juula Store fournit notamment :</p>
         <ul>
-          <li>un éditeur de pages produits avec photos, vidéos, avis et offres par quantité ;</li>
+          <li>
+            une Boutique en ligne avec son adresse dédiée, et un éditeur de Pages produits (photos,
+            vidéos, avis, FAQ, offres par quantité) ;
+          </li>
           <li>la réception et le suivi des commandes dans un tableau de bord ;</li>
-          <li>le paiement à la livraison et le paiement en ligne Wave, Orange Money ou carte ;</li>
-          <li>un portefeuille et des retraits vers Mobile Money ;</li>
-          <li>la connexion de pixels publicitaires Meta et TikTok.</li>
+          <li>
+            plusieurs modes de commande et de paiement : paiement à la livraison, commande sur
+            WhatsApp, liens de paiement propres au Marchand et, en option, JuulaPay ;
+          </li>
+          <li>un Portefeuille et des retraits vers Mobile Money pour les ventes JuulaPay ;</li>
+          <li>
+            des outils marketing : codes promo, barre d&apos;annonce, ventes croisées, liens
+            partenaires (affiliation) et pixels publicitaires Meta, TikTok et Google ;
+          </li>
+          <li>des statistiques de visites et de ventes ;</li>
+          <li>un annuaire public des boutiques et un système de signalement.</li>
         </ul>
         <p>
           Juula Store est un outil technique : il n&apos;est ni le vendeur, ni le livreur des
@@ -127,14 +149,63 @@ const sections: LegalSection[] = [
     ),
   },
   {
+    id: 'abonnement',
+    title: 'Abonnement PRO',
+    body: (
+      <ul>
+        <li>
+          La création du compte, de la Boutique et des Pages produits est gratuite. Leur mise en
+          ligne nécessite un Abonnement PRO actif, au prix de 3 900 FCFA par mois.
+        </li>
+        <li>
+          L&apos;abonnement est payé à l&apos;avance en ligne, via notre prestataire de paiement
+          agréé, pour une période de 30 jours. Il n&apos;est pas reconduit automatiquement : le
+          Marchand le renouvelle depuis son tableau de bord.
+        </li>
+        <li>
+          À l&apos;expiration de l&apos;abonnement, la Boutique et les Pages produits ne sont plus
+          accessibles au public et la Boutique est retirée de l&apos;annuaire. Les données du
+          Marchand sont conservées : un renouvellement remet tout en ligne.
+        </li>
+        <li>
+          Une période commencée n&apos;est pas remboursable, sauf disposition légale contraire.
+          Juula Store peut offrir des périodes d&apos;accès PRO à titre commercial.
+        </li>
+        <li>
+          Toute modification du prix est annoncée avant son application et ne concerne que les
+          périodes payées ensuite.
+        </li>
+      </ul>
+    ),
+  },
+  {
+    id: 'annuaire',
+    title: 'Annuaire public des boutiques',
+    body: (
+      <p>
+        Les Boutiques publiées disposant d&apos;un Abonnement PRO actif peuvent apparaître dans
+        l&apos;annuaire public (page{' '}
+        <Link href="/boutiques" className={linkCls}>
+          Boutiques
+        </Link>{' '}
+        et page d&apos;accueil), avec leur nom, logo, image de couverture, slogan, catégorie et
+        produits. La mention « Boutique vérifiée » indique uniquement que la Boutique dispose
+        d&apos;un abonnement actif et n&apos;est pas suspendue : elle ne constitue pas une garantie
+        sur les produits, le Marchand ou les transactions. L&apos;ordre d&apos;affichage est
+        déterminé librement par Juula Store.
+      </p>
+    ),
+  },
+  {
     id: 'pages-produits',
     title: 'Pages produits et liens de partage',
     body: (
       <p>
         Chaque produit dispose d&apos;un lien unique et permanent, partageable sur les réseaux
         sociaux, WhatsApp ou en publicité. Une page n&apos;est visible du public qu&apos;une fois
-        publiée ; un brouillon ou une page désactivée n&apos;est accessible qu&apos;à son Marchand.
-        Le Marchand peut désactiver ou supprimer une page à tout moment.
+        publiée et tant que l&apos;Abonnement PRO est actif ; un brouillon ou une page désactivée
+        n&apos;est accessible qu&apos;à son Marchand. Le Marchand peut désactiver ou supprimer une
+        page à tout moment.
       </p>
     ),
   },
@@ -143,9 +214,9 @@ const sections: LegalSection[] = [
     title: 'Contenus publiés par le Marchand',
     body: (
       <p>
-        Le Marchand est seul responsable des textes, prix, photos, vidéos, avis et témoignages
-        qu&apos;il publie. Il garantit détenir les droits nécessaires sur ces contenus et
-        qu&apos;ils sont exacts, loyaux et non trompeurs. Les avis et preuves clients affichés
+        Le Marchand est seul responsable des textes, prix, photos, vidéos, avis, témoignages et
+        comparatifs qu&apos;il publie. Il garantit détenir les droits nécessaires sur ces contenus
+        et qu&apos;ils sont exacts, loyaux et non trompeurs. Les avis et preuves clients affichés
         doivent être authentiques.
       </p>
     ),
@@ -173,13 +244,13 @@ const sections: LegalSection[] = [
   },
   {
     id: 'prix',
-    title: 'Prix, stocks et informations produits',
+    title: 'Prix et informations produits',
     body: (
       <p>
-        Le Marchand fixe librement ses prix, frais de livraison et remises par quantité, exprimés en
-        francs CFA (FCFA) toutes taxes comprises. Le montant d&apos;une commande est calculé par la
-        Plateforme à partir des informations publiées au moment de la commande. Le Marchand doit
-        tenir à jour ses stocks et ses délais.
+        Le Marchand fixe librement ses prix, frais de livraison, remises par quantité et codes
+        promo, exprimés en francs CFA (FCFA) toutes taxes comprises. Le montant d&apos;une commande,
+        remises et codes promo compris, est calculé par la Plateforme à partir des informations
+        publiées au moment de la commande. Le Marchand doit tenir à jour ses stocks et ses délais.
       </p>
     ),
   },
@@ -188,33 +259,91 @@ const sections: LegalSection[] = [
     title: 'Commandes des Clients',
     body: (
       <p>
-        Le Client passe commande en indiquant son nom, son numéro WhatsApp et son adresse de
-        livraison. La commande est transmise au Marchand avec une référence unique. Le contrat de
-        vente est conclu directement entre le Client et le Marchand ; le Marchand confirme la
-        commande et contacte le Client, notamment par WhatsApp.
+        Le Client passe commande depuis une Page produit ou le panier de la Boutique en indiquant
+        son nom, son numéro WhatsApp et son adresse de livraison. La commande est transmise au
+        Marchand avec une référence unique. Le contrat de vente est conclu directement entre le
+        Client et le Marchand ; le Marchand confirme la commande et contacte le Client, notamment
+        par WhatsApp.
       </p>
     ),
   },
   {
-    id: 'cod',
-    title: 'Paiement à la livraison',
+    id: 'modes-paiement',
+    title: 'Modes de paiement',
+    body: (
+      <>
+        <p>Selon les choix du Marchand, le Client peut payer :</p>
+        <ul>
+          <li>
+            <strong>en ligne via JuulaPay</strong> (Wave, Orange Money, carte) : seul mode de
+            paiement traité par la Plateforme ;
+          </li>
+          <li>
+            <strong>à la livraison</strong>, directement au Marchand ou à son livreur ;
+          </li>
+          <li>
+            <strong>via un lien de paiement propre au Marchand</strong> (Wave Business, Orange Money
+            ou autre) ;
+          </li>
+          <li>
+            <strong>selon les modalités convenues sur WhatsApp</strong> avec le Marchand.
+          </li>
+        </ul>
+        <p>
+          Les trois derniers modes sont des transactions hors plateforme, soumises à l&apos;article
+          suivant.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'hors-plateforme',
+    title: 'Transactions hors plateforme',
+    body: (
+      <>
+        <p>
+          <strong>Les transactions hors plateforme ne sont couvertes par aucune garantie.</strong>
+        </p>
+        <p>
+          Est une transaction hors plateforme tout paiement qui ne passe pas par JuulaPay : paiement
+          à la livraison, lien de paiement du Marchand, virement, transfert Mobile Money envoyé
+          directement au Marchand, paiement en espèces, ou tout accord conclu sur WhatsApp, par
+          téléphone ou sur un autre site.
+        </p>
+        <p>
+          Juula Store n&apos;encaisse pas ces sommes, n&apos;en a pas connaissance et ne peut ni les
+          geler, ni les rembourser, ni en garantir la bonne fin. Le séquestre, le gel des fonds et
+          le remboursement décrits dans les présentes CGU ne s&apos;appliquent qu&apos;aux commandes
+          payées via JuulaPay. Pour être protégé, le Client est invité à privilégier le paiement en
+          ligne JuulaPay et à ne jamais envoyer d&apos;argent à un vendeur en dehors de la
+          Plateforme avant d&apos;avoir vérifié sa commande.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'juulapay',
+    title: 'Paiement en ligne JuulaPay',
     body: (
       <p>
-        Lorsque le Client choisit le paiement à la livraison, il règle le Marchand ou son livreur
-        directement. Ces sommes ne transitent pas par Juula Store et n&apos;alimentent pas le
-        Portefeuille.
+        JuulaPay est optionnel : le Marchand l&apos;active ou le désactive depuis son tableau de
+        bord. Les paiements sont traités par notre prestataire de paiement agréé. En activant
+        JuulaPay, le Marchand mandate Juula Store pour encaisser en son nom les sommes payées par
+        ses Clients et les lui reverser via le Portefeuille, déduction faite de la commission. Une
+        commande n&apos;est considérée comme payée qu&apos;après confirmation du paiement par le
+        prestataire.
       </p>
     ),
   },
   {
-    id: 'paiement-en-ligne',
-    title: 'Paiement en ligne',
+    id: 'commission',
+    title: 'Commission JuulaPay',
     body: (
       <p>
-        Les paiements en ligne (Wave, Orange Money, carte) sont traités par notre prestataire de
-        paiement agréé. En activant ce mode, le Marchand mandate Juula Store pour encaisser en son
-        nom les sommes payées par ses Clients et les lui reverser via le Portefeuille. Une commande
-        n&apos;est considérée comme payée qu&apos;après confirmation du paiement par le prestataire.
+        Chaque paiement reçu via JuulaPay donne lieu à une commission de 7,5 % du montant payé. Le
+        montant crédité au Portefeuille est le montant net de cette commission. Aucune commission
+        n&apos;est prélevée sur les transactions hors plateforme. Toute modification du taux est
+        annoncée avant son application et ne concerne que les paiements postérieurs.
       </p>
     ),
   },
@@ -223,11 +352,10 @@ const sections: LegalSection[] = [
     title: 'Disponibilité des fonds : délai de 72 heures',
     body: (
       <p>
-        Le prestataire de paiement règle les fonds 72 heures après chaque paiement. En conséquence,
-        le montant d&apos;une vente payée en ligne est d&apos;abord affiché « en attente » dans le
-        Portefeuille et ne devient retirable que{' '}
-        <strong>72 heures après la confirmation du paiement</strong>. Le tableau de bord indique la
-        date du prochain déblocage.
+        Le montant d&apos;une vente payée via JuulaPay est d&apos;abord affiché « en attente » dans
+        le Portefeuille et ne devient retirable que{' '}
+        <strong>72 heures après la confirmation du paiement</strong>, sauf gel décidé dans le cadre
+        d&apos;un litige. Le tableau de bord indique la date du prochain déblocage.
       </p>
     ),
   },
@@ -253,44 +381,60 @@ const sections: LegalSection[] = [
     ),
   },
   {
-    id: 'commission',
-    title: 'Commissions et frais',
+    id: 'sequestre',
+    title: 'Séquestre et gel des fonds',
     body: (
-      <p>
-        Juula Store peut prélever une commission sur les ventes payées en ligne. Le montant crédité
-        au Portefeuille est le montant net de cette commission. Tout taux de commission ou toute
-        modification est porté à la connaissance du Marchand avant son application et ne
-        s&apos;applique qu&apos;aux paiements postérieurs.
-      </p>
+      <>
+        <p>
+          En cas de litige, de signalement, de suspicion de fraude ou de paiement contesté
+          concernant une commande payée via JuulaPay, Juula Store peut geler cette commande. Tant
+          qu&apos;elle est gelée :
+        </p>
+        <ul>
+          <li>
+            son montant n&apos;entre jamais dans le solde retirable du Marchand, même après le délai
+            de 72 heures ;
+          </li>
+          <li>
+            le Marchand en est informé dans son tableau de bord et ne peut ni retirer ni réclamer
+            ces fonds ;
+          </li>
+          <li>
+            si le montant avait déjà été retiré, il est déduit des encaissements JuulaPay suivants
+            du Marchand.
+          </li>
+        </ul>
+      </>
     ),
   },
   {
-    id: 'credits',
-    title: 'Crédits leads et forfaits',
+    id: 'litiges',
+    title: 'Résolution des litiges et remboursements',
     body: (
-      <p>
-        Des crédits leads sont offerts à l&apos;ouverture du compte, puis peuvent être rechargés par
-        forfaits (Pack Découverte, Pack Croissance, Pack Scaler Pro) dont les prix sont affichés sur
-        la page{' '}
-        <Link href="/#tarifs" className="text-[#1E60F8] font-semibold hover:underline">
-          Tarifs
-        </Link>
-        . Un crédit est consommé à la réception d&apos;une commande. Les crédits achetés
-        n&apos;expirent pas, ne sont ni remboursables ni convertibles en argent, sauf disposition
-        légale contraire.
-      </p>
-    ),
-  },
-  {
-    id: 'annulations',
-    title: 'Annulations et remboursements',
-    body: (
-      <p>
-        Le Marchand peut annuler une commande payée à la livraison. Une commande déjà payée en ligne
-        ne peut pas être annulée depuis le tableau de bord : le remboursement du Client est traité
-        par l&apos;intermédiaire du {support}, et le montant correspondant est déduit du
-        Portefeuille du Marchand.
-      </p>
+      <>
+        <p>
+          Tout litige relatif à un produit ou à une livraison doit d&apos;abord être réglé entre le
+          Client et le Marchand. Pour une commande payée via JuulaPay, Juula Store peut examiner le
+          dossier, demander des justificatifs (preuve de livraison, échanges, photos) et décider
+          souverainement :
+        </p>
+        <ul>
+          <li>
+            soit de <strong>libérer les fonds</strong> au Marchand, notamment s&apos;il prouve la
+            livraison ;
+          </li>
+          <li>
+            soit de <strong>rembourser le Client</strong> (colis non reçu, produit non conforme ou
+            endommagé, arnaque), par virement Mobile Money vers le Client ; le montant est alors
+            retiré définitivement du Portefeuille du Marchand.
+          </li>
+        </ul>
+        <p>
+          Chaque décision est archivée avec un rapport. Une commande payée en ligne ne peut pas être
+          annulée par le Marchand depuis son tableau de bord ; une commande payée à la livraison
+          peut l&apos;être.
+        </p>
+      </>
     ),
   },
   {
@@ -300,19 +444,77 @@ const sections: LegalSection[] = [
       <p>
         La livraison, sa qualité, ses délais, la garantie des produits et le service après-vente
         relèvent de la seule responsabilité du Marchand, qui s&apos;engage à respecter les délais et
-        conditions annoncés sur sa Page produit et les droits des consommateurs.
+        conditions annoncés sur sa Boutique et ses Pages produits ainsi que les droits des
+        consommateurs.
       </p>
     ),
   },
   {
-    id: 'litiges-clients',
-    title: 'Litiges entre Clients et Marchands',
+    id: 'signalements',
+    title: 'Signalements',
+    body: (
+      <>
+        <p>
+          Toute personne peut signaler une Boutique ou un produit grâce au lien « Signaler » présent
+          sur chaque Boutique et chaque Page produit. Le signalement comprend les coordonnées de son
+          auteur, un motif, une description et jusqu&apos;à cinq photos (preuves de paiement,
+          captures d&apos;écran, photos du colis).
+        </p>
+        <ul>
+          <li>
+            Les signalements sont traités par l&apos;équipe de sécurité de Juula Store, qui répond à
+            leur auteur par e-mail ; les réponses de l&apos;auteur sont rattachées au dossier.
+          </li>
+          <li>Les coordonnées de l&apos;auteur ne sont jamais transmises au Marchand signalé.</li>
+          <li>
+            Les signalements abusifs, mensongers ou répétés dans le but de nuire sont interdits et
+            peuvent entraîner des poursuites.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'moderation',
+    title: 'Modération et sanctions',
+    body: (
+      <>
+        <p>
+          Pour protéger les Clients et la Plateforme, notamment à la suite d&apos;un signalement,
+          Juula Store peut, selon la gravité des faits :
+        </p>
+        <ul>
+          <li>
+            désactiver un produit, avec un motif communiqué au Marchand, qui ne peut plus le
+            republier ;
+          </li>
+          <li>
+            suspendre une Boutique, qui affiche alors « Boutique temporairement indisponible » et ne
+            peut plus recevoir de commandes ;
+          </li>
+          <li>suspendre un compte Marchand, ce qui met fin à toutes ses sessions ;</li>
+          <li>
+            supprimer un produit, ou un compte et sa Boutique en cas de manquement grave ou répété ;
+          </li>
+          <li>geler les fonds concernés comme prévu à l&apos;article « Séquestre ».</li>
+        </ul>
+        <p>
+          Chaque sanction est enregistrée avec sa date et son motif. Juula Store en informe le
+          Marchand, sauf urgence, obligation légale ou risque de fraude.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'marketing',
+    title: 'Codes promo et liens partenaires',
     body: (
       <p>
-        Tout litige relatif à un produit ou à une livraison doit d&apos;abord être réglé entre le
-        Client et le Marchand. Juula Store peut, sans y être tenu, faciliter un règlement amiable
-        et, en cas de manquement avéré du Marchand pour une commande payée en ligne, procéder au
-        remboursement du Client sur le Portefeuille du Marchand.
+        Les codes promo, ventes croisées et liens partenaires (affiliation) sont créés et paramétrés
+        par le Marchand, qui fixe seul leurs conditions et les commissions versées à ses
+        partenaires. Ces commissions sont à sa charge et réglées directement par lui : Juula Store
+        fournit uniquement le suivi des visites et des ventes attribuées, sans être partie à la
+        relation entre le Marchand et ses partenaires.
       </p>
     ),
   },
@@ -321,11 +523,11 @@ const sections: LegalSection[] = [
     title: 'Pixels publicitaires',
     body: (
       <p>
-        Le Marchand qui connecte un Pixel Meta ou TikTok agit sous sa propre responsabilité : il
-        respecte les conditions de ces plateformes, informe ses Clients de l&apos;utilisation de ces
-        traceurs et recueille, le cas échéant, leur consentement. Juula Store transmet les
-        événements de navigation et de commande configurés, sans garantie sur les résultats
-        publicitaires.
+        Le Marchand qui connecte un pixel Meta, TikTok ou une balise Google agit sous sa propre
+        responsabilité : il respecte les conditions de ces plateformes, informe ses Clients de
+        l&apos;utilisation de ces traceurs et recueille, le cas échéant, leur consentement. Juula
+        Store transmet les événements de navigation et de commande configurés, sans garantie sur les
+        résultats publicitaires.
       </p>
     ),
   },
@@ -338,7 +540,11 @@ const sections: LegalSection[] = [
         pour gérer leurs commandes, dans le respect de la loi sénégalaise sur la protection des
         données personnelles. Il est interdit de revendre ces données ou de les utiliser pour du
         démarchage non sollicité. Juula Store les traite en tant que sous-traitant, comme décrit
-        dans la politique de confidentialité.
+        dans la{' '}
+        <Link href="/confidentialite" className={linkCls}>
+          politique de confidentialité
+        </Link>
+        .
       </p>
     ),
   },
@@ -361,8 +567,8 @@ const sections: LegalSection[] = [
       <p>
         Le Marchand reste propriétaire de ses contenus. Il accorde à Juula Store une licence
         gratuite et non exclusive pour les héberger, les afficher et les adapter techniquement
-        (redimensionnement des images, aperçu des liens partagés) dans le seul but de fournir le
-        service, pour la durée de leur publication.
+        (redimensionnement des images, aperçu des liens partagés, annuaire des boutiques) dans le
+        seul but de fournir et de promouvoir le service, pour la durée de leur publication.
       </p>
     ),
   },
@@ -372,7 +578,11 @@ const sections: LegalSection[] = [
     body: (
       <ul>
         <li>contourner les mesures de sécurité ou accéder aux données d&apos;autres Marchands ;</li>
-        <li>passer de fausses commandes ou simuler des paiements ;</li>
+        <li>passer de fausses commandes, simuler des paiements ou de faux avis ;</li>
+        <li>
+          inciter un Client à payer hors plateforme dans le but de le tromper ou de contourner une
+          sanction ;
+        </li>
         <li>extraire massivement des données (scraping) ou surcharger le service ;</li>
         <li>utiliser la Plateforme pour du blanchiment ou toute opération frauduleuse.</li>
       </ul>
@@ -384,9 +594,9 @@ const sections: LegalSection[] = [
     body: (
       <p>
         En cas de suspicion de fraude, de paiement contesté ou d&apos;activité illicite, Juula Store
-        peut suspendre les retraits, retenir les fonds concernés le temps des vérifications,
-        demander des justificatifs et signaler les faits aux autorités compétentes, conformément à
-        la réglementation en vigueur.
+        peut suspendre les retraits, geler les fonds concernés le temps des vérifications, demander
+        des justificatifs et signaler les faits aux autorités compétentes, conformément à la
+        réglementation en vigueur.
       </p>
     ),
   },
@@ -397,20 +607,20 @@ const sections: LegalSection[] = [
       <p>
         Juula Store s&apos;efforce d&apos;assurer un service accessible en permanence mais ne peut
         garantir une disponibilité sans interruption. Des maintenances ou des incidents chez nos
-        prestataires (hébergement, paiement, réseaux mobiles) peuvent entraîner des indisponibilités
-        temporaires.
+        prestataires (hébergement, paiement, envoi d&apos;e-mails, réseaux mobiles) peuvent
+        entraîner des indisponibilités temporaires.
       </p>
     ),
   },
   {
-    id: 'suspension',
-    title: 'Suspension et clôture du compte',
+    id: 'cloture',
+    title: 'Clôture du compte',
     body: (
       <p>
-        Le Marchand peut demander la clôture de son compte à tout moment auprès du {support} ; le
-        solde disponible lui est reversé après les délais de disponibilité et les éventuelles
-        vérifications. Juula Store peut suspendre ou clôturer un compte en cas de manquement grave
-        aux présentes CGU, après information du Marchand sauf urgence ou obligation légale.
+        Le Marchand peut cesser d&apos;utiliser la Plateforme et demander la clôture de son compte à
+        tout moment ; le solde disponible lui est reversé après les délais de disponibilité, la
+        résolution des litiges en cours et les éventuelles vérifications. Juula Store peut clôturer
+        un compte dans les cas prévus à l&apos;article « Modération et sanctions ».
       </p>
     ),
   },
@@ -420,10 +630,10 @@ const sections: LegalSection[] = [
     body: (
       <p>
         Juula Store est tenu d&apos;une obligation de moyens. Sa responsabilité ne saurait être
-        engagée pour les produits vendus, les relations entre Marchands et Clients, les pertes de
-        chiffre d&apos;affaires indirectes, ni pour les dommages résultant d&apos;une mauvaise
-        utilisation du compte. En tout état de cause, sa responsabilité est limitée aux sommes
-        perçues au titre des douze derniers mois.
+        engagée pour les produits vendus, les relations entre Marchands et Clients, les transactions
+        hors plateforme, les pertes de chiffre d&apos;affaires indirectes, ni pour les dommages
+        résultant d&apos;une mauvaise utilisation du compte. En tout état de cause, sa
+        responsabilité est limitée aux sommes perçues du Marchand au titre des douze derniers mois.
       </p>
     ),
   },
@@ -445,7 +655,8 @@ const sections: LegalSection[] = [
     body: (
       <p>
         Les enregistrements des systèmes de Juula Store (commandes, confirmations de paiement,
-        retraits, journaux de connexion) font foi entre les parties, sauf preuve contraire.
+        retraits, signalements, échanges par e-mail, décisions de modération, journaux de connexion)
+        font foi entre les parties, sauf preuve contraire.
       </p>
     ),
   },
@@ -481,28 +692,6 @@ const sections: LegalSection[] = [
       </p>
     ),
   },
-  {
-    id: 'contact',
-    title: 'Contact',
-    body: (
-      <p>
-        Pour toute question sur ces conditions, contactez le {support}
-        {LEGAL.email && (
-          <>
-            {' '}
-            ou écrivez à{' '}
-            <a
-              href={`mailto:${LEGAL.email}`}
-              className="text-[#1E60F8] font-semibold hover:underline"
-            >
-              {LEGAL.email}
-            </a>
-          </>
-        )}
-        .
-      </p>
-    ),
-  },
 ];
 
 export default function TermsPage() {
@@ -512,9 +701,11 @@ export default function TermsPage() {
       title="Conditions générales d'utilisation"
       intro={
         <p>
-          Ces conditions expliquent les règles du jeu entre Juula Store, les marchands qui vendent
-          sur la plateforme et leurs clients : création des pages produits, commandes, paiements,
-          délai de 72 heures, retraits et responsabilités de chacun.
+          Ces conditions expliquent les règles entre Juula Store, les marchands qui vendent sur la
+          plateforme et leurs clients : abonnement, boutiques et pages produits, commandes, modes de
+          paiement, JuulaPay, délai de 72 heures, gel des fonds et litiges, signalements, modération
+          et responsabilités de chacun.{' '}
+          <strong>Les transactions hors plateforme ne sont couvertes par aucune garantie.</strong>
         </p>
       }
       sections={sections}

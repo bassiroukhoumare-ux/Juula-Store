@@ -1,6 +1,6 @@
 // Legal identity of the publisher, shown on /confidentialite, /conditions
 // and the site footer. Empty fields are simply not displayed — fill them in
-// (company registration, address, email) before the public launch.
+// (company registration, address) before the public launch.
 export const LEGAL = {
   brand: 'Juula Store',
   siteUrl: 'https://www.juula.store',
@@ -15,12 +15,9 @@ export const LEGAL = {
   /** Adresse du siège. */
   address: '',
   country: 'Sénégal',
-  /** Adresse e-mail de contact / protection des données. */
-  email: '',
-  /** WhatsApp support (affiché dans le tableau de bord). */
-  whatsapp: '+221 77 412 89 30',
-  whatsappLink: 'https://wa.me/221774128930',
-  lastUpdated: '4 octobre 2026',
+  // Aucune coordonnée de support (téléphone, e-mail) n'est publiée : les
+  // demandes passent par le tableau de bord et le formulaire « Signaler ».
+  lastUpdated: '7 octobre 2026',
 } as const;
 
 /** "Juula Store" or "Juula Store (Raison sociale)" when the company is filled. */

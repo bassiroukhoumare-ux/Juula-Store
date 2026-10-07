@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { JuulaLogo } from '@/components/brand/JuulaLogo';
-import { LEGAL } from '@/lib/legal';
+import { ShieldAlert } from 'lucide-react';
 
 export const SiteFooter: React.FC = () => (
   <footer className="bg-white border-t border-[#E5E9F0]">
@@ -23,8 +23,8 @@ export const SiteFooter: React.FC = () => (
             </Link>
           </li>
           <li>
-            <Link href="/#tarifs" className="text-[#475569] hover:text-[#1E60F8]">
-              Tarifs
+            <Link href="/boutiques" className="text-[#475569] hover:text-[#1E60F8]">
+              Boutiques
             </Link>
           </li>
           <li>
@@ -55,29 +55,22 @@ export const SiteFooter: React.FC = () => (
               Politique de confidentialité
             </Link>
           </li>
-          <li>
-            <a
-              href={LEGAL.whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#475569] hover:text-[#1E60F8]"
-            >
-              Support WhatsApp
-            </a>
-          </li>
-          {LEGAL.email && (
-            <li>
-              <a href={`mailto:${LEGAL.email}`} className="text-[#475569] hover:text-[#1E60F8]">
-                {LEGAL.email}
-              </a>
-            </li>
-          )}
         </ul>
       </div>
     </div>
     <div className="border-t border-[#F1F5F9]">
+      <p className="max-w-6xl mx-auto px-4 pt-5 text-xs text-[#475569]">
+        <ShieldAlert
+          className="inline w-3.5 h-3.5 -mt-0.5 mr-1 text-[#B45309]"
+          aria-hidden="true"
+        />
+        Les transactions hors plateforme ne sont couvertes par aucune garantie.{' '}
+        <Link href="/conditions#hors-plateforme" className="font-semibold hover:text-[#1E60F8]">
+          En savoir plus
+        </Link>
+      </p>
       <p className="max-w-6xl mx-auto px-4 py-5 text-xs text-[#64748B]">
-        © {new Date().getFullYear()} {LEGAL.companyName || LEGAL.brand} · Dakar, {LEGAL.country}
+        © {new Date().getFullYear()} Juula
       </p>
     </div>
   </footer>

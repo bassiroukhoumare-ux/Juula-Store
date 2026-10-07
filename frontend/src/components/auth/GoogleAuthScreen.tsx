@@ -95,25 +95,22 @@ export const GoogleAuthScreen: React.FC<GoogleAuthScreenProps> = ({ mode }) => {
     <div
       className={`${displayFont.className} min-h-screen bg-[#EDEFF3] text-[#201D1D] p-3 sm:p-5 flex flex-col`}
     >
-      {/* Top bar: back to the landing page */}
-      <div className="flex items-center justify-between gap-3 px-1 sm:px-2 pb-3">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-[14px] bg-white border border-[#E3E7EE] text-sm font-semibold hover:bg-[#F6F7F9] hover:-translate-x-0.5 transition-all"
-        >
-          <ArrowLeft className="w-4 h-4" /> Retour à l’accueil
-        </Link>
-        <Link href="/" aria-label="Juula — accueil" className="sm:hidden">
-          <JuulaLogo height={26} />
-        </Link>
-      </div>
-
-      <main className="flex-1 grid lg:grid-cols-[1fr_1.05fr] gap-3 sm:gap-5">
+      <main className="flex-1 grid lg:grid-cols-[1.05fr_1fr] gap-3 sm:gap-5">
         {/* Form */}
         <section className="rounded-[36px] bg-[#F6F7F9] border border-white flex items-center justify-center px-4 py-12 sm:py-16">
           <div className="w-full max-w-[420px]">
+            {/* Back to the landing page, centred above the logo */}
+            <div className="flex justify-center">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-[14px] bg-white border border-[#E3E7EE] text-sm font-semibold hover:bg-[#F6F7F9] transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Retour à l’accueil
+              </Link>
+            </div>
+
             <div
-              className="opacity-0 motion-reduce:opacity-100 hidden sm:flex justify-center"
+              className="mt-8 sm:mt-10 flex justify-center opacity-0 motion-reduce:opacity-100"
               style={rise(0.05)}
             >
               <Link href="/" aria-label="Juula — accueil">
@@ -122,7 +119,7 @@ export const GoogleAuthScreen: React.FC<GoogleAuthScreenProps> = ({ mode }) => {
             </div>
 
             <div
-              className="mt-8 text-center opacity-0 motion-reduce:opacity-100"
+              className="mt-5 text-center opacity-0 motion-reduce:opacity-100"
               style={rise(0.15)}
             >
               <h1 className="text-[38px] sm:text-5xl leading-[1.05] font-extrabold tracking-[-0.035em]">
@@ -212,7 +209,7 @@ export const GoogleAuthScreen: React.FC<GoogleAuthScreenProps> = ({ mode }) => {
 
         {/* Visual panel (desktop) */}
         <aside
-          className="hidden lg:flex relative rounded-[36px] overflow-hidden bg-gradient-to-br from-[#2F63FF] via-[#235BF7] to-[#1638B8] text-white items-center justify-center p-12"
+          className="hidden lg:flex lg:order-first relative rounded-[36px] overflow-hidden bg-gradient-to-br from-[#2F63FF] via-[#235BF7] to-[#1638B8] text-white items-center justify-center p-12"
           aria-hidden="true"
         >
           <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/10 blur-3xl" />

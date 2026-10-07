@@ -198,7 +198,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       value={whatsappNumber}
                       onChange={(e) => setWhatsappNumber(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] font-medium text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
-                      placeholder="+221 77 412 89 30"
+                      placeholder="+221 77 123 45 67"
                     />
                   </div>
                 </div>
