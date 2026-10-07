@@ -25,6 +25,7 @@ import { HeroNetwork, JuulaMark } from '@/components/landing/HeroNetwork';
 import { IntegrationsFan } from '@/components/landing/IntegrationsFan';
 import { Reveal } from '@/components/landing/Reveal';
 import { SalesChart } from '@/components/landing/SalesChart';
+import { StoreShowcase } from '@/components/landing/StoreShowcase';
 import {
   FacebookIcon,
   MastercardIcon,
@@ -34,6 +35,9 @@ import {
   WaveTile,
 } from '@/components/landing/BrandIcons';
 import { LEGAL } from '@/lib/legal';
+
+// The featured shops change with subscriptions: refresh every 10 minutes.
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: 'Juula — Votre boutique pro en un seul lien',
@@ -265,6 +269,9 @@ export default function LandingPage() {
             </ol>
           </div>
         </section>
+
+        {/* ─────────────────────── JUULA CREATORS ─────────────────────── */}
+        <StoreShowcase />
 
         {/* ─────────────────────── BENTO ─────────────────────── */}
         <section

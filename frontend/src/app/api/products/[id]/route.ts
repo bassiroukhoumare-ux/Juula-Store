@@ -101,6 +101,21 @@ export async function PATCH(
       if (!internalName && config.internalName) data.internalName = config.internalName;
     }
 
+    // A product disabled by the administration stays offline.
+    // (Saving the page content alone keeps it inactive.)
+    if (existing.adminDisabledAt && !status && data.status) data.status = 'inactive';
+    if (existing.adminDisabledAt && data.status && data.status !== 'inactive') {
+      return NextResponse.json(
+        {
+          error: 'PRODUCT_DISABLED_BY_ADMIN',
+          message: `Ce produit a été désactivé par l’administration Juula${
+            existing.adminDisabledReason ? ` : ${existing.adminDisabledReason}` : ''
+          }. Contactez le support pour le réactiver.`,
+        },
+        { status: 423, headers: { 'x-request-id': ctx.requestId } },
+      );
+    }
+
     // Going online needs an active subscription (3 900 FCFA / mois).
     if (data.status === 'published' && existing.status !== 'published') {
       const store = await prisma.store.findUnique({ where: { userId: auth.user.sub } });

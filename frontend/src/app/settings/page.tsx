@@ -21,8 +21,11 @@ import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { useAuth, useUser } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useDashboardTheme } from '@/lib/theme';
+import { ThemeChooser } from '@/components/dashboard/ThemeControls';
 
 export default function SettingsPage() {
+  const { pref: themePref, setPref: setThemePref } = useDashboardTheme();
   const user = useUser();
   const { refresh } = useAuth();
   const { toast } = useToast();
@@ -103,6 +106,8 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold">Paramètres</h1>
         <p className="text-sm text-gray-600">Connecté en tant que {user.email}</p>
       </header>
+
+      <ThemeChooser pref={themePref} onChange={setThemePref} />
 
       {/* ── Password section ─────────────────────────────────────────── */}
       <section className="flex flex-col gap-3 rounded-lg border border-gray-200 p-5">

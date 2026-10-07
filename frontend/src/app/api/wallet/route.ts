@@ -108,7 +108,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       source: o.paymentType === 'online_orange' ? 'online_orange' : 'online_wave',
       amount: o.netAmount ?? o.totalAmount,
       date: o.paidAt ? dateTimeFmt.format(o.paidAt) : '',
-      status: o.availableAt && o.availableAt <= now ? 'confirmed' : 'received',
+      status: o.isFrozen
+        ? 'frozen'
+        : o.availableAt && o.availableAt <= now
+          ? 'confirmed'
+          : 'received',
       ...(o.availableAt ? { availableAt: o.availableAt.toISOString() } : {}),
     }));
 
@@ -117,6 +121,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       pendingOnlineAmount: ledger.pending,
       nextReleaseAt: ledger.nextReleaseAt,
       payoutHoldHours: payoutHoldHours(),
+      frozenAmount: ledger.frozen,
       todayRevenue: today._sum.totalAmount ?? 0,
       monthRevenue: month._sum.totalAmount ?? 0,
       codCollectedAmount: codCollected._sum.totalAmount ?? 0,

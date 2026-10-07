@@ -51,7 +51,12 @@ export default async function StoreProductPage({ params, searchParams }: PagePro
   const { shop, slug } = await params;
   const found = await load(shop, slug, toSearch(await searchParams));
   if (!found?.product || !isStoreLive(found.store)) {
-    return <ComingSoon storeName={found?.store.name ?? null} />;
+    return (
+      <ComingSoon
+        storeName={found?.store.name ?? null}
+        unavailable={Boolean(found?.store.suspendedAt)}
+      />
+    );
   }
   const { store, product } = found;
   return (

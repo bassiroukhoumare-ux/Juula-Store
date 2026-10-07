@@ -56,6 +56,20 @@ const STATUS_META: Record<FunnelPageStatus, { label: string; cls: string }> = {
   inactive: { label: 'Désactivé', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
 };
 
+const ADMIN_DISABLED_META = {
+  label: 'Désactivé par Juula',
+  cls: 'bg-rose-50 text-rose-700 border-rose-200',
+};
+
+/** Reason given by the Juula administration when it disabled a product. */
+const AdminDisabledNote: React.FC<{ page: FunnelPageItem }> = ({ page }) =>
+  page.adminDisabled ? (
+    <p className="mt-1 text-[12px] font-semibold text-rose-600 leading-snug">
+      Désactivé par l’administration
+      {page.adminDisabled.reason ? ` : ${page.adminDisabled.reason}` : ''}. Contactez le support.
+    </p>
+  ) : null;
+
 const STATUS_ORDER: Record<FunnelPageStatus, number> = { published: 0, draft: 1, inactive: 2 };
 const DAY = 86_400_000;
 
@@ -285,7 +299,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                 const cfg = page.config;
                 const image = cfg.mediaItems?.find((m) => m.type === 'image')?.url;
                 const stats = statsById.get(page.id);
-                const meta = STATUS_META[page.status];
+                const meta = page.adminDisabled ? ADMIN_DISABLED_META : STATUS_META[page.status];
                 const title = cfg.productTitle || page.internalName;
                 return (
                   <li
@@ -319,6 +333,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                           <span className="font-bold text-[#235BF7]">{formatFCFA(cfg.price)}</span>
                           {' · '}modifié {page.updatedAt}
                         </p>
+                        <AdminDisabledNote page={page} />
                       </div>
                     </div>
                     <span>
@@ -418,7 +433,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
               const cfg = page.config;
               const image = cfg.mediaItems?.find((m) => m.type === 'image')?.url;
               const stats = statsById.get(page.id);
-              const meta = STATUS_META[page.status];
+              const meta = page.adminDisabled ? ADMIN_DISABLED_META : STATUS_META[page.status];
               return (
                 <article
                   key={page.id}
@@ -456,6 +471,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                       <p className="mt-1 text-[15px] font-extrabold text-[#235BF7]">
                         {formatFCFA(cfg.price)}
                       </p>
+                      <AdminDisabledNote page={page} />
                     </div>
                   </div>
 

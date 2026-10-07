@@ -138,6 +138,7 @@ export function toFunnelPageItem(product: Product): FunnelPageItem {
     createdAt: dateFmt.format(product.createdAt),
     updatedAt: dateFmt.format(product.updatedAt),
     config: productConfig(product),
+    adminDisabled: product.adminDisabledAt ? { reason: product.adminDisabledReason } : null,
   };
 }
 

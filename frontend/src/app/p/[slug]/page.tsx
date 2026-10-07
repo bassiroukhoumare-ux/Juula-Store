@@ -34,7 +34,9 @@ export default async function PublicProductPage({ params, searchParams }: PagePr
   // Pages are online only while the store has an active subscription
   // (the owner keeps a private preview).
   if (!found.isPreview && !isStoreLive(found.store)) {
-    return <ComingSoon storeName={found.store?.name} />;
+    return (
+      <ComingSoon storeName={found.store?.name} unavailable={Boolean(found.store?.suspendedAt)} />
+    );
   }
 
   // Every store has its own address: <shop>.juula.store/<slug>.

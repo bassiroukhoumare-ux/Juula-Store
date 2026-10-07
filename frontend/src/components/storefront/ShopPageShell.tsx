@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowLeft, Check, Eye, Lock } from 'lucide-react';
+import { ArrowLeft, Check, Eye, Flag, Lock } from 'lucide-react';
 import { AnnouncementBar } from './AnnouncementBar';
 import type { AnnouncementBar as AnnouncementBarData } from '@/lib/store/marketing';
 
@@ -145,6 +145,13 @@ export const ShopPageShell: React.FC<ShopPageShellProps> = ({
           )}
           <p className="text-[16px] font-bold">{storeName}</p>
         </div>
+        <a
+          href={`${base}/signaler`}
+          rel="nofollow"
+          className="inline-flex items-center gap-1.5 min-h-10 px-3 rounded-full text-[13px] text-white/75 hover:text-white hover:bg-white/10"
+        >
+          <Flag className="w-3.5 h-3.5" /> Signaler cette boutique
+        </a>
         <p className="text-[13px] text-white/70">
           Paiement sécurisé · Boutique propulsée par{' '}
           <a

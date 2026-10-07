@@ -19,7 +19,8 @@ export const metadata: Metadata = { title: 'Mon panier', robots: { index: false 
 export default async function Page({ params }: PageProps) {
   const { shop } = await params;
   const { store, settings, products, isPreview } = await loadShop(shop);
-  if (!products) return <ComingSoon storeName={store.name} />;
+  if (!products)
+    return <ComingSoon storeName={store.name} unavailable={Boolean(store.suspendedAt)} />;
   const base = await shopBase(store.subdomain!);
 
   return (

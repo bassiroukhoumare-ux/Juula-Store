@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Bell, Plus, Search } from 'lucide-react';
+import type { ThemePref } from '@/lib/theme';
+import { ThemeToggle } from './ThemeControls';
 import type { DashboardTab } from '@/types/juula';
 import { JuulaLogo } from '@/components/brand/JuulaLogo';
 import type { CustomDates, PeriodId } from '@/lib/store/period';
@@ -18,6 +20,10 @@ export interface HeaderWidgetsState {
 }
 
 interface HeaderProps {
+  /** Light / dark / automatic theme (sun / moon button). */
+  theme?: ThemePref | undefined;
+  dark?: boolean | undefined;
+  onThemeChange?: ((p: ThemePref) => void) | undefined;
   activeTab: DashboardTab;
   onTabChange: (tab: DashboardTab) => void;
   leadCreditsRemaining: number;
@@ -53,6 +59,9 @@ const TITLES: Record<DashboardTab, string> = {
 };
 
 export const Header: React.FC<HeaderProps> = ({
+  theme,
+  dark,
+  onThemeChange,
   activeTab,
   onTabChange,
   onCreatePageClick,
@@ -118,6 +127,9 @@ export const Header: React.FC<HeaderProps> = ({
         </form>
 
         <div className="flex items-center gap-2.5 ml-auto">
+          {theme && onThemeChange && (
+            <ThemeToggle pref={theme} dark={Boolean(dark)} onChange={onThemeChange} />
+          )}
           {/* Notifications → full page */}
           <button
             type="button"

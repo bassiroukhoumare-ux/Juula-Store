@@ -56,6 +56,8 @@ export interface DirectPaymentMethod {
 export interface StorefrontSettings {
   published: boolean;
   tagline: string;
+  /** Public directory category (see lib/store/categories). */
+  category: string | null;
   coverUrl: string | null;
   accent: string;
   banners: StoreBanner[];

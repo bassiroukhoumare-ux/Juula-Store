@@ -21,7 +21,12 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { shop } = await params;
   const { store, products, settings } = await loadShop(shop);
-  if (!products) return { title: 'Boutique en cours de préparation', robots: { index: false } };
+  if (!products) {
+    return {
+      title: store.suspendedAt ? 'Boutique indisponible' : 'Boutique en cours de préparation',
+      robots: { index: false },
+    };
+  }
   const image =
     settings.coverUrl ??
     products
@@ -33,7 +38,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function StorefrontPage({ params }: PageProps) {
   const { shop } = await params;
   const { store, settings, products, isPreview } = await loadShop(shop);
-  if (!products) return <ComingSoon storeName={store.name} />;
+  if (!products)
+    return <ComingSoon storeName={store.name} unavailable={Boolean(store.suspendedAt)} />;
 
   // On the shop's own subdomain pages live at /<slug>, /panier…; on www
   // (preview) under /boutique/<shop>/.

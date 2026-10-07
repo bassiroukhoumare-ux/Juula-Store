@@ -244,7 +244,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                       ? { label: 'Paiement à vérifier', cls: 'bg-amber-100 text-amber-800' }
                       : order.paymentStatus === 'pending_online'
                         ? { label: 'Paiement en cours', cls: 'bg-[#F1F3F6] text-[#3F4654]' }
-                        : null;
+                        : order.paymentStatus === 'refunded'
+                          ? { label: 'Remboursé', cls: 'bg-rose-100 text-rose-700' }
+                          : null;
               const cleanPhone = (order.phone || '').replace(/[^0-9+]/g, '');
               const whatsappUrl = `https://wa.me/${order.whatsappNumber || cleanPhone}?text=${encodeURIComponent(
                 `Bonjour ${order.customerName} ! Boutique concernant votre commande #${order.id} (${order.productName}). Pouvez-vous nous confirmer votre heure de livraison à ${order.neighborhood} ?`,

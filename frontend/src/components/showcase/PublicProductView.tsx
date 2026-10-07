@@ -216,6 +216,9 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
           trackProductEvent(config.slug, 'checkout_open');
         }}
         onCheckoutDraft={handleCheckoutDraft}
+        {...(isPreview
+          ? {}
+          : { reportHref: `/signaler?produit=${encodeURIComponent(config.slug)}` })}
       />
     </div>
   );

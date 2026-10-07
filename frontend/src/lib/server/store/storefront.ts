@@ -1,4 +1,5 @@
 import { capFaq } from '@/lib/store/product-content';
+import { isStoreCategory } from '@/lib/store/categories';
 import { parseAnnouncement } from '@/lib/store/marketing';
 import 'server-only';
 // Storefront (<subdomain>.juula.store) settings and the payment options a
@@ -111,6 +112,7 @@ export function toStorefrontSettings(store: Store | null): StorefrontSettings {
   return {
     published: store?.storefrontPublished ?? false,
     tagline: store?.storeTagline ?? '',
+    category: isStoreCategory(store?.storeCategory) ? store.storeCategory : null,
     coverUrl: store?.storeCoverUrl ?? null,
     accent: isHexColor(store?.storeAccent) ? store.storeAccent : DEFAULT_ACCENT,
     banners: parseBanners(store?.storeBanners),
@@ -125,9 +127,12 @@ export function toStorefrontSettings(store: Store | null): StorefrontSettings {
   };
 }
 
-/** A shop and its product pages are online only with an active subscription. */
+/**
+ * A shop and its product pages are online only with an active subscription,
+ * and never while the administration has suspended the shop.
+ */
 export function isStoreLive(store: Store | null): boolean {
-  return isStorePro(store);
+  return isStorePro(store) && !store?.suspendedAt;
 }
 
 /**
@@ -151,6 +156,7 @@ export function checkoutOptionsFor(store: Store | null): CheckoutOptions {
 export interface StorefrontInput {
   published?: boolean | undefined;
   tagline?: string | undefined;
+  category?: string | null | undefined;
   coverUrl?: string | null | undefined;
   accent?: string | undefined;
   banners?: unknown[] | undefined; // normalized by parseBanners
@@ -192,6 +198,9 @@ export async function saveStorefrontSettings(
     data.onlinePaymentsEnabled = input.onlinePaymentsEnabled;
   }
   if (input.tagline !== undefined) data.storeTagline = input.tagline.trim().slice(0, 140) || null;
+  if (input.category !== undefined) {
+    data.storeCategory = isStoreCategory(input.category) ? input.category : null;
+  }
   if (input.coverUrl !== undefined) {
     if (input.coverUrl !== null && !isAllowedLogoUrl(input.coverUrl)) {
       return fail('COVER_INVALID', 'Image de couverture invalide : téléversez une image.');

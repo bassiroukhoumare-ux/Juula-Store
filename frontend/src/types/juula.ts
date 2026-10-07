@@ -28,7 +28,8 @@ export type PaymentStatus =
   | 'pending_cod'
   | 'pending_online'
   | 'pending_direct'
-  | 'paid_direct';
+  | 'paid_direct'
+  | 'refunded'; // refunded to the customer after a dispute (/adminom)
 
 export interface OrderLead {
   id: string;
@@ -120,8 +121,8 @@ export interface InflowRecord {
   source: 'online_wave' | 'online_orange' | 'cod_cash';
   amount: number;
   date: string;
-  /** received = paid but inside the 72h hold; confirmed = withdrawable. */
-  status: 'received' | 'confirmed';
+  /** received = paid but inside the 72h hold; confirmed = withdrawable; frozen = dispute. */
+  status: 'received' | 'confirmed' | 'frozen';
   availableAt?: string;
 }
 
@@ -136,6 +137,8 @@ export interface WalletState {
   /** ISO date of the next hold release, if any. */
   nextReleaseAt?: string | null;
   payoutHoldHours?: number;
+  /** Paid online but frozen by the administration (dispute in progress). */
+  frozenAmount?: number;
   totalWithdrawn: number;
   currency: string;
   payoutHistory: PayoutRecord[];
@@ -199,6 +202,8 @@ export interface FunnelPageItem {
   createdAt: string;
   updatedAt: string;
   config: FunnelPageConfig;
+  /** Set when the Juula administration disabled the product (reason shown to the merchant). */
+  adminDisabled?: { reason: string | null } | null;
 }
 
 export interface FunnelPageConfig {

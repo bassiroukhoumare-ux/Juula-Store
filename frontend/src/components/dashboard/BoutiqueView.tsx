@@ -1,5 +1,6 @@
 'use client';
 
+import { STORE_CATEGORIES } from '@/lib/store/categories';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -490,6 +491,32 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
               </span>
             </label>
             <SloganSuggester storeName={storeName} onPick={(tagline) => set({ tagline })} />
+            <div className="space-y-1.5">
+              <span className="text-[14px] font-semibold text-[#201D1D]">
+                Catégorie de la boutique
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {STORE_CATEGORIES.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => set({ category: settings.category === c.id ? null : c.id })}
+                    aria-pressed={settings.category === c.id}
+                    className={`min-h-10 px-3.5 rounded-full border text-[13px] font-semibold transition-colors cursor-pointer ${
+                      settings.category === c.id
+                        ? 'bg-[#235BF7] border-[#235BF7] text-white'
+                        : 'bg-white border-[#E3E7EE] text-[#3F4654] hover:bg-[#F6F7F9]'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <span className="block text-[13px] text-[#7A808C]">
+                Votre boutique apparaît dans cette catégorie de l’annuaire public
+                juula.store/boutiques.
+              </span>
+            </div>
             <div className="space-y-1.5">
               <span className="text-[14px] font-semibold text-[#201D1D]">Couleur des boutons</span>
               <div className="flex flex-wrap gap-2">
@@ -1263,6 +1290,7 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
 function fullPayloadOf(next: StorefrontSettings): Partial<StorefrontSettings> {
   return {
     tagline: next.tagline,
+    category: next.category,
     coverUrl: next.coverUrl,
     accent: next.accent,
     banners: next.banners.filter((b) => b.imageUrl && b.title),

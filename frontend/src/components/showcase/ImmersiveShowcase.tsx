@@ -42,6 +42,7 @@ import {
   Minus,
   ArrowLeft,
   Palette,
+  Flag,
 } from 'lucide-react';
 import {
   FunnelPageConfig,
@@ -98,6 +99,8 @@ interface ImmersiveShowcaseProps {
     quantity: number;
   }) => void;
   isInsideMockup?: boolean;
+  /** Public mode: link to the full-page « Signaler ce produit » form. */
+  reportHref?: string;
 }
 
 export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
@@ -108,6 +111,7 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
   onCheckoutOpened,
   onCheckoutDraft,
   isInsideMockup = false,
+  reportHref,
 }) => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
@@ -1981,6 +1985,17 @@ export const ImmersiveShowcase: React.FC<ImmersiveShowcaseProps> = ({
           {/* 6b. Description longue + tableau « Nous vs Les autres » (masqués si vides) */}
           <ProductDescription text={config.description} />
           <ComparisonTable comparison={config.comparison} />
+          {reportHref && (
+            <div className="flex justify-center">
+              <a
+                href={reportHref}
+                rel="nofollow"
+                className="inline-flex items-center gap-1.5 min-h-11 px-4 rounded-full text-[13px] font-semibold text-[#7A808C] hover:text-[#B42318] hover:bg-[#FEF3F2] transition-colors"
+              >
+                <Flag className="w-4 h-4" /> Signaler ce produit
+              </a>
+            </div>
+          )}
 
           {/* ======================================================== */}
           {/* 7. PREUVES CLIENTS REÇUES : PHOTOS, VIDÉOS & VOCAUX      */}

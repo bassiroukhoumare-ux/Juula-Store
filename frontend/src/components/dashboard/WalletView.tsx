@@ -15,6 +15,7 @@ import {
   MapPin,
   Clock,
   X,
+  Snowflake,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { WalletState, OrderLead, InflowRecord, PayoutRecord } from '@/types/juula';
@@ -55,6 +56,8 @@ export const WalletView: React.FC<WalletViewProps> = ({
 
   // Inflows list
   const rawInflows: InflowRecord[] = wallet.inflowHistory || [];
+
+  const frozenInflows = rawInflows.filter((item) => item.status === 'frozen');
 
   const filteredInflows = rawInflows.filter((item) => {
     if (inflowFilter === 'all') return true;
@@ -99,6 +102,33 @@ export const WalletView: React.FC<WalletViewProps> = ({
           Retirer
         </Button>
       </div>
+
+      {/* Payments frozen by the administration (dispute in progress) */}
+      {frozenInflows.length > 0 && (
+        <div
+          role="alert"
+          className="p-4 sm:p-5 rounded-[24px] bg-sky-50 border border-sky-200 flex items-start gap-3"
+        >
+          <span className="w-10 h-10 shrink-0 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center">
+            <Snowflake className="w-5 h-5" />
+          </span>
+          <div className="min-w-0 space-y-1">
+            <p className="text-[15px] font-bold text-[#0C4A6E]">
+              {formatFCFA(wallet.frozenAmount ?? 0)} suspendus par l’administration
+            </p>
+            {frozenInflows.map((f) => (
+              <p key={f.id} className="text-[14px] text-[#075985]">
+                Paiement de la commande #{f.orderId} suspendu par l’administration suite à un litige
+                en cours.
+              </p>
+            ))}
+            <p className="text-[13px] text-[#0369A1]">
+              Ce montant ne peut pas être retiré tant que le litige n’est pas résolu. Gardez vos
+              preuves de livraison et contactez le support Juula.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 2. Four essential numbers */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -293,6 +323,11 @@ export const WalletView: React.FC<WalletViewProps> = ({
                       <span>{item.source === 'cod_cash' ? 'Espèces' : 'Mobile Money'}</span>
                       <span>{item.date}</span>
                     </div>
+                    {item.status === 'frozen' && (
+                      <span className="inline-flex items-center gap-1 text-[12px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full">
+                        <Snowflake className="w-3 h-3" /> Suspendu (litige)
+                      </span>
+                    )}
                   </div>
                 ))
               )}
@@ -359,10 +394,17 @@ export const WalletView: React.FC<WalletViewProps> = ({
                           +{formatFCFA(item.amount)}
                         </td>
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-1 rounded-full">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Encaissé & Validé</span>
-                          </span>
+                          {item.status === 'frozen' ? (
+                            <span className="inline-flex items-center gap-1 text-[13px] font-bold text-sky-700 bg-sky-50 px-2.5 py-1 rounded-full">
+                              <Snowflake className="w-3 h-3" />
+                              <span>Suspendu (litige)</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#059669] bg-[#ECFDF5] px-2.5 py-1 rounded-full">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Encaissé & Validé</span>
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))

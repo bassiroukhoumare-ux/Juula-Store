@@ -37,7 +37,7 @@ export async function buildNotificationFeed(userId: string): Promise<{
   unread: number;
 }> {
   const since = new Date(Date.now() - WINDOW_DAYS * 86_400_000);
-  const [orders, withdrawals, states] = await Promise.all([
+  const [orders, withdrawals, states, disputes] = await Promise.all([
     prisma.storeOrder.findMany({
       where: { merchantId: userId, createdAt: { gte: since } },
       orderBy: { createdAt: 'desc' },
@@ -49,6 +49,15 @@ export async function buildNotificationFeed(userId: string): Promise<{
       take: 50,
     }),
     prisma.notificationState.findMany({ where: { userId } }),
+    // Disputes handled by the administration (any age while open).
+    prisma.storeOrder.findMany({
+      where: {
+        merchantId: userId,
+        OR: [{ isFrozen: true }, { disputeClosedAt: { gte: since } }],
+      },
+      orderBy: { frozenAt: 'desc' },
+      take: 50,
+    }),
   ]);
 
   const all: Omit<MerchantNotification, 'read'>[] = [];
@@ -123,6 +132,42 @@ export async function buildNotificationFeed(userId: string): Promise<{
         `Destination : ${to}`,
         ...(w.status === 'FAILED' || w.status === 'CANCELLED'
           ? ['Le montant a été recrédité sur votre solde.']
+          : []),
+      ],
+      at: at.toISOString(),
+      when: dateFmt.format(at),
+      target: { tab: 'wallet' },
+    });
+  }
+
+  for (const o of disputes) {
+    const at = (o.isFrozen ? o.frozenAt : o.disputeClosedAt) ?? o.updatedAt;
+    const kind = o.isFrozen ? 'frozen' : o.disputeStatus === 'refunded' ? 'refunded' : 'released';
+    const content = {
+      frozen: {
+        kind: 'alert' as const,
+        title: `Paiement suspendu · ${o.reference}`,
+        summary: `Paiement de la commande #${o.reference} suspendu par l’administration suite à un litige en cours.`,
+      },
+      released: {
+        kind: 'payment' as const,
+        title: `Litige clos · ${o.reference}`,
+        summary: `Les fonds de la commande #${o.reference} sont de nouveau disponibles sur votre solde.`,
+      },
+      refunded: {
+        kind: 'alert' as const,
+        title: `Client remboursé · ${o.reference}`,
+        summary: `La commande #${o.reference} a été remboursée au client à l’issue du litige.`,
+      },
+    }[kind];
+    all.push({
+      key: `dispute:${o.id}:${kind}`,
+      ...content,
+      details: [
+        `Montant : ${money(o.netAmount ?? o.totalAmount)}`,
+        ...(o.frozenReason ? [`Motif : ${o.frozenReason}`] : []),
+        ...(kind === 'frozen'
+          ? ['Ce montant ne peut pas être retiré tant que le litige n’est pas résolu.']
           : []),
       ],
       at: at.toISOString(),

@@ -31,6 +31,7 @@ model User {
   // refused with 403 ACCOUNT_SUSPENDED. Mutated via /api/admin/users/[id]/status
   // (ADMIN can suspend; only SUPERADMIN can restore).
   status            String    @default("ACTIVE") // ACTIVE | SUSPENDED
+  uiTheme           String    @default("system") // dashboard theme: light | dark | system
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -385,6 +386,7 @@ model Store {
   storefrontSetupDone   Boolean      @default(false) // first-time guided setup finished
   onlinePaymentsEnabled Boolean      @default(false) // JuulaPay online payments (7,5 % per payment)
   storeTagline          String?
+  storeCategory         String? // public directory category (mode, beaute, …)
   storeCoverUrl         String? // Cloudinary image
   storeAccent           String? // hex colour of buttons/badges (#RRGGBB)
   storeBanners          Json? // [{ id, imageUrl, title, badge, buttonLabel, category }]
@@ -396,7 +398,10 @@ model Store {
   whatsappOrderEnabled  Boolean      @default(false)
   directPaymentMethods  Json? // [{ id, name, url, qrUrl }]
   planExpiresAt         DateTime? // null = active if PRO, or expiration date
+  suspendedAt           DateTime? // set by /adminom: shop closed to buyers, whatever the plan
+  suspendedReason       String?
   aliases               StoreAlias[]
+  reports               Report[]
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
 }
@@ -409,6 +414,10 @@ model StoreSubscription {
   amount            Int       @default(3900) // 3 900 FCFA / mois
   currency          String    @default("FCFA")
   status            String    @default("pending") // pending | active | expired
+  /// moneriz = paid online · manual = granted from /adminom (offered, cash…)
+  source            String    @default("moneriz")
+  /// Internal note of a manual grant (« Paiement reçu en espèces »…).
+  note              String?
   providerSessionId String?   @unique
   providerPaymentId String?
   startsAt          DateTime?
@@ -430,20 +439,25 @@ model StoreAlias {
 }
 
 model Product {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  slug         String   @unique
-  internalName String
-  status       String   @default("draft") // draft | published | inactive
-  price        Int      @default(0)
-  config       Json
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug                String    @unique
+  internalName        String
+  status              String    @default("draft") // draft | published | inactive
+  // Disabled by /adminom (suspicious, counterfeit…): kept inactive, the
+  // merchant sees the reason and cannot publish it again.
+  adminDisabledAt     DateTime?
+  adminDisabledReason String?
+  price               Int       @default(0)
+  config              Json
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  orders StoreOrder[]
-  events ProductEvent[]
-  drafts CheckoutDraft[]
+  orders  StoreOrder[]
+  events  ProductEvent[]
+  reports Report[]
+  drafts  CheckoutDraft[]
 
   @@index([userId, updatedAt])
 }
@@ -533,9 +547,22 @@ model StoreOrder {
   availableAt       DateTime?
   netAmount         Int? // credited to the merchant wallet (totalAmount - platform commission)
 
+  // Escrow / disputes (/adminom). A frozen order never reaches the
+  // withdrawable balance, even after the 72 h hold.
+  isFrozen        Boolean   @default(false)
+  frozenReason    String?
+  frozenAt        DateTime?
+  disputeStatus   String? // frozen | refunding | released | refunded
+  disputeClosedAt DateTime?
+  disputeReport   String? // closing note archived with the case
+  refundMethod    String? // moneriz_wave | moneriz_orange | manual
+  refundPhone     String?
+  refundReference String? // Moneriz withdrawal id or manual transfer reference
+
   @@unique([merchantId, number])
   @@index([merchantId, createdAt])
   @@index([merchantId, paymentStatus])
+  @@index([disputeStatus])
 }
 
 /// Merchant notification feed state. The feed itself is derived from orders
@@ -612,4 +639,56 @@ model PartnerVisit {
   createdAt DateTime @default(now())
 
   @@unique([partnerId, visitorId])
+}
+
+// Public reports (« Signaler cette boutique / ce produit ») handled from
+// /adminom. Target snapshots survive a deleted shop or product.
+model Report {
+  id             String          @id @default(cuid())
+  reporterName   String
+  reporterEmail  String
+  reporterPhone  String
+  reason         String // not_received | scam | counterfeit | dangerous | abusive | other
+  description    String
+  images         String[] // Cloudinary URLs (max 5)
+  storeId        String?
+  store          Store?          @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  productId      String?
+  product        Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  storeName      String?
+  storeSubdomain String?
+  productTitle   String?
+  productSlug    String?
+  pageUrl        String?
+  ip             String?
+  userAgent      String?
+  status         String          @default("new") // new | investigating | resolved | dismissed
+  readAt         DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  messages       ReportMessage[]
+
+  @@index([status, createdAt])
+  @@index([storeId])
+}
+
+// E-mails exchanged about a report (sent through Resend from /adminom).
+model ReportMessage {
+  id             String    @id @default(cuid())
+  reportId       String
+  report         Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  kind           String    @default("reply") // ack (automatic acknowledgement) | reply | inbound (reporter's e-mail)
+  subject        String
+  body           String
+  status         String // sent | failed
+  providerId     String?
+  /// inbound only: Resend received-email id (webhook dedupe), sender, photos
+  inboundEmailId String?   @unique
+  fromEmail      String?
+  attachments    String[]
+  agent          String? // admin who sent a reply
+  readAt         DateTime? // inbound: seen by the admin
+  createdAt      DateTime  @default(now())
+
+  @@index([reportId, createdAt])
 }

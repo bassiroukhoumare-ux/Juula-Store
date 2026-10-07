@@ -20,7 +20,8 @@ export const metadata: Metadata = { title: 'Finaliser la commande', robots: { in
 export default async function Page({ params, searchParams }: PageProps) {
   const { shop } = await params;
   const { store, settings, products, isPreview } = await loadShop(shop);
-  if (!products) return <ComingSoon storeName={store.name} />;
+  if (!products)
+    return <ComingSoon storeName={store.name} unavailable={Boolean(store.suspendedAt)} />;
   const base = await shopBase(store.subdomain!);
   const mode = (await searchParams).mode === 'whatsapp' ? 'whatsapp' : 'order';
 

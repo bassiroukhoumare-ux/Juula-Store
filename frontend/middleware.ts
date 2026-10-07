@@ -37,7 +37,7 @@ function isAuthedPath(pathname: string): boolean {
 }
 
 const PLATFORM_ONLY =
-  /^\/(dashboard|login|signup|auth|settings|vitrine|conditions|confidentialite|boutique|p)(\/|$)/;
+  /^\/(dashboard|login|signup|auth|settings|vitrine|conditions|confidentialite|boutique|p|adminom)(\/|$)/;
 
 function storefront(req: NextRequest, shop: string): NextResponse {
   const { pathname, search } = req.nextUrl;

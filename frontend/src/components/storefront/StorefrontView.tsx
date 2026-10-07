@@ -15,6 +15,7 @@ import {
   Eye,
   ShoppingBag,
   XCircle,
+  Flag,
 } from 'lucide-react';
 import { applyDisplayCurrency, formatMoney, isDisplayCurrency } from '@/lib/money';
 import type {
@@ -547,6 +548,15 @@ export const StorefrontView: React.FC<StorefrontViewProps> = (props) => {
               </button>
             ))}
           </nav>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-3 flex justify-center sm:justify-end">
+          <a
+            href={`${props.base}/signaler`}
+            rel="nofollow"
+            className="inline-flex items-center gap-1.5 min-h-10 px-3 rounded-full text-[13px] text-white/75 hover:text-white hover:bg-white/10"
+          >
+            <Flag className="w-3.5 h-3.5" /> Signaler cette boutique
+          </a>
         </div>
         <p className="pb-8 text-center text-[12px] text-white/60">
           Boutique propulsée par{' '}

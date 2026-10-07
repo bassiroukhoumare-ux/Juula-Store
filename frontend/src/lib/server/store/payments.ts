@@ -173,6 +173,8 @@ export interface MerchantWallet {
   totalWithdrawn: number;
   /** Sum of PENDING/PROCESSING withdrawals. */
   inFlight: number;
+  /** Paid orders frozen by the administration (dispute): never withdrawable. */
+  frozen: number;
 }
 
 /**
@@ -190,8 +192,10 @@ export async function computeMerchantWallet(
     merchantId,
     paymentStatus: 'paid',
     status: { not: 'cancelled' },
+    // Frozen (dispute) orders stay out of the balance, even after the hold.
+    isFrozen: false,
   };
-  const [matured, held, nextRelease, withdrawals] = await Promise.all([
+  const [matured, held, nextRelease, withdrawals, frozen] = await Promise.all([
     client.storeOrder.aggregate({
       where: { ...paidWhere, availableAt: { lte: now } },
       _sum: { netAmount: true },
@@ -210,6 +214,10 @@ export async function computeMerchantWallet(
       where: { userId: merchantId, status: { in: RESERVING_WITHDRAWAL_STATUSES } },
       _sum: { amount: true },
     }),
+    client.storeOrder.aggregate({
+      where: { merchantId, paymentStatus: 'paid', isFrozen: true },
+      _sum: { netAmount: true },
+    }),
   ]);
 
   const sumFor = (status: string) => withdrawals.find((w) => w.status === status)?._sum.amount ?? 0;
@@ -223,6 +231,7 @@ export async function computeMerchantWallet(
     nextReleaseAt: nextRelease?.availableAt?.toISOString() ?? null,
     totalWithdrawn,
     inFlight,
+    frozen: frozen._sum.netAmount ?? 0,
   };
 }
 

@@ -6,6 +6,7 @@ import { JuulaLogo } from '@/components/brand/JuulaLogo';
 const NAV = [
   { href: '/#fonctionnalites', label: 'Fonctionnalités' },
   { href: '/#comment-ca-marche', label: 'Comment ça marche' },
+  { href: '/boutiques', label: 'Boutiques' },
   { href: '/#faq', label: 'FAQ' },
 ];
 

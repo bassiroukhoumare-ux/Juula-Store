@@ -23,6 +23,8 @@ export interface SendEmailInput {
   text?: string;
   /** RFC 2369 — adds List-Unsubscribe + List-Unsubscribe-Post=One-Click headers. */
   listUnsubscribe?: ListUnsubscribe;
+  /** Address the recipient's « Reply » goes to. */
+  replyTo?: string;
 }
 
 export interface Mailer {
@@ -75,6 +77,7 @@ export function createMailer(env: CreateMailerEnv, options: CreateMailerOptions 
         html: string;
         text?: string;
         headers?: Record<string, string>;
+        replyTo?: string;
       } = {
         from,
         to: input.to,
@@ -82,6 +85,7 @@ export function createMailer(env: CreateMailerEnv, options: CreateMailerOptions 
         html: input.html,
       };
       if (input.text !== undefined) sendArgs.text = input.text;
+      if (input.replyTo) sendArgs.replyTo = input.replyTo;
       if (Object.keys(headers).length > 0) sendArgs.headers = headers;
 
       const { data, error } = await client.emails.send(sendArgs);

@@ -14,8 +14,11 @@ import {
   Coins,
   Wallet,
   Crown,
+  Palette,
 } from 'lucide-react';
 import { FunnelPageConfig } from '@/types/juula';
+import type { ThemePref } from '@/lib/theme';
+import { ThemeChooser } from './ThemeControls';
 import { SectionLayout, type SectionItem } from './SectionLayout';
 import { PayoutAccountsCard } from '@/components/store/PayoutAccountsCard';
 import { SubscriptionCard } from '@/components/store/SubscriptionCard';
@@ -31,7 +34,8 @@ export type SettingsSection =
   | 'devise'
   | 'retraits'
   | 'securite'
-  | 'abonnement';
+  | 'abonnement'
+  | 'apparence';
 
 const SECTIONS: SectionItem<SettingsSection>[] = [
   { id: 'boutique', label: 'Ma boutique', icon: <Globe /> },
@@ -41,6 +45,7 @@ const SECTIONS: SectionItem<SettingsSection>[] = [
   { id: 'retraits', label: 'Moyens de retrait', icon: <Wallet /> },
   { id: 'securite', label: 'Sécurité des virements', icon: <KeyRound /> },
   { id: 'abonnement', label: 'Abonnement', icon: <Crown /> },
+  { id: 'apparence', label: 'Apparence', icon: <Palette /> },
 ];
 
 interface SettingsViewProps {
@@ -59,6 +64,9 @@ interface SettingsViewProps {
   onOpenUpgrade?: () => void;
   /** Section shown first (e.g. « abonnement » from the sidebar). */
   initialSection?: SettingsSection | undefined;
+  /** Light / dark / automatic theme. */
+  theme?: ThemePref | undefined;
+  onThemeChange?: ((p: ThemePref) => void) | undefined;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -75,6 +83,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onStoreProfileSaved,
   onOpenUpgrade,
   initialSection,
+  theme,
+  onThemeChange,
 }) => {
   const [section, setSection] = useState<SettingsSection>(initialSection ?? 'boutique');
   useEffect(() => {
@@ -126,6 +136,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       )}
 
       {section === 'retraits' && <PayoutAccountsCard pinRequired={payoutSecurity.isPinSet} />}
+
+      {section === 'apparence' && theme && onThemeChange && (
+        <ThemeChooser pref={theme} onChange={onThemeChange} />
+      )}
 
       {section === 'abonnement' && (
         <SubscriptionCard

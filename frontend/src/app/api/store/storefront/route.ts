@@ -6,6 +6,7 @@ export const runtime = 'nodejs';
 import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { STORE_CATEGORY_IDS } from '@/lib/store/categories';
 import { verifyCsrf } from '@/lib/server/auth';
 import { requireAuth } from '@/lib/server/middleware';
 import { makeRequestContext, withRequestContext } from '@/lib/server/observability/request-context';
@@ -48,6 +49,7 @@ const Body = z
   .object({
     published: z.boolean(),
     tagline: z.string().max(140),
+    category: z.enum(STORE_CATEGORY_IDS).nullable(),
     coverUrl: z.string().max(500).nullable(),
     accent: z.string().max(7),
     banners: z.array(Banner).max(5),

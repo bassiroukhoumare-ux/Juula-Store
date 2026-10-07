@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/Sidebar';
+import { useDashboardTheme } from '@/lib/theme';
 import { Header, HeaderWidgetsState } from '@/components/dashboard/Header';
 import { CockpitView } from '@/components/dashboard/CockpitView';
 import { KanbanView } from '@/components/dashboard/KanbanView';
@@ -95,6 +96,7 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 export default function JuulaStoreApp() {
+  const { pref: themePref, dark: themeDark, setPref: setThemePref } = useDashboardTheme();
   const router = useRouter();
   const { toast } = useToast();
   const [session, setSession] = useState<'loading' | 'onboarding' | 'ready' | 'error'>('loading');
@@ -419,6 +421,13 @@ export default function JuulaStoreApp() {
   const handleTogglePageStatus = (pageId: string, newStatus: FunnelPageStatus) => {
     const page = funnelPages.find((p) => p.id === pageId);
     if (!page) return;
+    if (page.adminDisabled && newStatus !== 'inactive') {
+      toast(
+        'Ce produit a été désactivé par l’administration Juula. Contactez le support pour le réactiver.',
+        'error',
+      );
+      return;
+    }
     const base = pageId === activePageId ? funnelConfig : page.config;
     const updatedConfig: FunnelPageConfig = { ...base, status: newStatus };
     setFunnelPages((prev) =>
@@ -689,13 +698,13 @@ export default function JuulaStoreApp() {
 
   return (
     <div
-      className={`${displayFont.className} min-h-screen bg-[#EDEFF3] text-[#201D1D] flex flex-col`}
+      className={`${displayFont.className} juula-dash-root min-h-screen bg-[#EDEFF3] text-[#201D1D] flex flex-col`}
     >
       {/* ======================================================== */}
       {/* VUE 2 : VITRINE IMMERSIVE (DESKTOP & MOBILE RESPONSIVE)  */}
       {/* ======================================================== */}
       {viewMode === 'vitrine' ? (
-        <div className="min-h-screen bg-[#F6F7F9]">
+        <div className="juula-light min-h-screen bg-[#F6F7F9]">
           <ImmersiveShowcase config={previewConfig} isInsideMockup={false} />
 
           {/* Return button: small, in the empty left slot of the store header */}
@@ -728,6 +737,9 @@ export default function JuulaStoreApp() {
           <div className="flex-1 flex flex-col min-w-0 bg-[#EDEFF3] lg:rounded-[32px] lg:bg-[#F6F7F9] lg:border lg:border-white lg:overflow-hidden">
             {/* Header */}
             <Header
+              theme={themePref}
+              dark={themeDark}
+              onThemeChange={setThemePref}
               activeTab={activeTab}
               onTabChange={(tab) => {
                 setIsPayoutPageOpen(false);
@@ -909,6 +921,8 @@ export default function JuulaStoreApp() {
 
                   {activeTab === 'settings' && (
                     <SettingsView
+                      theme={themePref}
+                      onThemeChange={setThemePref}
                       funnelConfig={funnelConfig}
                       onSaveConfig={handleSaveStoreSettings}
                       payoutSecurity={payoutSecurity}
