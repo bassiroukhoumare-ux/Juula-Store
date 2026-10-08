@@ -989,6 +989,7 @@ export default function JuulaStoreApp() {
         onRecharged={handleRecharged}
         currentPlan={storeProfile.plan || 'FREE'}
         planExpiresAt={storeProfile.planExpiresAt}
+        defaultCurrency={storeProfile.displayCurrency ?? 'XOF'}
       />
     </div>
   );

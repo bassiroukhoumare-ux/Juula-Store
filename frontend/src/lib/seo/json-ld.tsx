@@ -7,8 +7,21 @@ import type { FunnelPageConfig } from '@/types/juula';
 
 type Json = Record<string, unknown>;
 
+/**
+ * Several entities go out as ONE object with a shared @context and an @graph:
+ * a top-level array is valid JSON-LD, but some readers (browser extensions,
+ * scrapers) assume `data['@context']` exists and crash on it.
+ */
+export function toJsonLdDocument(data: Json | Json[]): Json {
+  if (!Array.isArray(data)) return data;
+  return {
+    '@context': 'https://schema.org',
+    '@graph': data.map(({ '@context': _ctx, ...rest }) => rest),
+  };
+}
+
 export function JsonLd({ data }: { data: Json | Json[] }) {
-  const json = JSON.stringify(data).replace(/</g, '\\u003c');
+  const json = JSON.stringify(toJsonLdDocument(data)).replace(/</g, '\\u003c');
   return createElement('script', {
     type: 'application/ld+json',
     dangerouslySetInnerHTML: { __html: json },

@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { FunnelPageConfig } from '@/types/juula';
-import { JsonLd, isoCurrency, productLd, storeLd } from './json-ld';
+import { JsonLd, isoCurrency, platformLd, productLd, storeLd, toJsonLdDocument } from './json-ld';
 
 const config = (over: Partial<FunnelPageConfig> = {}) =>
   ({
@@ -26,6 +26,27 @@ describe('JsonLd', () => {
     expect(html.match(/<\/script>/g)).toHaveLength(1);
     const json = html.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '');
     expect(JSON.parse(json).name).toBe(config().productTitle);
+  });
+});
+
+describe('toJsonLdDocument', () => {
+  it('wraps several entities in one @context + @graph object', () => {
+    const doc = toJsonLdDocument(platformLd());
+    expect(doc['@context']).toBe('https://schema.org');
+    const graph = doc['@graph'] as Record<string, unknown>[];
+    expect(graph.map((e) => e['@type'])).toEqual([
+      'Organization',
+      'WebSite',
+      'SoftwareApplication',
+    ]);
+    expect(graph.every((e) => !('@context' in e))).toBe(true);
+  });
+
+  it('keeps a single entity as is', () => {
+    expect(toJsonLdDocument({ '@context': 'https://schema.org', name: 'x' })).toEqual({
+      '@context': 'https://schema.org',
+      name: 'x',
+    });
   });
 });
 

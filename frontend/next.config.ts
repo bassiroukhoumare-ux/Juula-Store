@@ -2,18 +2,24 @@ import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
 
 // Static security headers applied to every response.
-// Set via next.config.ts (not middleware.ts) so Vercel's edge can serve them
+// Set via next.config.ts (not the proxy) so Vercel's edge can serve them
 // from the CDN cache without invoking a function — zero per-request latency.
 //
 // CSP: a baseline policy that blocks the classic injection vectors (<base>
-// hijacking, plugins, clickjacking, mixed content) without restricting
-// script origins — merchant storefronts load their own Facebook/TikTok pixels
-// and the Moneriz checkout, which a strict script-src would break.
+// hijacking, plugins, clickjacking) without restricting script origins —
+// merchant storefronts load their own Facebook/TikTok pixels and the Moneriz
+// checkout, which a strict script-src would break.
+//
+// HTTPS-only headers (HSTS, upgrade-insecure-requests) are sent on Vercel
+// deployments only: Safari applies upgrade-insecure-requests to
+// http://localhost too (Chrome exempts it), so locally every stylesheet and
+// script was requested over https:// and the site rendered unstyled.
+const httpsOnly = process.env.VERCEL === '1' || process.env.FORCE_HTTPS === '1';
+
 const securityHeaders = [
-  {
-    key: 'Strict-Transport-Security',
-    value: 'max-age=63072000; includeSubDomains; preload',
-  },
+  ...(httpsOnly
+    ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' }]
+    : []),
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -24,7 +30,7 @@ const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
   {
     key: 'Content-Security-Policy',
-    value: "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests",
+    value: `base-uri 'self'; object-src 'none'; frame-ancestors 'none'${httpsOnly ? '; upgrade-insecure-requests' : ''}`,
   },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
 ];

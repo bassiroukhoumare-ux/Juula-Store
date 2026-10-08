@@ -412,8 +412,13 @@ model StoreSubscription {
   storeId           String
   userId            String
   plan              String    @default("PRO") // PRO
-  amount            Int       @default(3900) // 3 900 FCFA / mois
+  amount            Int       @default(3900) // charged in FCFA (term price)
   currency          String    @default("FCFA")
+  /// Term bought: 1, 3, 6 or 12 months (activation extends by this many months).
+  months            Int       @default(1)
+  /// Currency the merchant was viewing prices in (XOF | EUR | USD); the
+  /// payment itself is always charged in FCFA.
+  displayCurrency   String    @default("XOF")
   status            String    @default("pending") // pending | active | expired
   /// moneriz = paid online · manual = granted from /adminom (offered, cash…)
   source            String    @default("moneriz")

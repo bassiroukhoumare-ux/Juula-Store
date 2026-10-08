@@ -22,6 +22,7 @@ import {
 import { displayFont as display } from '@/app/fonts';
 import { SiteHeader } from '@/components/site/SiteHeader';
 import { JsonLd, platformLd } from '@/lib/seo/json-ld';
+import { AccountDeletedNotice } from '@/components/site/AccountDeletedNotice';
 import { JuulaLogo } from '@/components/brand/JuulaLogo';
 import { HeroNetwork, JuulaMark } from '@/components/landing/HeroNetwork';
 import { IntegrationsFan } from '@/components/landing/IntegrationsFan';
@@ -144,6 +145,7 @@ export default function LandingPage() {
       className={`${display.className} min-h-screen bg-[#EDEFF3] text-[#201D1D] overflow-x-hidden`}
     >
       <JsonLd data={platformLd()} />
+      <AccountDeletedNotice />
       {/* Without JS, never leave revealed content invisible. */}
       <noscript>
         <style>

@@ -1,6 +1,5 @@
 'use client';
 
-import { Dropdown } from '@/components/ui/Dropdown';
 import { FilterBar } from '@/components/ui/FilterBar';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -14,6 +13,10 @@ import {
   Volume2,
   Tag,
   Handshake,
+  BadgePlus,
+  Truck,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { OrderLead, OrderStatus } from '@/types/juula';
 import { formatFCFA } from '@/lib/orderUtils';
@@ -42,6 +45,87 @@ function paymentKind(o: OrderLead): 'online' | 'cod' | 'whatsapp' | 'direct' {
   if (o.paymentType === 'whatsapp') return 'whatsapp';
   if (o.paymentType === 'direct') return 'direct';
   return 'cod';
+}
+
+const STATUS_OPTIONS: {
+  value: OrderStatus;
+  label: string;
+  icon: React.ReactNode;
+  active: string;
+}[] = [
+  {
+    value: 'new',
+    label: 'Nouvelle',
+    icon: <BadgePlus className="w-[18px] h-[18px]" strokeWidth={2.25} />,
+    active: 'border-[#235BF7] bg-[#EEF3FF] text-[#235BF7]',
+  },
+  {
+    value: 'confirmed',
+    label: 'En route',
+    icon: <Truck className="w-4 h-4" />,
+    active: 'border-amber-500 bg-amber-50 text-amber-800',
+  },
+  {
+    value: 'delivered',
+    label: 'Livrée & payée',
+    icon: <CheckCircle2 className="w-4 h-4" />,
+    active: 'border-emerald-600 bg-emerald-50 text-emerald-800',
+  },
+  {
+    value: 'cancelled',
+    label: 'Annulée',
+    icon: <XCircle className="w-4 h-4" />,
+    active: 'border-rose-500 bg-rose-50 text-rose-700',
+  },
+];
+
+/** Order status as 4 big tap targets (no dropdown to clip or mis-tap). */
+function StatusPicker({
+  value,
+  onChange,
+}: {
+  value: OrderStatus;
+  onChange: (status: OrderStatus) => void;
+}) {
+  return (
+    <div className="pt-1">
+      <p className="mb-2 text-[13px] font-semibold text-[#7A808C]">Statut de la commande</p>
+      <div
+        role="radiogroup"
+        aria-label="Statut de la commande"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+      >
+        {STATUS_OPTIONS.map((o) => {
+          const on = o.value === value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => !on && onChange(o.value)}
+              className={`min-h-12 px-3 rounded-xl border-2 flex items-center justify-center gap-2 text-[14px] font-bold text-center leading-tight transition-colors cursor-pointer ${
+                on
+                  ? o.active
+                  : 'border-[#ECEFF4] bg-white text-[#3F4654] hover:border-[#BFD0FD] hover:bg-[#F6F7F9]'
+              }`}
+            >
+              <span className="relative shrink-0">
+                {o.icon}
+                {on && o.value === 'new' && (
+                  <span className="absolute -top-0.5 -right-0.5 flex w-2 h-2" aria-hidden="true">
+                    <span className="absolute inset-0 rounded-full bg-[#235BF7] opacity-60 motion-safe:animate-ping" />
+                    <span className="relative w-2 h-2 rounded-full bg-[#235BF7] ring-2 ring-[#EEF3FF]" />
+                  </span>
+                )}
+              </span>
+              <span>{o.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export const KanbanView: React.FC<KanbanViewProps> = ({
@@ -468,20 +552,11 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                         </a>
                       </div>
 
-                      {/* Changement rapide de statut */}
-                      <div className="pt-1">
-                        <Dropdown
-                          label="Statut de la commande"
-                          value={order.status as OrderStatus}
-                          onChange={(status) => handleMoveStatus(order.id, status)}
-                          options={[
-                            { value: 'new', label: 'Nouvelle demande' },
-                            { value: 'confirmed', label: 'Confirmée (en route)' },
-                            { value: 'delivered', label: 'Livrée & payée' },
-                            { value: 'cancelled', label: 'Annulée' },
-                          ]}
-                        />
-                      </div>
+                      {/* Changement rapide de statut : 4 gros boutons, un seul toucher */}
+                      <StatusPicker
+                        value={order.status as OrderStatus}
+                        onChange={(status) => handleMoveStatus(order.id, status)}
+                      />
                     </div>
                   )}
                 </div>

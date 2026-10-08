@@ -1,4 +1,4 @@
-// Juula Store — Pro Subscription Service (3 900 FCFA / month)
+// Juula Store — subscription checkout: 1, 3, 6 or 12 months, paid once in FCFA.
 import { invalidateStorefront } from '@/lib/server/store/public-cache';
 import 'server-only';
 import { prisma } from '@/lib/server/prisma';
@@ -8,7 +8,13 @@ import {
   getMonerizConfig,
   MonerizApiError,
 } from '@/lib/server/payments/moneriz';
-import { PRO_PLAN_PRICE_FCFA, isStorePro } from '@/lib/store/plans';
+import {
+  addMonths,
+  isStorePro,
+  subscriptionTerm,
+  type PriceCurrency,
+  type SubscriptionMonths,
+} from '@/lib/store/plans';
 import { log } from '@/lib/server/observability/log';
 import { safeAfter, sendProSubscriptionActivatedEmail } from '@/lib/server/store/notify';
 
@@ -60,7 +66,18 @@ export type CreateSubscriptionError = {
 export async function createProSubscriptionSession(
   userId: string,
   returnBaseUrl: string,
+  choice: { months: SubscriptionMonths; displayCurrency: PriceCurrency } = {
+    months: 1,
+    displayCurrency: 'XOF',
+  },
 ): Promise<CreateSubscriptionResult | CreateSubscriptionError> {
+  // The amount always comes from the server-side price list, never the client.
+  const term = subscriptionTerm(choice.months);
+  if (!term) {
+    return { ok: false, error: 'PROVIDER_ERROR', message: 'Durée d’abonnement invalide.' };
+  }
+  const amount = term.priceXof;
+
   if (!isMonerizConfigured()) {
     return {
       ok: false,
@@ -81,8 +98,10 @@ export async function createProSubscriptionSession(
       storeId: store.id,
       userId,
       plan: 'PRO',
-      amount: PRO_PLAN_PRICE_FCFA,
+      amount,
       currency: 'FCFA',
+      months: term.months,
+      displayCurrency: choice.displayCurrency,
       status: 'pending',
     },
   });
@@ -93,9 +112,9 @@ export async function createProSubscriptionSession(
 
   try {
     const session = await createMonerizCheckoutSession({
-      amount: PRO_PLAN_PRICE_FCFA,
+      amount,
       currency: 'XOF',
-      title: 'Abonnement Juula — 1 mois (3 900 FCFA)',
+      title: `Abonnement Juula — ${term.label} (${amount.toLocaleString('fr-FR').replace(/\s/g, ' ')} FCFA)`,
       reference: sub.id,
       country: 'SN',
       integrationMode: 'redirect',
@@ -108,6 +127,7 @@ export async function createProSubscriptionSession(
         storeId: store.id,
         userId,
         plan: 'PRO',
+        months: term.months,
       },
       idempotencyKey: `sub-${sub.id}-${Date.now()}`,
     });
@@ -122,7 +142,7 @@ export async function createProSubscriptionSession(
       checkoutUrl: session.checkoutUrl,
       sessionId: session.id,
       subscriptionId: sub.id,
-      amount: PRO_PLAN_PRICE_FCFA,
+      amount,
     };
   } catch (err) {
     log.error('store.subscription.create_failed', {
@@ -151,8 +171,13 @@ export async function verifyStoreSubscription(
   });
 
   if (!sub) return { status: 'not_found' };
-  if (sub.status === 'active' && sub.expiresAt && sub.expiresAt > new Date()) {
-    return { status: 'active', plan: 'PRO', expiresAt: sub.expiresAt };
+  // A payment activates its subscription once. An already-activated one is
+  // only reported — never extended again (else re-verifying an old, expired
+  // subscription would renew the plan for free).
+  if (sub.status !== 'pending') {
+    return sub.status === 'active' && sub.expiresAt && sub.expiresAt > new Date()
+      ? { status: 'active', plan: 'PRO', expiresAt: sub.expiresAt }
+      : { status: 'not_found' };
   }
   if (!sub.providerSessionId || !isMonerizConfigured()) return { status: 'unavailable' };
 
@@ -176,37 +201,43 @@ export async function verifyStoreSubscription(
     return { status: 'mismatch' };
   }
 
-  // 30 days active duration
+  // Active for the months bought, added after any time still left. The
+  // pending → active claim is atomic: when the webhook and the merchant's
+  // return page verify at the same time, only one of them extends the plan.
   const startsAt = new Date();
-  const currentStore = await prisma.store.findUnique({
-    where: { id: sub.storeId },
-    select: { planExpiresAt: true },
-  });
-  // If store already has active days left, extend by 30 days, else start from now
-  const baseDate =
-    currentStore?.planExpiresAt && currentStore.planExpiresAt > startsAt
-      ? currentStore.planExpiresAt
-      : startsAt;
-  const expiresAt = new Date(baseDate.getTime() + 30 * 24 * 3600_000);
-
-  await prisma.$transaction([
-    prisma.storeSubscription.update({
-      where: { id: sub.id },
-      data: {
-        status: 'active',
-        startsAt,
-        expiresAt,
-        providerPaymentId: session.paymentId,
-      },
-    }),
-    prisma.store.update({
+  const expiresAt = await prisma.$transaction(async (tx) => {
+    const claimed = await tx.storeSubscription.updateMany({
+      where: { id: sub.id, status: 'pending' },
+      data: { status: 'active', startsAt, providerPaymentId: session.paymentId },
+    });
+    if (claimed.count !== 1) return null;
+    const currentStore = await tx.store.findUnique({
       where: { id: sub.storeId },
-      data: {
-        plan: 'PRO',
-        planExpiresAt: expiresAt,
-      },
-    }),
-  ]);
+      select: { planExpiresAt: true },
+    });
+    const baseDate =
+      currentStore?.planExpiresAt && currentStore.planExpiresAt > startsAt
+        ? currentStore.planExpiresAt
+        : startsAt;
+    const until = addMonths(baseDate, sub.months);
+    await tx.storeSubscription.update({ where: { id: sub.id }, data: { expiresAt: until } });
+    await tx.store.update({
+      where: { id: sub.storeId },
+      data: { plan: 'PRO', planExpiresAt: until },
+    });
+    return until;
+  });
+
+  if (!expiresAt) {
+    // Another request activated it a moment ago: report its result.
+    const done = await prisma.storeSubscription.findUnique({
+      where: { id: sub.id },
+      select: { expiresAt: true },
+    });
+    return done?.expiresAt
+      ? { status: 'active', plan: 'PRO', expiresAt: done.expiresAt }
+      : { status: 'pending' };
+  }
 
   // The shop goes online at once (cached pages refreshed).
   invalidateStorefront({ userId: sub.userId });
@@ -224,7 +255,7 @@ export async function verifyStoreSubscription(
           userId: sub.userId,
           type: 'plan.pro_activated',
           title: 'Abonnement Juula activé',
-          body: 'Votre boutique et vos pages produits peuvent être en ligne pendant 30 jours.',
+          body: `Votre boutique et vos pages produits sont en ligne pour ${sub.months === 12 ? '1 an' : `${sub.months} mois`}.`,
           dedupeKey: `pro-activated-${sub.id}`,
           data: { plan: 'PRO', expiresAt: expiresAt.toISOString() },
         },
@@ -232,8 +263,8 @@ export async function verifyStoreSubscription(
       })
       .catch((err) => log.error('store.subscription.notif_failed', { error: String(err) }));
 
-    await sendProSubscriptionActivatedEmail(sub.userId, expiresAt).catch((err) =>
-      log.error('store.subscription.email_failed', { error: String(err) }),
+    await sendProSubscriptionActivatedEmail(sub.userId, expiresAt, sub.months, sub.amount).catch(
+      (err) => log.error('store.subscription.email_failed', { error: String(err) }),
     );
   });
 

@@ -745,6 +745,33 @@ export async function sendPasswordResetEmail(
   return send(to, mail.subject, mail.html, mail.text, 'password_reset');
 }
 
+export function accountDeletionCodeEmailTemplate(code: string, ttlMin: number): RenderedEmail {
+  return {
+    subject: `Code de suppression de votre compte Juula : ${code}`,
+    html: renderEmail({
+      preheader: `Votre code pour supprimer définitivement votre compte Juula est ${code}. Valable ${ttlMin} minutes.`,
+      label: 'Sécurité & Accès',
+      badge: { text: 'Suppression de compte', tone: 'red' },
+      title: 'Confirmez la suppression de votre compte',
+      intro:
+        'Vous avez demandé la suppression définitive de votre compte Juula. Saisissez ce code pour la confirmer :',
+      codeBlock: { code, caption: `Ce code expire dans ${ttlMin} minutes.` },
+      note: "Si vous n'êtes pas à l'origine de cette demande, ne communiquez ce code à personne et changez votre mot de passe : votre compte reste intact tant que le code n'est pas saisi.",
+    }),
+    text: `Code de suppression de votre compte Juula : ${code}\nCe code expire dans ${ttlMin} minutes.\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail et ne communiquez ce code à personne.`,
+  };
+}
+
+export async function sendAccountDeletionCodeEmail(
+  to: string,
+  code: string,
+  ttlMin: number,
+): Promise<boolean> {
+  if (!getMailer()) return false;
+  const mail = accountDeletionCodeEmailTemplate(code, ttlMin);
+  return send(to, mail.subject, mail.html, mail.text, 'account_deletion_code');
+}
+
 export async function sendDirectEmail(input: {
   to: string;
   subject: string;
@@ -793,6 +820,8 @@ export async function sendWithdrawalFailedEmail(withdrawalId: string): Promise<v
 export async function sendProSubscriptionActivatedEmail(
   userId: string,
   expiresAt: Date,
+  months = 1,
+  amountXof = 3900,
 ): Promise<void> {
   if (!getMailer()) return;
   const user = await prisma.user.findUnique({
@@ -819,7 +848,7 @@ export async function sendProSubscriptionActivatedEmail(
         </div>
         <div style="padding: 28px 24px; color: ${C.text}; font-size: 14px; line-height: 1.6;">
           <p style="margin-top: 0;">${greeting}</p>
-          <p>Nous vous confirmons l'activation de votre <strong>abonnement Juula</strong> (3 900 FCFA/mois).</p>
+          <p>Nous vous confirmons l'activation de votre <strong>abonnement Juula</strong> : ${months === 12 ? '1 an' : `${months} mois`} (${amountXof.toLocaleString('fr-FR').replace(/\s/g, ' ')} FCFA).</p>
           
           <div style="background: ${C.blueSoft}; border-left: 4px solid ${C.blue}; padding: 14px 16px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0; color: ${C.blue}; font-weight: bold; font-size: 13px;">Ce que comprend votre abonnement :</p>

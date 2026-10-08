@@ -1,17 +1,17 @@
 // @vitest-environment node
-// Edge session routing (middleware.ts): installed-app auto-login, protected
+// Session routing (proxy.ts): installed-app auto-login, protected
 // pages, silent refresh bounce and loop guards.
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 const SECRET = 'x'.repeat(48);
-let middleware: typeof import('../../../../middleware').middleware;
+let middleware: typeof import('../../../proxy').proxy;
 
 beforeAll(async () => {
   vi.stubEnv('JWT_SECRET', SECRET);
   vi.stubEnv('AUTH_PROTECTED_PREFIXES', '');
-  ({ middleware } = await import('../../../../middleware'));
+  ({ proxy: middleware } = await import('../../../proxy'));
 });
 
 const access = (type = 'access', exp = '15m', secret = SECRET) =>

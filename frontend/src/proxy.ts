@@ -23,7 +23,8 @@ import { platformOrigin, subdomainFromHost } from '@/lib/store/subdomain';
 // rewritten to /boutique/<shop>/<path> (storefront home or product page).
 // Platform pages (dashboard, login…) always live on www and are redirected.
 //
-// Edge runtime: no DB, no bcrypt, no Prisma. We only verify the access JWT
+// Runs before every page (Next 16 "proxy", formerly middleware): no DB, no
+// bcrypt, no Prisma. We only verify the access JWT
 // signature/expiry and build redirects — the heavy lifting happens in
 // /api/auth/refresh-and-return (runtime=nodejs).
 
@@ -88,7 +89,7 @@ function storefront(req: NextRequest, shop: string): NextResponse {
   return NextResponse.rewrite(url);
 }
 
-export async function middleware(req: NextRequest): Promise<NextResponse> {
+export async function proxy(req: NextRequest): Promise<NextResponse> {
   const shop = subdomainFromHost(req.headers.get('host'));
   if (shop) return storefront(req, shop);
 

@@ -1,3 +1,5 @@
+import { XOF_PER_EUR } from '@/lib/money';
+
 // Juula Store — Business Model & Pricing Plans
 // Création gratuite ; abonnement 3 900 FCFA/mois pour être en ligne ;
 // paiement en ligne JuulaPay optionnel, 7,5 % par paiement.
@@ -68,6 +70,71 @@ export const JUULA_PLANS: Record<StorePlanType, StorePlanConfig> = {
 };
 
 export const PRO_PLAN_PRICE_FCFA = 3900;
+
+// ─────────────────────────────────────────────────────────────────────────
+// Subscription terms: 1, 3, 6 or 12 months, paid once (no auto-renewal).
+// Prices are in FCFA (XOF) — the only currency the payment provider charges.
+// EUR / USD are display conversions for merchants abroad.
+// ─────────────────────────────────────────────────────────────────────────
+export type SubscriptionMonths = 1 | 3 | 6 | 12;
+
+export interface SubscriptionTerm {
+  months: SubscriptionMonths;
+  label: string;
+  priceXof: number;
+}
+
+export const SUBSCRIPTION_TERMS: readonly SubscriptionTerm[] = [
+  { months: 1, label: '1 mois', priceXof: 3900 },
+  { months: 3, label: '3 mois', priceXof: 11000 },
+  { months: 6, label: '6 mois', priceXof: 22000 },
+  { months: 12, label: '1 an', priceXof: 45000 },
+];
+
+export function subscriptionTerm(months: number): SubscriptionTerm | null {
+  return SUBSCRIPTION_TERMS.find((t) => t.months === months) ?? null;
+}
+
+/** Saving vs paying month by month, in whole percent (0 for 1 month). */
+export function termSavingsPercent(term: SubscriptionTerm): number {
+  const full = PRO_PLAN_PRICE_FCFA * term.months;
+  return Math.max(0, Math.round((1 - term.priceXof / full) * 100));
+}
+
+/** Price per month of a term, rounded to the franc. */
+export function termMonthlyXof(term: SubscriptionTerm): number {
+  return Math.round(term.priceXof / term.months);
+}
+
+export type PriceCurrency = 'XOF' | 'EUR' | 'USD';
+
+/**
+ * Display price in another currency, rounded the way a price tag would be:
+ * euros end in ,99 (5,95 → 5,99) and dollars go to the next half dollar
+ * (18,33 → 18,50). FCFA stays exact.
+ */
+export function displayPrice(xof: number, currency: PriceCurrency, xofPerUsd: number): number {
+  if (currency === 'EUR') {
+    const v = xof / XOF_PER_EUR; // fixed peg: 1 € = 655,957 FCFA
+    return Math.max(0.99, Math.ceil(v) - 0.01);
+  }
+  if (currency === 'USD') {
+    if (!(xofPerUsd > 0)) return 0;
+    return Math.ceil((xof / xofPerUsd) * 2) / 2;
+  }
+  return xof;
+}
+
+/** Adds calendar months (31 Jan + 1 month → 28/29 Feb, never overflows). */
+export function addMonths(from: Date, months: number): Date {
+  const d = new Date(from.getTime());
+  const day = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(day, last));
+  return d;
+}
 
 export function isStorePro(
   store: { plan?: string | null; planExpiresAt?: Date | string | null } | null | undefined,
