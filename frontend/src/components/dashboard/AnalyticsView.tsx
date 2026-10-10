@@ -2,7 +2,17 @@
 
 import { SkeletonStats } from '@/components/ui/Skeleton';
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Package, Radio, Settings2 } from 'lucide-react';
+import {
+  CheckCircle2,
+  MousePointerClick,
+  Package,
+  Radio,
+  Settings2,
+  ShoppingBag,
+  TrendingUp,
+  Truck,
+  Users,
+} from 'lucide-react';
 import type { OrderLead } from '@/types/juula';
 import { formatFCFA } from '@/lib/orderUtils';
 import type { PeriodRange } from '@/lib/store/period';
@@ -55,13 +65,69 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ range, orders, onO
   }
 
   const t = data.totals;
-  const funnel = [
-    { label: 'Visiteurs', value: t.visitors },
-    { label: 'Clics « Commander »', value: t.checkoutOpens },
-    { label: 'Commandes', value: t.orders },
-    { label: 'Livrées', value: delivered },
+  const funnelSteps = [
+    {
+      id: 'visitors',
+      stepNum: '01',
+      label: 'Visiteurs uniques',
+      shortLabel: 'Visiteurs',
+      value: t.visitors,
+      icon: Users,
+      iconBg: 'bg-[#EEF3FF] text-[#235BF7]',
+      barColor: 'bg-[#235BF7]',
+      desc: 'Trafic de la boutique',
+      retentionOfTotal: 100,
+      conversionFromPrev: null,
+    },
+    {
+      id: 'checkout',
+      stepNum: '02',
+      label: 'Clics « Commander »',
+      shortLabel: 'Clics commande',
+      value: t.checkoutOpens,
+      icon: MousePointerClick,
+      iconBg: 'bg-sky-50 text-sky-600',
+      barColor: 'bg-sky-500',
+      desc: "Intention d'achat",
+      retentionOfTotal:
+        t.visitors > 0 ? Math.min(100, Math.round((t.checkoutOpens / t.visitors) * 100)) : 0,
+      conversionFromPrev: t.visitors > 0 ? Math.round((t.checkoutOpens / t.visitors) * 100) : null,
+    },
+    {
+      id: 'orders',
+      stepNum: '03',
+      label: 'Commandes passées',
+      shortLabel: 'Commandes',
+      value: t.orders,
+      icon: ShoppingBag,
+      iconBg: 'bg-amber-50 text-amber-600',
+      barColor: 'bg-amber-500',
+      desc: 'Paniers validés',
+      retentionOfTotal:
+        t.visitors > 0 ? Math.min(100, Math.round((t.orders / t.visitors) * 100)) : 0,
+      conversionFromPrev:
+        t.checkoutOpens > 0
+          ? Math.round((t.orders / t.checkoutOpens) * 100)
+          : t.visitors > 0
+            ? Math.round((t.orders / t.visitors) * 100)
+            : null,
+    },
+    {
+      id: 'delivered',
+      stepNum: '04',
+      label: 'Commandes livrées',
+      shortLabel: 'Livrées',
+      value: delivered,
+      icon: Truck,
+      iconBg: 'bg-emerald-50 text-emerald-600',
+      barColor: 'bg-emerald-500',
+      desc: 'Acheminées au client',
+      retentionOfTotal:
+        t.visitors > 0 ? Math.min(100, Math.round((delivered / t.visitors) * 100)) : 0,
+      conversionFromPrev: t.orders > 0 ? Math.round((delivered / t.orders) * 100) : null,
+    },
   ];
-  const funnelMax = Math.max(1, ...funnel.map((f) => f.value));
+  const funnelMax = Math.max(1, ...funnelSteps.map((f) => f.value));
   const products = [...data.products].sort((a, b) => b.revenue - a.revenue || b.views - a.views);
 
   return (
@@ -91,28 +157,77 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ range, orders, onO
         />
       </div>
 
-      {/* Funnel */}
-      <div className="p-4 sm:p-5 rounded-[22px] bg-white border border-[#ECEFF4] space-y-3">
-        <h3 className="text-[15px] font-extrabold text-[#201D1D]">Parcours d’achat</h3>
-        <div className="space-y-2.5">
-          {funnel.map((step, i) => {
-            const prev = i > 0 ? funnel[i - 1]!.value : 0;
-            const rate = i > 0 && prev > 0 ? Math.round((step.value / prev) * 100) : null;
+      {/* Funnel - Parcours d'achat */}
+      <div className="p-5 sm:p-6 rounded-[28px] bg-white border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-6">
+        {/* En-tête avec métrique globale */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#F1F5F9]">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center shrink-0">
+                <TrendingUp className="w-4 h-4" />
+              </span>
+              <h3 className="text-base sm:text-lg font-black text-[#201D1D] tracking-tight">
+                Entonnoir du Parcours d’Achat
+              </h3>
+            </div>
+            <p className="mt-1 text-xs sm:text-[13px] text-[#7A808C]">
+              Déperdition et taux de conversion à chaque étape, du premier visiteur jusqu’à la
+              livraison.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="px-3.5 py-1.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center gap-2">
+              <span className="text-[11px] font-bold text-[#7A808C]">Conversion globale :</span>
+              <span className="text-xs font-black text-[#235BF7] tabular-nums">
+                {t.visitors > 0 ? Math.round((t.orders / t.visitors) * 100) : 0}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Progression détaillée du tunnel */}
+        <div className="space-y-4 pt-1">
+          {funnelSteps.map((step, idx) => {
+            const Icon = step.icon;
+            const barWidth = funnelMax > 0 ? Math.min(100, (step.value / funnelMax) * 100) : 0;
             return (
-              <div key={step.label} className="space-y-1">
-                <div className="flex items-center justify-between text-[13px]">
-                  <span className="font-semibold text-[#201D1D]">{step.label}</span>
-                  <span className="tabular-nums text-[#7A808C]">
-                    <strong className="text-[#201D1D]">{step.value}</strong>
-                    {rate !== null && (
-                      <span className="ml-1.5 text-xs">({rate}% de l’étape précédente)</span>
+              <div key={`bar-${step.id}`} className="space-y-2">
+                <div className="flex items-center justify-between text-xs sm:text-[13px]">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl ${step.iconBg} flex items-center justify-center shrink-0`}
+                    >
+                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </span>
+                    <div>
+                      <span className="font-extrabold text-[#201D1D] block sm:inline">
+                        {step.label}
+                      </span>
+                      <span className="text-[11px] text-[#7A808C] sm:ml-2">· {step.desc}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 sm:gap-3 tabular-nums shrink-0">
+                    <strong className="text-sm sm:text-base font-black text-[#201D1D]">
+                      {step.value}
+                    </strong>
+                    {idx > 0 && step.conversionFromPrev !== null ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F1F5F9] text-[#475569]">
+                        {step.conversionFromPrev}% de l’étape précédente
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F1F5F9] text-[#7A808C]">
+                        100% (Point de départ)
+                      </span>
                     )}
-                  </span>
+                  </div>
                 </div>
-                <div className="h-2.5 rounded-full bg-[#F1F3F6] overflow-hidden">
+
+                <div className="h-3 rounded-full bg-[#F1F3F6] overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#235BF7]"
-                    style={{ width: `${(step.value / funnelMax) * 100}%`, opacity: 1 - i * 0.18 }}
+                    className={`h-full rounded-full ${step.barColor} transition-all duration-500`}
+                    style={{ width: `${barWidth}%` }}
                   />
                 </div>
               </div>

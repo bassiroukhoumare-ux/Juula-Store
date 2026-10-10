@@ -15,6 +15,7 @@ import {
 } from '@/lib/store/plans';
 import { formatNumber } from '@/lib/orderUtils';
 import { api, ApiError } from '@/lib/api';
+import { MonerizCheckoutModal } from '@/components/payments/MonerizCheckoutModal';
 
 interface RechargeModalProps {
   isOpen: boolean;
@@ -63,6 +64,9 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
   const [xofPerUsd, setXofPerUsd] = useState(USD_FALLBACK);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [monerizSession, setMonerizSession] =
+    useState<React.ComponentProps<typeof MonerizCheckoutModal>['session']>(null);
+  const [isMonerizModalOpen, setIsMonerizModalOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) setCurrency(defaultCurrency);
@@ -106,7 +110,13 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
     setIsProcessing(true);
     setErrorMessage(null);
     try {
-      const data = await api<{ checkoutUrl?: string }>('/api/store/subscription', {
+      const data = await api<{
+        checkoutUrl?: string;
+        embedUrl?: string | null;
+        integrationMode?: 'iframe' | 'redirect';
+        sessionId?: string;
+        subscriptionId?: string;
+      }>('/api/store/subscription', {
         method: 'POST',
         body: { months, displayCurrency: currency },
       });
@@ -115,8 +125,23 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
         setIsProcessing(false);
         return;
       }
-      // Moneriz secure checkout (Wave / Orange Money / carte).
-      window.location.href = data.checkoutUrl;
+
+      if (data.integrationMode === 'redirect' || !data.embedUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+
+      setMonerizSession({
+        id: data.sessionId || `sub-${Date.now()}`,
+        checkoutUrl: data.checkoutUrl,
+        embedUrl: data.embedUrl,
+        status: 'open',
+        amount: term.priceXof,
+        currency: 'XOF',
+        reference: data.subscriptionId || 'Abonnement Juula PRO',
+      });
+      setIsMonerizModalOpen(true);
+      setIsProcessing(false);
     } catch (err) {
       setErrorMessage(
         err instanceof ApiError
@@ -327,6 +352,16 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({
           passent hors ligne : rien n’est supprimé.
         </p>
       </div>
+
+      <MonerizCheckoutModal
+        isOpen={isMonerizModalOpen}
+        onClose={() => setIsMonerizModalOpen(false)}
+        session={monerizSession}
+        onPaymentSuccess={() => {
+          setIsMonerizModalOpen(false);
+          window.location.href = '/dashboard?sub_status=success';
+        }}
+      />
     </div>
   );
 };

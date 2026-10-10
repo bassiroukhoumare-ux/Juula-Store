@@ -182,14 +182,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
     ];
   }, [recentOrders]);
 
-  // Dynamic segmentation
-  const codCount = recentOrders.filter((o) => o.paymentType === 'cod').length;
-  const mobileMoneyCount = recentOrders.filter((o) => o.paymentType !== 'cod').length;
   const totalOrdersCount = recentOrders.length;
-  const uniqueCustomersCount = new Set(recentOrders.map((o) => o.phone || o.customerName)).size;
-  const codPercent = totalOrdersCount > 0 ? Math.round((codCount / totalOrdersCount) * 100) : 0;
-  const mobileMoneyPercent =
-    totalOrdersCount > 0 ? Math.round((mobileMoneyCount / totalOrdersCount) * 100) : 0;
 
   // Dynamic delivery rate
   const deliveredCount = recentOrders.filter((o) => o.status === 'delivered').length;
@@ -366,391 +359,324 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* 2. MIDDLE GRID: TOTAL PROFIT CHART + CUSTOMERS SEGMENTATION */}
+      {/* 2. MAIN REVENUE & PROFIT CHART (FULL WIDTH RESPONSIVE) */}
       {/* ======================================================== */}
-      {(activeWidgets.profitChart ||
-        activeWidgets.segmentation ||
-        activeWidgets.activeDays ||
-        activeWidgets.deliveryRate ||
-        activeWidgets.aiAssistant) && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column (8 cols): Total Profit Spline Chart + Customers */}
-          {(activeWidgets.profitChart || activeWidgets.segmentation) && (
-            <div
-              className={`${
-                !activeWidgets.activeDays &&
-                !activeWidgets.deliveryRate &&
-                !activeWidgets.aiAssistant
-                  ? 'lg:col-span-12'
-                  : 'lg:col-span-8'
-              } space-y-6`}
-            >
-              {/* Main Chart Card */}
-              {activeWidgets.profitChart && (
-                <div className="bg-white rounded-[28px] p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <span className="text-base font-bold text-[#7A808C] block truncate">
-                        Bénéfice & Chiffre d'Affaires Total
-                      </span>
-                      {/* Strictly on a single line / whitespace-nowrap */}
-                      <div className="flex flex-wrap items-baseline gap-2.5 mt-1 whitespace-nowrap">
-                        <span className="text-3xl sm:text-4xl font-black text-[#201D1D] tracking-tight whitespace-nowrap">
-                          {formatFCFA(periodData.totalRevenue)}
-                        </span>
-                        <span
-                          className={`inline-flex items-center gap-1 text-sm font-bold whitespace-nowrap ${
-                            periodData.revenuePositive ? 'text-[#16A34A]' : 'text-[#DC2626]'
-                          }`}
+      {activeWidgets.profitChart && (
+        <div className="bg-white rounded-[28px] p-5 sm:p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="min-w-0">
+              <span className="text-base font-bold text-[#7A808C] block truncate">
+                Bénéfice & Chiffre d'Affaires Total
+              </span>
+              {/* Strictly on a single line / whitespace-nowrap */}
+              <div className="flex flex-wrap items-baseline gap-2.5 mt-1 whitespace-nowrap">
+                <span className="text-3xl sm:text-4xl font-black text-[#201D1D] tracking-tight whitespace-nowrap">
+                  {formatFCFA(periodData.totalRevenue)}
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1 text-sm font-bold whitespace-nowrap ${
+                    periodData.revenuePositive ? 'text-[#16A34A]' : 'text-[#DC2626]'
+                  }`}
+                >
+                  <span>{periodData.revenueChange}</span>
+                  <span className="text-[#94A3B8] font-normal">vs période préc.</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button className="p-1.5 text-[#94A3B8] hover:text-[#201D1D] rounded-lg">
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Real revenue curve for the selected period vs the previous one */}
+          <div className="pt-2">
+            <RevenueChart
+              orders={recentOrders}
+              previousOrders={previousOrders}
+              range={periodRange}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* 3. PERFORMANCE & ACTIVITY METRICS (RESPONSIVE GRID) */}
+      {/* ======================================================== */}
+      {(activeWidgets.activeDays || activeWidgets.deliveryRate || activeWidgets.aiAssistant) && (
+        <div
+          className={`grid grid-cols-1 gap-6 ${
+            activeWidgets.activeDays && activeWidgets.deliveryRate && activeWidgets.aiAssistant
+              ? 'md:grid-cols-2 lg:grid-cols-3'
+              : (activeWidgets.activeDays ? 1 : 0) +
+                    (activeWidgets.deliveryRate ? 1 : 0) +
+                    (activeWidgets.aiAssistant ? 1 : 0) ===
+                  2
+                ? 'md:grid-cols-2'
+                : 'grid-cols-1'
+          }`}
+        >
+          {/* Card 1: Most Day Active (Interactive bar chart with amounts) */}
+          {activeWidgets.activeDays && (
+            <div className="bg-white rounded-[28px] p-5 sm:p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col justify-between space-y-4 h-full">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[13px] font-bold text-[#7A808C] block">
+                      Journées les Plus Actives
+                    </span>
+                    <span className="text-xs text-[#94A3B8]">Volume d'encaissements par jour</span>
+                  </div>
+                  <button className="text-[#94A3B8] hover:text-[#201D1D] p-1">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Vertical Bars */}
+                <div className="pt-4">
+                  <div className="flex items-end justify-between h-40 px-1 sm:px-3 gap-1 sm:gap-2">
+                    {activeDaysList.map((item) => {
+                      const isSelected = selectedDay === item.day;
+                      return (
+                        <div
+                          key={item.day}
+                          className="flex-1 flex flex-col items-center gap-2 cursor-pointer group max-w-[42px]"
+                          onClick={() => setSelectedDay(item.day)}
                         >
-                          <span>{periodData.revenueChange}</span>
-                          <span className="text-[#94A3B8] font-normal">vs période préc.</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button className="p-1.5 text-[#94A3B8] hover:text-[#201D1D] rounded-lg">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Real revenue curve for the selected period vs the previous one */}
-                  <div className="pt-2">
-                    <RevenueChart
-                      orders={recentOrders}
-                      previousOrders={previousOrders}
-                      range={periodRange}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Customers Segmentation Card */}
-              {activeWidgets.segmentation && (
-                <div className="bg-white rounded-[28px] p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[13px] font-bold text-[#7A808C] block">
-                        Segmentation des Commandes & Clients
-                      </span>
-                      <span className="text-[13px] text-[#94A3B8]">
-                        {uniqueCustomersCount} client(s) unique(s) enregistré(s)
-                      </span>
-                    </div>
-                    <button className="p-1 text-[#94A3B8] hover:text-[#201D1D]">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="space-y-4 pt-1">
-                    {/* Segment 1 : COD Espèces */}
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-1 text-[13px]">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="w-2.5 h-2.5 rounded-md bg-[#235BF7] shadow-xs shrink-0" />
-                          <span className="font-bold text-[#201D1D] truncate">
-                            <span className="hidden sm:inline">Commandes </span>Cash on Delivery
-                            (COD)
+                          {isSelected && (
+                            <span className="text-[11px] sm:text-xs font-black text-[#235BF7] bg-[#EEF3FF] px-1 sm:px-1.5 py-0.5 rounded-md -mb-1 animate-pulse whitespace-nowrap shadow-xs">
+                              {item.value}
+                            </span>
+                          )}
+                          <div
+                            className={`w-full max-w-[32px] rounded-xl transition-all ${
+                              isSelected
+                                ? 'bg-[#235BF7] shadow-[0_4px_12px_rgba(30,96,248,0.3)] scale-105'
+                                : 'bg-[#F1F5F9] hover:bg-[#CBD5E1]'
+                            }`}
+                            style={{ height: `${item.height}px` }}
+                            title={`${item.full} : ${item.value}`}
+                          />
+                          <span
+                            className={`text-xs font-bold ${
+                              isSelected ? 'text-[#235BF7]' : 'text-[#94A3B8]'
+                            }`}
+                          >
+                            {item.day}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="tabular-nums font-black text-[#201D1D]">{codCount}</span>
-                          <span className="text-xs font-black bg-[#EEF3FF] text-[#235BF7] px-2 py-0.5 rounded-md">
-                            {codPercent}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-[#E2E8F0] h-2 sm:h-2.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[#235BF7] h-full rounded-full transition-all duration-700"
-                          style={{ width: `${codPercent}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Segment 2 : Mobile Money (paiement en ligne) */}
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-1 text-[13px]">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="w-2.5 h-2.5 rounded-md bg-[#10B981] shadow-xs shrink-0" />
-                          <span className="font-bold text-[#201D1D] truncate">
-                            <span className="hidden sm:inline">Paiements </span>Mobile Money
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-black text-[#201D1D] tabular-nums">
-                            {mobileMoneyCount}
-                          </span>
-                          <span className="text-xs font-black bg-[#ECFDF5] text-[#059669] px-2 py-0.5 rounded-md">
-                            {mobileMoneyPercent}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-[#E2E8F0] h-2 sm:h-2.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[#10B981] h-full rounded-full transition-all duration-700"
-                          style={{ width: `${mobileMoneyPercent}%` }}
-                        />
-                      </div>
-                    </div>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* Quick Summary Breakdown matching delivery card */}
+              <div className="pt-3 border-t border-[#F1F5F9]">
+                <div className="grid grid-cols-2 gap-2 text-left">
+                  <div className="bg-[#F8FAFC] rounded-2xl p-2.5 border border-[#E2E8F0]/70">
+                    <span className="text-xs font-bold text-[#7A808C] block uppercase tracking-wider">
+                      Jour Sélectionné
+                    </span>
+                    <span className="text-[15px] font-black text-[#235BF7] truncate block">
+                      {activeDaysList.find((d) => d.day === selectedDay)?.full ?? 'Mardi'}
+                    </span>
+                  </div>
+                  <div className="bg-[#F8FAFC] rounded-2xl p-2.5 border border-[#E2E8F0]/70">
+                    <span className="text-xs font-bold text-[#7A808C] block uppercase tracking-wider">
+                      Volume du jour
+                    </span>
+                    <span className="text-[15px] font-black text-[#201D1D] truncate block">
+                      {activeDaysList.find((d) => d.day === selectedDay)?.value ?? '0 FCFA'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Right Column (4 cols): Most Day Active, Dotted Arc Gauge, AI Assistant */}
-          {(activeWidgets.activeDays ||
-            activeWidgets.deliveryRate ||
-            activeWidgets.aiAssistant) && (
-            <div
-              className={`${
-                !activeWidgets.profitChart && !activeWidgets.segmentation
-                  ? 'lg:col-span-12'
-                  : 'lg:col-span-4'
-              } space-y-6`}
-            >
-              {/* Card 1: Most Day Active (Interactive bar chart with amounts) */}
-              {activeWidgets.activeDays && (
-                <div className="bg-white rounded-[28px] p-5 sm:p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[13px] font-bold text-[#7A808C] block">
-                        Journées les Plus Actives
-                      </span>
-                      <span className="text-xs text-[#94A3B8]">
-                        Volume d'encaissements par jour
-                      </span>
-                    </div>
-                    <button className="text-[#94A3B8] hover:text-[#201D1D] p-1">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                  </div>
+          {/* Card 2: Taux de Livraison Réussie */}
+          {activeWidgets.deliveryRate && (
+            <div className="bg-white rounded-[28px] p-5 sm:p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col justify-between space-y-3.5 text-center h-full">
+              <div className="flex items-center justify-between text-left">
+                <div>
+                  <span className="text-[13px] font-bold text-[#7A808C] block">
+                    Taux de Livraison Réussie
+                  </span>
+                  <span className="text-xs text-[#94A3B8]">Performance des expéditions</span>
+                </div>
+                <button className="text-[#94A3B8] hover:text-[#201D1D] p-1">
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </div>
 
-                  {/* Vertical Bars */}
-                  <div className="pt-2">
-                    <div className="flex items-end justify-between h-36 px-1 sm:px-2 gap-1 sm:gap-1.5">
-                      {activeDaysList.map((item) => {
-                        const isSelected = selectedDay === item.day;
-                        return (
-                          <div
-                            key={item.day}
-                            className="flex-1 flex flex-col items-center gap-2 cursor-pointer group max-w-[36px]"
-                            onClick={() => setSelectedDay(item.day)}
-                          >
-                            {isSelected && (
-                              <span className="text-[11px] sm:text-xs font-black text-[#235BF7] bg-[#EEF3FF] px-1 sm:px-1.5 py-0.5 rounded-md -mb-1 animate-pulse whitespace-nowrap shadow-xs">
-                                {item.value}
-                              </span>
-                            )}
-                            <div
-                              className={`w-full max-w-[28px] rounded-xl transition-all ${
-                                isSelected
-                                  ? 'bg-[#235BF7] shadow-[0_4px_12px_rgba(30,96,248,0.3)] scale-105'
-                                  : 'bg-[#F1F5F9] hover:bg-[#CBD5E1]'
-                              }`}
-                              style={{ height: `${item.height}px` }}
-                              title={`${item.full} : ${item.value}`}
-                            />
-                            <span
-                              className={`text-xs font-bold ${
-                                isSelected ? 'text-[#235BF7]' : 'text-[#94A3B8]'
-                              }`}
-                            >
-                              {item.day}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
+              {/* Semicircular Solid Gauge SVG with perfect geometry & target marker */}
+              <div className="relative flex flex-col items-center justify-center pt-2 pb-0">
+                <svg
+                  viewBox="0 0 260 145"
+                  className="w-56 sm:w-64 max-w-full h-32 sm:h-36 overflow-visible"
+                >
+                  <defs>
+                    <linearGradient id="deliveryGaugeGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#059669" />
+                      <stop offset="65%" stopColor="#10B981" />
+                      <stop offset="100%" stopColor="#00D084" />
+                    </linearGradient>
+                    <filter id="gaugeShadow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow
+                        dx="0"
+                        dy="3"
+                        stdDeviation="3"
+                        floodColor="#10B981"
+                        floodOpacity="0.25"
+                      />
+                    </filter>
+                  </defs>
+
+                  {/* Semicircle background track */}
+                  <path
+                    d="M 34 130 A 96 96 0 0 1 226 130"
+                    fill="none"
+                    stroke="#F1F5F9"
+                    strokeWidth="16"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Target 80% marker on track (x=207.7, y=73.6) */}
+                  <g className="transition-opacity duration-300">
+                    <circle
+                      cx="207.7"
+                      cy="73.6"
+                      r="4.5"
+                      fill="#FFFFFF"
+                      stroke="#235BF7"
+                      strokeWidth="2.5"
+                      className="drop-shadow-xs"
+                    />
+                  </g>
+
+                  {/* Active solid emerald progress arc */}
+                  <path
+                    d="M 34 130 A 96 96 0 0 1 226 130"
+                    fill="none"
+                    stroke="url(#deliveryGaugeGrad)"
+                    strokeWidth="16"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(deliveryPercent / 100) * 302} 302`}
+                    filter="url(#gaugeShadow)"
+                    className="transition-all duration-700 ease-out"
+                  />
+                </svg>
+
+                {/* Centered stat inside arc dome */}
+                <div className="absolute bottom-1 inset-x-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
+                  <span className="text-4xl font-black text-[#201D1D] tracking-tight leading-none">
+                    {deliveryPercent}%
+                  </span>
+                  <span className="text-xs font-extrabold uppercase tracking-widest text-[#94A3B8] mt-1.5">
+                    Taux Actuel
+                  </span>
+                </div>
+              </div>
+
+              {/* Clean status pill & target comparison below arc */}
+              <div className="space-y-3 pt-1">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] text-[13px] font-bold shadow-2xs">
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>
+                    {totalOrdersCount === 0
+                      ? 'En attente de commandes'
+                      : deliveryPercent >= 80
+                        ? 'Objectif 80% atteint !'
+                        : 'En bonne voie pour 80%'}
+                  </span>
+                </div>
+
+                {/* Quick Metrics Breakdown */}
+                <div className="grid grid-cols-2 gap-2 text-left pt-1 border-t border-[#F1F5F9]">
+                  <div className="bg-[#F8FAFC] rounded-2xl p-2.5 border border-[#E2E8F0]/70">
+                    <span className="text-xs font-bold text-[#7A808C] block uppercase tracking-wider">
+                      Colis Livrés
+                    </span>
+                    <span className="text-[15px] font-black text-[#201D1D]">{deliveredCount}</span>
+                  </div>
+                  <div className="bg-[#F8FAFC] rounded-2xl p-2.5 border border-[#E2E8F0]/70">
+                    <span className="text-xs font-bold text-[#7A808C] block uppercase tracking-wider">
+                      Objectif Cible
+                    </span>
+                    <span className="text-[15px] font-black text-[#235BF7]">
+                      80% <span className="text-xs text-[#94A3B8] font-normal">cible</span>
+                    </span>
                   </div>
                 </div>
-              )}
 
-              {/* Card 2: Taux de Livraison Réussie (Image 2 Pixel-Perfect Solid Arc Gauge - Redesigned) */}
-              {activeWidgets.deliveryRate && (
-                <div className="bg-white rounded-[28px] p-5 sm:p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-3.5 text-center">
-                  <div className="flex items-center justify-between text-left">
-                    <div>
-                      <span className="text-[13px] font-bold text-[#7A808C] block">
-                        Taux de Livraison Réussie
-                      </span>
-                      <span className="text-xs text-[#94A3B8]">Performance des expéditions</span>
-                    </div>
-                    <button className="text-[#94A3B8] hover:text-[#201D1D] p-1">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
+                {/* Action Button */}
+                <button
+                  onClick={onOpenKanban}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-[#201D1D] hover:bg-[#1E293B] text-white text-[13px] font-bold transition-all shadow-xs flex items-center justify-center gap-2 group cursor-pointer"
+                >
+                  <Truck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <span>Voir les détails logistiques</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-white/70 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Card 3: AI Assistant Widget */}
+          {activeWidgets.aiAssistant && (
+            <div className="bg-white rounded-[28px] p-5 sm:p-6 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col justify-between space-y-4 h-full md:col-span-2 lg:col-span-1">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center">
+                      <BrainCircuit className="w-4.5 h-4.5" />
+                    </span>
+                    <span className="text-[13px] font-bold text-[#201D1D]">Assistant IA Juula</span>
                   </div>
-
-                  {/* Semicircular Solid Gauge SVG with perfect geometry & target marker */}
-                  <div className="relative flex flex-col items-center justify-center pt-2 pb-0">
-                    <svg
-                      viewBox="0 0 260 145"
-                      className="w-56 sm:w-64 max-w-full h-32 sm:h-36 overflow-visible"
-                    >
-                      <defs>
-                        <linearGradient id="deliveryGaugeGrad" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="#059669" />
-                          <stop offset="65%" stopColor="#10B981" />
-                          <stop offset="100%" stopColor="#00D084" />
-                        </linearGradient>
-                        <filter id="gaugeShadow" x="-20%" y="-20%" width="140%" height="140%">
-                          <feDropShadow
-                            dx="0"
-                            dy="3"
-                            stdDeviation="3"
-                            floodColor="#10B981"
-                            floodOpacity="0.25"
-                          />
-                        </filter>
-                      </defs>
-
-                      {/* Semicircle background track */}
-                      <path
-                        d="M 34 130 A 96 96 0 0 1 226 130"
-                        fill="none"
-                        stroke="#F1F5F9"
-                        strokeWidth="16"
-                        strokeLinecap="round"
-                      />
-
-                      {/* Target 80% marker on track (x=207.7, y=73.6) */}
-                      <g className="transition-opacity duration-300">
-                        <circle
-                          cx="207.7"
-                          cy="73.6"
-                          r="4.5"
-                          fill="#FFFFFF"
-                          stroke="#235BF7"
-                          strokeWidth="2.5"
-                          className="drop-shadow-xs"
-                        />
-                      </g>
-
-                      {/* Active solid emerald progress arc */}
-                      <path
-                        d="M 34 130 A 96 96 0 0 1 226 130"
-                        fill="none"
-                        stroke="url(#deliveryGaugeGrad)"
-                        strokeWidth="16"
-                        strokeLinecap="round"
-                        strokeDasharray={`${(deliveryPercent / 100) * 302} 302`}
-                        filter="url(#gaugeShadow)"
-                        className="transition-all duration-700 ease-out"
-                      />
-                    </svg>
-
-                    {/* Centered stat inside arc dome */}
-                    <div className="absolute bottom-1 inset-x-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
-                      <span className="text-4xl font-black text-[#201D1D] tracking-tight leading-none">
-                        {deliveryPercent}%
-                      </span>
-                      <span className="text-xs font-extrabold uppercase tracking-widest text-[#94A3B8] mt-1.5">
-                        Taux Actuel
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Clean status pill & target comparison below arc */}
-                  <div className="space-y-3">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] text-[13px] font-bold shadow-2xs">
-                      <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>
-                        {totalOrdersCount === 0
-                          ? 'En attente de commandes'
-                          : deliveryPercent >= 80
-                            ? 'Objectif 80% atteint !'
-                            : 'En bonne voie pour 80%'}
-                      </span>
-                    </div>
-
-                    {/* Quick Metrics Breakdown */}
-                    <div className="grid grid-cols-2 gap-2 text-left pt-1 border-t border-[#F1F5F9]">
-                      <div className="bg-[#F8FAFC] rounded-2xl p-2.5 border border-[#E2E8F0]/70">
-                        <span className="text-xs font-bold text-[#7A808C] block uppercase tracking-wider">
-                          Colis Livrés
-                        </span>
-                        <span className="text-[15px] font-black text-[#201D1D]">
-                          {deliveredCount}
-                        </span>
-                      </div>
-                      <div className="bg-[#F8FAFC] rounded-2xl p-2.5 border border-[#E2E8F0]/70">
-                        <span className="text-xs font-bold text-[#7A808C] block uppercase tracking-wider">
-                          Objectif Cible
-                        </span>
-                        <span className="text-[15px] font-black text-[#235BF7]">
-                          80% <span className="text-xs text-[#94A3B8] font-normal">cible</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Action Button */}
-                    <button
-                      onClick={onOpenKanban}
-                      className="w-full py-2.5 px-4 rounded-2xl bg-[#201D1D] hover:bg-[#1E293B] text-white text-[13px] font-bold transition-all shadow-xs flex items-center justify-center gap-2 group cursor-pointer"
-                    >
-                      <Truck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                      <span>Voir les détails logistiques</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-white/70 group-hover:translate-x-1 transition-transform" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleGenerateAiTip}
+                    className="text-[#94A3B8] hover:text-[#201D1D]"
+                    title="Agrandir"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-              )}
 
-              {/* Card 3: AI Assistant Widget */}
-              {activeWidgets.aiAssistant && (
-                <div className="bg-white rounded-[28px] p-5 border border-[#ECEFF4] shadow-[0_1px_3px_rgba(0,0,0,0.02)] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center">
-                        <BrainCircuit className="w-4.5 h-4.5" />
-                      </span>
-                      <span className="text-[13px] font-bold text-[#201D1D]">
-                        Assistant IA Juula
-                      </span>
-                    </div>
-                    <button
-                      onClick={handleGenerateAiTip}
-                      className="text-[#94A3B8] hover:text-[#201D1D]"
-                      title="Agrandir"
-                    >
-                      <Maximize2 className="w-3.5 h-3.5" />
-                    </button>
+                <div className="flex items-center gap-4 p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                  {/* 3D Blue Sphere matching Shopeers */}
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#0F2B6B] via-[#235BF7] to-[#93C5FD] shadow-[0_6px_16px_rgba(30,96,248,0.4)] flex-shrink-0 flex items-center justify-center ring-4 ring-white text-white">
+                    <Bot className="w-6 h-6" />
                   </div>
 
-                  <div className="flex items-center gap-4 p-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                    {/* 3D Blue Sphere matching Shopeers */}
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#0F2B6B] via-[#235BF7] to-[#93C5FD] shadow-[0_6px_16px_rgba(30,96,248,0.4)] flex-shrink-0 flex items-center justify-center ring-4 ring-white text-white">
-                      <Bot className="w-6 h-6" />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-[#201D1D] leading-tight">
-                        Optimiseur de Ventes & Accroches
-                      </p>
-                      <p className="text-[13px] text-[#7A808C] mt-0.5">
-                        Générez vos textes pubs en 1 clic
-                      </p>
-                    </div>
-                  </div>
-
-                  {aiGeneratedTip ? (
-                    <p className="text-[13px] text-[#201D1D] bg-[#EEF3FF] p-3 rounded-xl border border-[#BFDBFE] leading-relaxed animate-in fade-in">
-                      {aiGeneratedTip}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-[#201D1D] leading-tight">
+                      Optimiseur de Ventes & Accroches
                     </p>
-                  ) : (
-                    <button
-                      onClick={handleGenerateAiTip}
-                      className="w-full py-2 px-3 rounded-xl bg-[#EEF3FF] hover:bg-[#DBEAFE] text-[#235BF7] text-[13px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <Lightbulb className="w-4 h-4" />
-                      <span>Générer un conseil pour aujourd'hui</span>
-                    </button>
-                  )}
+                    <p className="text-[13px] text-[#7A808C] mt-0.5">
+                      Générez vos textes pubs en 1 clic
+                    </p>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              <div className="pt-2">
+                {aiGeneratedTip ? (
+                  <p className="text-[13px] text-[#201D1D] bg-[#EEF3FF] p-3 rounded-xl border border-[#BFDBFE] leading-relaxed animate-in fade-in">
+                    {aiGeneratedTip}
+                  </p>
+                ) : (
+                  <button
+                    onClick={handleGenerateAiTip}
+                    className="w-full py-2.5 px-3 rounded-xl bg-[#EEF3FF] hover:bg-[#DBEAFE] text-[#235BF7] text-[13px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Lightbulb className="w-4 h-4" />
+                    <span>Générer un conseil pour aujourd'hui</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

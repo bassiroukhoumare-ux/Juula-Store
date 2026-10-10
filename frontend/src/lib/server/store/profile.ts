@@ -52,6 +52,7 @@ export interface StoreProfile {
   plan: 'FREE' | 'PRO';
   planExpiresAt: string | null;
   displayCurrency: DisplayCurrency;
+  acquisitionSource?: string | null;
 }
 
 export function toStoreProfile(store: Store | null): StoreProfile {
@@ -67,6 +68,7 @@ export function toStoreProfile(store: Store | null): StoreProfile {
     plan: isPro ? 'PRO' : 'FREE',
     planExpiresAt: store?.planExpiresAt?.toISOString() ?? null,
     displayCurrency: isDisplayCurrency(store?.displayCurrency) ? store.displayCurrency : 'XOF',
+    acquisitionSource: store?.acquisitionSource ?? null,
   };
 }
 
@@ -79,6 +81,7 @@ export interface ProfileInput {
   onlineOnly?: boolean | undefined;
   address?: string | null | undefined;
   city?: string | null | undefined;
+  acquisitionSource?: string | null | undefined;
 }
 
 export type ProfileUpdateResult =
@@ -201,6 +204,9 @@ export async function updateStoreProfile(
             address: onlineOnly ? null : address,
             city,
             ...(input.displayCurrency ? { displayCurrency: input.displayCurrency } : {}),
+            ...(input.acquisitionSource !== undefined
+              ? { acquisitionSource: input.acquisitionSource?.trim() || null }
+              : {}),
           },
         });
 

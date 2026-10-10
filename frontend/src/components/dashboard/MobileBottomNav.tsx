@@ -34,7 +34,7 @@ const MAIN: { id: DashboardTab; label: string; icon: React.ElementType }[] = [
 ];
 
 const MORE: { id: DashboardTab; label: string; icon: React.ElementType }[] = [
-  { id: 'wallet', label: 'Finances', icon: Wallet },
+  { id: 'wallet', label: 'Juula Finance', icon: Wallet },
   { id: 'marketing', label: 'Marketing', icon: Megaphone },
   { id: 'analytics', label: 'Performances', icon: BarChart3 },
   { id: 'customers', label: 'Clients', icon: Users },

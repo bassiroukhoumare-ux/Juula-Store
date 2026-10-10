@@ -22,6 +22,7 @@ const Body = z
     displayCurrency: z.enum(['XOF', 'EUR', 'USD']).optional(),
     address: z.string().trim().max(200).nullable().optional(),
     city: z.string().trim().max(80).nullable().optional(),
+    acquisitionSource: z.string().trim().max(200).nullable().optional(),
   })
   .refine((b) => Object.values(b).some((v) => v !== undefined), { message: 'Nothing to update' });
 

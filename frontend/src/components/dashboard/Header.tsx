@@ -47,7 +47,7 @@ interface HeaderProps {
 const TITLES: Record<DashboardTab, string> = {
   cockpit: 'Tableau de bord',
   kanban: 'Commandes',
-  wallet: 'Portefeuille',
+  wallet: 'Juula Finance',
   products: 'Pages produits',
   storefront: 'Ma boutique',
   notifications: 'Notifications',

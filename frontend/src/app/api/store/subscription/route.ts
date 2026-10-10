@@ -69,6 +69,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       {
         checkoutUrl: result.checkoutUrl,
+        embedUrl: result.embedUrl,
+        integrationMode: result.integrationMode,
         sessionId: result.sessionId,
         subscriptionId: result.subscriptionId,
         amount: result.amount,

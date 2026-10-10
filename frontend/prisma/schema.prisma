@@ -401,6 +401,7 @@ model Store {
   planExpiresAt         DateTime? // null = active if PRO, or expiration date
   suspendedAt           DateTime? // set by /adminom: shop closed to buyers, whatever the plan
   suspendedReason       String?
+  acquisitionSource     String? // facebook | youtube | tiktok | instagram | bouche_a_oreille | autre:...
   aliases               StoreAlias[]
   reports               Report[]
   createdAt             DateTime     @default(now())

@@ -49,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'customers', label: 'Clients', icon: Users },
       ],
     },
-    { title: 'Finances', items: [{ id: 'wallet', label: 'Juula Pay & retraits', icon: Wallet }] },
+    { title: 'Finances', items: [{ id: 'wallet', label: 'Juula Finance', icon: Wallet }] },
     {
       title: 'Croissance',
       items: [

@@ -24,6 +24,7 @@ import { type ShopPageProps } from './CartPage';
 import { priceCart } from './types';
 import { PromoCodeField, useStoredPromo } from './PromoCodeField';
 import { trackCartCheckout, trackCartPurchase } from '@/lib/store/tracking';
+import { MonerizCheckoutModal } from '@/components/payments/MonerizCheckoutModal';
 
 interface CheckoutPageProps extends ShopPageProps {
   /** « Commander sur WhatsApp »: no payment choice, ends on WhatsApp. */
@@ -76,6 +77,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+  const [monerizSession, setMonerizSession] =
+    useState<React.ComponentProps<typeof MonerizCheckoutModal>['session']>(null);
+  const [isMonerizModalOpen, setIsMonerizModalOpen] = useState(false);
+  const [pendingOnlineOrder, setPendingOnlineOrder] = useState<
+    (PlacedOrder & { id: string }) | null
+  >(null);
 
   const { sync, loaded } = cart;
   useEffect(() => {
@@ -201,10 +208,17 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         const session = await fetch('/api/payments/moneriz/checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: order.id, integrationMode: 'redirect' }),
+          body: JSON.stringify({ orderId: order.id, integrationMode: 'iframe' }),
         });
         const data = (await session.json().catch(() => null)) as {
+          id?: string;
           checkoutUrl?: string;
+          embedUrl?: string | null;
+          integrationMode?: 'iframe' | 'redirect';
+          status?: string;
+          amount?: number;
+          currency?: string;
+          reference?: string;
           message?: string;
         } | null;
         if (!session.ok || !data?.checkoutUrl) {
@@ -212,7 +226,31 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             `${data?.message || 'Le paiement en ligne n’a pas pu démarrer.'} Votre commande ${order.reference} est enregistrée.`,
           );
         }
-        window.location.href = data.checkoutUrl;
+
+        // Si l'origine n'autorise pas l'iframe ou embedUrl manquant, repli sécurisé sur la redirection
+        if (data.integrationMode === 'redirect' || !data.embedUrl) {
+          window.location.href = data.checkoutUrl;
+          return;
+        }
+
+        setPendingOnlineOrder({
+          id: order.id,
+          reference: order.reference,
+          totalAmount: order.totalAmount,
+          payment: paymentType,
+          firstName: name.split(' ')[0] ?? '',
+          lines: cart.lines.map((l) => ({ ...l, price: unitPrice.get(l.key) ?? l.price })),
+        });
+        setMonerizSession({
+          id: data.id || `cs-${order.id}`,
+          checkoutUrl: data.checkoutUrl,
+          embedUrl: data.embedUrl,
+          status: data.status || 'open',
+          amount: data.amount || order.totalAmount,
+          currency: data.currency || 'XOF',
+          reference: data.reference || order.reference,
+        });
+        setIsMonerizModalOpen(true);
         return;
       }
 
@@ -259,17 +297,24 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     const placedDirect = placed.payment.startsWith('direct:')
       ? options.direct.find((m) => `direct:${m.id}` === placed.payment)
       : undefined;
-    const steps = placedDirect
+    const isOnline = placed.payment.startsWith('online_');
+    const steps = isOnline
       ? [
-          `Réglez ${formatMoney(placed.totalAmount)} via ${placedDirect.name} en indiquant la référence ${placed.reference}.`,
-          `${storeName} confirme la réception de votre paiement.`,
+          'Votre paiement en ligne a été validé avec succès.',
+          `${storeName} prépare votre commande.`,
           'Vous êtes contacté sur WhatsApp pour la livraison.',
         ]
-      : [
-          `${storeName} vous contacte sur WhatsApp pour confirmer la commande.`,
-          'Le livreur vous apporte votre commande à l’adresse indiquée.',
-          'Vous vérifiez vos articles puis payez en espèces au livreur.',
-        ];
+      : placedDirect
+        ? [
+            `Réglez ${formatMoney(placed.totalAmount)} via ${placedDirect.name} en indiquant la référence ${placed.reference}.`,
+            `${storeName} confirme la réception de votre paiement.`,
+            'Vous êtes contacté sur WhatsApp pour la livraison.',
+          ]
+        : [
+            `${storeName} vous contacte sur WhatsApp pour confirmer la commande.`,
+            'Le livreur vous apporte votre commande à l’adresse indiquée.',
+            'Vous vérifiez vos articles puis payez en espèces au livreur.',
+          ];
     return shell(
       3,
       <div className="max-w-2xl mx-auto space-y-5">
@@ -622,6 +667,32 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           </p>
         </div>
       </form>
+      <MonerizCheckoutModal
+        isOpen={isMonerizModalOpen}
+        onClose={() => setIsMonerizModalOpen(false)}
+        session={monerizSession}
+        onPaymentSuccess={async () => {
+          setIsMonerizModalOpen(false);
+          if (!pendingOnlineOrder) return;
+          const orderToPlace = pendingOnlineOrder;
+          try {
+            await fetch(
+              `/api/public/orders/${encodeURIComponent(orderToPlace.id)}/payment-status`,
+              { method: 'POST' },
+            );
+          } catch {
+            // Reconcilié également de manière asynchrone par le webhook Moneriz
+          }
+          trackCartPurchase(trackedLines, {
+            reference: orderToPlace.reference,
+            total: orderToPlace.totalAmount,
+          });
+          setPromo(null);
+          setPlaced(orderToPlace);
+          cart.clear();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
     </>,
   );
 };

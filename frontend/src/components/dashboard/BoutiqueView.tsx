@@ -22,6 +22,7 @@ import {
   Star,
   Trash2,
   Wallet,
+  Lock,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { formatFCFA } from '@/lib/orderUtils';
@@ -973,20 +974,26 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
             icon={<Wallet className="w-4 h-4" />}
             hint="S’applique à votre boutique et à toutes vos pages de vente."
           >
-            <SwitchRow
-              label="Paiement en ligne par Mobile Money (JuulaPay)"
-              hint={
-                settings.onlinePaymentsEnabled
-                  ? 'Activé : vos clients peuvent payer en ligne (Wave, Orange Money, carte). 7,5 % prélevés par paiement, retrait vers votre Wave / Orange Money 72 h après la commande.'
-                  : 'Optionnel : laissez vos clients payer en ligne. 7,5 % sont prélevés sur chaque paiement en ligne.'
-              }
-              on={settings.onlinePaymentsEnabled}
-              onClick={() =>
-                settings.onlinePaymentsEnabled
-                  ? set({ onlinePaymentsEnabled: false })
-                  : setConfirmOnline(true)
-              }
-            />
+            <div className="w-full flex items-start sm:items-center justify-between gap-4 p-4 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC]">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[14px] font-bold text-[#201D1D]">
+                    Paiement en ligne par Mobile Money (Juula Finance)
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-black inline-flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-amber-600" /> Bientôt disponible
+                  </span>
+                </div>
+                <p className="text-[13px] text-[#7A808C] leading-relaxed">
+                  L'encaissement direct sur votre boutique par Wave, Orange Money et carte bancaire
+                  est temporairement verrouillé. Vos clients règlent via paiement à la livraison ou
+                  WhatsApp.
+                </p>
+              </div>
+              <span className="shrink-0 w-11 h-6 rounded-full p-0.5 bg-[#E2E8F0] opacity-50 cursor-not-allowed">
+                <span className="block w-5 h-5 rounded-full bg-white shadow-xs" />
+              </span>
+            </div>
             <div className="space-y-3">
               <SwitchRow
                 label="Paiement à la livraison"

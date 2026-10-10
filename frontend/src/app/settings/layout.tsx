@@ -1,6 +1,5 @@
 // Dark theme of the merchant space: generated colour layer + pre-paint script.
 import '../dash-dark.css';
-import { THEME_INIT_SCRIPT } from '@/lib/theme-script';
 import type { Metadata, Viewport } from 'next';
 
 // Installable app (PWA): « Ajouter à l'écran d'accueil » on Android and iOS,
@@ -16,10 +15,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: '#235BF7' };
 
 export default function ThemedLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      {children}
-    </>
-  );
+  return children;
 }

@@ -52,6 +52,8 @@ export async function getStoreSubscriptionStatus(
 export interface CreateSubscriptionResult {
   ok: true;
   checkoutUrl: string;
+  embedUrl?: string | null;
+  integrationMode?: 'redirect' | 'iframe';
   sessionId: string;
   subscriptionId: string;
   amount: number;
@@ -117,7 +119,7 @@ export async function createProSubscriptionSession(
       title: `Abonnement Juula — ${term.label} (${amount.toLocaleString('fr-FR').replace(/\s/g, ' ')} FCFA)`,
       reference: sub.id,
       country: 'SN',
-      integrationMode: 'redirect',
+      integrationMode: 'iframe',
       embedOrigin: base,
       successUrl,
       cancelUrl,
@@ -140,6 +142,8 @@ export async function createProSubscriptionSession(
     return {
       ok: true,
       checkoutUrl: session.checkoutUrl,
+      embedUrl: session.embedUrl,
+      integrationMode: session.integrationMode,
       sessionId: session.id,
       subscriptionId: sub.id,
       amount,
