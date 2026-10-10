@@ -29,6 +29,7 @@ const MAX_PRODUCTS_PER_MERCHANT = 200;
 
 const CreateBody = z.object({
   internalName: z.string().trim().min(1).max(120),
+  configPatch: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -98,17 +99,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
     if (store?.whatsapp) inherited.whatsappSupportNumber = formatWhatsapp(store.whatsapp);
 
+    const patch = (parsed.data.configPatch || {}) as Partial<FunnelPageConfig>;
     const config: FunnelPageConfig = {
       ...defaultFunnelConfig,
       ...inherited,
+      ...patch,
       internalName,
       status: 'draft',
-      productTitle: internalName,
-      mediaItems: [],
-      benefits: [],
-      proofItems: [],
-      reviews: [],
-      availableColors: [],
+      productTitle: patch.productTitle || internalName,
+      mediaItems: patch.mediaItems || [],
+      benefits: patch.benefits || [],
+      proofItems: patch.proofItems || [],
+      reviews: patch.reviews || [],
+      availableColors: patch.availableColors || [],
     };
 
     // Random suffix keeps slugs unguessable-ish and avoids collisions

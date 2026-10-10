@@ -402,6 +402,8 @@ model Store {
   suspendedAt           DateTime? // set by /adminom: shop closed to buyers, whatever the plan
   suspendedReason       String?
   acquisitionSource     String? // facebook | youtube | tiktok | instagram | bouche_a_oreille | autre:...
+  secondaryStore        Json? // 2ème boutique : { name, subdomain, logoUrl, storeCoverUrl, storeCategory, storeAccent, storeTagline, codEnabled, whatsappOrderEnabled, directPaymentMethods, storeFaq, announcementBar, storeSections }
+  activeStoreSlot       Int          @default(1) // 1 = Boutique principale, 2 = Boutique secondaire
   aliases               StoreAlias[]
   reports               Report[]
   createdAt             DateTime     @default(now())

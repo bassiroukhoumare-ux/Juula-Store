@@ -408,11 +408,17 @@ export default function JuulaStoreApp() {
     }
   };
 
-  const handleCreateNewPage = async (internalName: string): Promise<FunnelPageItem | null> => {
+  const handleCreateNewPage = async (
+    internalName: string,
+    configPatch?: Partial<FunnelPageConfig>,
+  ): Promise<FunnelPageItem | null> => {
     try {
       const { product } = await api<{ product: FunnelPageItem }>('/api/products', {
         method: 'POST',
-        body: { internalName: internalName.trim() || 'Nouveau produit' },
+        body: {
+          internalName: internalName.trim() || 'Nouveau produit',
+          ...(configPatch ? { configPatch } : {}),
+        },
       });
       setFunnelPages((prev) => [product, ...prev]);
       setActivePageId(product.id);
@@ -905,8 +911,9 @@ export default function JuulaStoreApp() {
                         pages={funnelPages}
                         subdomain={storeProfile.subdomain}
                         createSignal={createSignal}
-                        onCreate={async (name) => {
-                          if (await handleCreateNewPage(name)) setIsEditingProduct(true);
+                        onCreate={async (name, configPatch) => {
+                          if (await handleCreateNewPage(name, configPatch))
+                            setIsEditingProduct(true);
                         }}
                         onEdit={(id) => {
                           handleSelectPage(id);

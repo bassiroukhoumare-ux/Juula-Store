@@ -9,7 +9,6 @@ import {
   Check,
   Eye,
   EyeOff,
-  Loader2,
   Package,
   Pencil,
   Plus,
@@ -19,10 +18,11 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import type { FunnelPageItem, FunnelPageStatus } from '@/types/juula';
+import type { FunnelPageConfig, FunnelPageItem, FunnelPageStatus } from '@/types/juula';
 import { formatFCFA } from '@/lib/orderUtils';
 import { storeProductUrl } from '@/lib/store/subdomain';
 import type { ProductStats } from '@/lib/store/analytics-types';
+import { ProductCreationWizardModal } from '@/components/dashboard/ProductCreationWizardModal';
 import { useStoreAnalytics } from '@/components/dashboard/analytics/useStoreAnalytics';
 import {
   AbandonedPanel,
@@ -34,7 +34,10 @@ import {
 interface ProductsListViewProps {
   pages: FunnelPageItem[];
   subdomain?: string | null | undefined;
-  onCreate: (name: string) => Promise<void> | void;
+  onCreate: (
+    name: string,
+    configPatch?: Partial<FunnelPageConfig>,
+  ) => Promise<void | boolean> | void;
   onEdit: (id: string) => void;
   onPreview: (id: string) => void;
   onSetStatus: (id: string, status: FunnelPageStatus) => void;
@@ -95,8 +98,6 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
   const [shopFilter, setShopFilter] = useState<'all' | 'visible' | 'hidden'>('all');
   const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [busy, setBusy] = useState(false);
   const [toDelete, setToDelete] = useState<FunnelPageItem | null>(null);
   const [statsFor, setStatsFor] = useState<FunnelPageItem | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -143,19 +144,6 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
         .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]),
     [pages, filter, shopFilter, query],
   );
-
-  const submitCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    try {
-      await onCreate(newName.trim() || 'Nouveau produit');
-      setCreating(false);
-      setNewName('');
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const copyLink = async (page: FunnelPageItem) => {
     const url = subdomain
@@ -606,35 +594,16 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
         </div>
       )}
 
-      {/* Create */}
-      {creating && (
-        <Modal onClose={() => !busy && setCreating(false)} title="Nouveau produit">
-          <form onSubmit={submitCreate} className="space-y-4">
-            <label className="block space-y-1.5">
-              <span className="text-[14px] font-semibold text-[#201D1D]">Nom du produit</span>
-              <input
-                autoFocus
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                maxLength={120}
-                placeholder="Ex : Montre Élégance"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#E3E7EE] bg-[#F6F7F9] text-[14px] text-[#201D1D] focus:outline-none focus:border-[#235BF7] focus:bg-white"
-              />
-              <span className="text-[13px] text-[#7A808C]">
-                Vous ajouterez ensuite les photos, la vidéo, le prix et la description.
-              </span>
-            </label>
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] disabled:opacity-60 text-white text-[14px] font-semibold cursor-pointer"
-            >
-              {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-              Créer et configurer
-            </button>
-          </form>
-        </Modal>
-      )}
+      {/* Create Wizard IA */}
+      <ProductCreationWizardModal
+        isOpen={creating}
+        onClose={() => setCreating(false)}
+        onCreateProduct={async (patch, name) => {
+          await onCreate(name, patch);
+          setCreating(false);
+        }}
+        storeName={subdomain || undefined}
+      />
 
       {/* Delete confirmation */}
       {toDelete && (
