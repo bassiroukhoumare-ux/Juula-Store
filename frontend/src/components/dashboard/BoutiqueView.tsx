@@ -132,6 +132,8 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
   const [isSwitchingStore, setIsSwitchingStore] = useState(false);
   const [isAiGeneratingShop, setIsAiGeneratingShop] = useState(false);
 
+  const [modalError, setModalError] = useState<string | null>(null);
+
   useEffect(() => {
     api<{
       activeSlot: number;
@@ -145,25 +147,43 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
   const handleSwitchSlot = async (slot: 1 | 2) => {
     setIsSwitchingStore(true);
     try {
-      const res = await api<{ success: boolean; activeSlot: number }>('/api/store/slots', {
-        method: 'POST',
-        body: { action: 'switch', slot },
-      });
+      const res = await api<{ success: boolean; message?: string; activeSlot: number }>(
+        '/api/store/slots',
+        {
+          method: 'POST',
+          body: { action: 'switch', slot },
+        },
+      );
       if (res.success) {
-        window.location.reload();
+        setMessage({
+          tone: 'ok',
+          text: res.message || `Bascule vers la Boutique ${slot} réussie !`,
+        });
+        setTimeout(() => window.location.reload(), 500);
       }
-    } catch {
-      setMessage({ tone: 'error', text: 'Impossible de basculer de boutique pour le moment.' });
+    } catch (err) {
+      const msg =
+        (err instanceof ApiError && ((err.body?.message as string) || err.message)) ||
+        'Impossible de basculer de boutique pour le moment.';
+      setMessage({ tone: 'error', text: msg });
     } finally {
       setIsSwitchingStore(false);
     }
   };
 
   const handleCreateSecondStore = async () => {
-    if (!newStoreName.trim() || !newStoreSubdomain.trim()) return;
+    setModalError(null);
+    if (!newStoreName.trim()) {
+      setModalError('Veuillez renseigner un nom pour votre 2ème boutique.');
+      return;
+    }
+    if (!newStoreSubdomain.trim() || newStoreSubdomain.trim().length < 3) {
+      setModalError('L’adresse web doit comporter au moins 3 caractères.');
+      return;
+    }
     setIsSwitchingStore(true);
     try {
-      const res = await api<{ success: boolean }>('/api/store/slots', {
+      const res = await api<{ success: boolean; message?: string }>('/api/store/slots', {
         method: 'POST',
         body: {
           action: 'create',
@@ -172,10 +192,20 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
         },
       });
       if (res.success) {
-        window.location.reload();
+        setIsNewStoreModalOpen(false);
+        setMessage({
+          tone: 'ok',
+          text: res.message || 'Votre 2ème boutique a été créée avec succès !',
+        });
+        setTimeout(() => window.location.reload(), 600);
       }
-    } catch {
-      setMessage({ tone: 'error', text: 'Échec de la création de la 2ème boutique.' });
+    } catch (err) {
+      const msg =
+        (err instanceof ApiError &&
+          ((err.body?.message as string) || (err.body?.error as string) || err.message)) ||
+        'Échec de la création de la 2ème boutique. Vérifiez le nom et l’adresse choisie.';
+      setModalError(msg);
+      setMessage({ tone: 'error', text: msg });
     } finally {
       setIsSwitchingStore(false);
     }
@@ -1522,6 +1552,12 @@ export const BoutiqueView: React.FC<BoutiqueViewProps> = ({
                 Vous pourrez configurer ses couleurs, sa catégorie et ses produits distincts dès la
                 création.
               </p>
+
+              {modalError && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[12px] font-medium leading-relaxed">
+                  {modalError}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
