@@ -40,6 +40,7 @@ import {
   ProductColorOption,
 } from '@/types/juula';
 import { ProductContentEditor } from '@/components/dashboard/ProductContentEditor';
+import { AiCopywritingModal } from '@/components/dashboard/AiCopywritingModal';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Button } from '@/components/ui/Button';
@@ -74,6 +75,16 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
   const [isSaved, setIsSaved] = useState(false);
   const [isNewPageModalOpen, setIsNewPageModalOpen] = useState(false);
   const [newPageNameInput, setNewPageNameInput] = useState('');
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
+  const handleApplyAiCopy = (patch: Partial<FunnelPageConfig>) => {
+    const updated = {
+      ...config,
+      ...patch,
+    };
+    setConfig(updated);
+    onSaveConfig(updated);
+  };
 
   // Sync config whenever initialConfig changes (e.g., selecting another page)
   useEffect(() => {
@@ -485,6 +496,17 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
 
           {/* Section Droite : Actions Unifiées (Zéro Doublon) */}
           <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-2 lg:pt-0 border-t border-[#F1F5F9] lg:border-t-0">
+            {/* Bouton IA Copywriting */}
+            <button
+              type="button"
+              onClick={() => setIsAiModalOpen(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-[13px] font-black transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer"
+              title="Rédiger avec Gemini IA (Copywriting Africain COD & WhatsApp)"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+              <span>Rédiger avec l'IA</span>
+            </button>
+
             {/* 1. Bouton Aperçu Plein Écran */}
             <button
               type="button"
@@ -1462,6 +1484,34 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
                 </p>
               </div>
 
+              {/* Bannière IA Copywriting */}
+              <div className="p-4 rounded-2xl bg-linear-to-r from-blue-50 via-indigo-50/40 to-blue-50 border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#235BF7] text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <Sparkles className="w-4.5 h-4.5 text-amber-300" />
+                  </div>
+                  <div>
+                    <h4 className="text-[13px] font-black text-slate-900">
+                      Besoin d'un texte persuasif qui fait vendre ?
+                    </h4>
+                    <p className="text-[12px] text-slate-600">
+                      Générez une accroche irrésistible, 4 bénéfices clés et une garantie COD avec
+                      Gemini IA.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsAiModalOpen(true)}
+                  className="shrink-0 flex items-center gap-2 bg-[#235BF7] shadow-sm"
+                >
+                  <Wand2 className="w-3.5 h-3.5" />
+                  Générer avec l'IA
+                </Button>
+              </div>
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-[13px] font-bold uppercase tracking-wider text-[#201D1D]">
@@ -2001,6 +2051,14 @@ export const WizardEditor: React.FC<WizardEditorProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modale Gemini IA Copywriting */}
+      <AiCopywritingModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        config={config}
+        onApplyCopy={handleApplyAiCopy}
+      />
     </div>
   );
 };
