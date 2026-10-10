@@ -1,6 +1,9 @@
 import type { FaqItem, ProductComparison } from '@/lib/store/product-content';
 import type { AnnouncementBar, CrossSell } from '@/lib/store/marketing';
 import type { DirectPaymentMethod } from '@/lib/store/storefront-types';
+import type { PriceAbTest } from '@/lib/store/ab-testing';
+
+export type { PriceAbTest };
 
 export type DashboardTab =
   | 'cockpit'
@@ -71,6 +74,8 @@ export interface OrderLead {
   /** Affiliate partner that brought the order, and its commission. */
   partnerName?: string | undefined;
   partnerCommission?: number | undefined;
+  /** A/B test variant assigned to the buyer ('A' | 'B') */
+  abVariant?: 'A' | 'B' | undefined;
 }
 
 export interface OrderItem {
@@ -283,6 +288,10 @@ export interface FunnelPageConfig {
   stockQuantity?: number | undefined;
   showStockBadge?: boolean | undefined;
   availableColors?: ProductColorOption[] | undefined;
+  /** A/B Testing Ultra-Simplifié (Test de Prix) */
+  abTest?: PriceAbTest | undefined;
+  /** Evaluated variant served on the page ('A' | 'B') */
+  abVariant?: 'A' | 'B' | undefined;
 }
 
 export interface ProductColorOption {

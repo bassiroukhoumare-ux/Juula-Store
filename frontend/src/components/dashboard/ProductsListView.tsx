@@ -15,6 +15,7 @@ import {
   Plus,
   Power,
   Rocket,
+  Split,
   Trash2,
   X,
 } from 'lucide-react';
@@ -464,6 +465,11 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
                         >
                           {meta.label}
                         </span>
+                        {page.config.abTest?.enabled && page.config.abTest.status === 'running' && (
+                          <span className="shrink-0 text-[11px] font-black px-2 py-0.5 rounded-md border bg-indigo-50 text-indigo-700 border-indigo-200 flex items-center gap-1 shadow-2xs">
+                            <Split className="w-3 h-3 text-indigo-600" /> A/B Test 50/50
+                          </span>
+                        )}
                       </div>
                       <p className="mt-0.5 text-[13px] text-[#7A808C] truncate">
                         {page.internalName} · modifié {page.updatedAt}

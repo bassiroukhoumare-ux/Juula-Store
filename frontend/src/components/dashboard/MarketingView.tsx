@@ -42,11 +42,20 @@ import { PartnersPanel } from './PartnersPanel';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { AnnouncementBar } from '@/components/storefront/AnnouncementBar';
 import { SkeletonList } from '@/components/ui/Skeleton';
+import { PriceAbTestingCard } from './marketing/PriceAbTestingCard';
+import { Split } from 'lucide-react';
 
-export type MarketingSection = 'promos' | 'partners' | 'pixels' | 'annonce' | 'crosssell';
+export type MarketingSection =
+  | 'promos'
+  | 'abtest'
+  | 'partners'
+  | 'pixels'
+  | 'annonce'
+  | 'crosssell';
 
 const SECTIONS: SectionItem<MarketingSection>[] = [
   { id: 'promos', label: 'Codes promo', icon: <Tag /> },
+  { id: 'abtest', label: 'A/B Testing Prix', icon: <Split /> },
   { id: 'partners', label: 'Liens & partenaires', icon: <Handshake /> },
   { id: 'pixels', label: 'Pixels & tracking', icon: <Radar /> },
   { id: 'annonce', label: 'Barre d’annonce', icon: <Megaphone /> },
@@ -895,6 +904,9 @@ export const MarketingView: React.FC<MarketingViewProps> = ({ pages, onUpdatePro
   return (
     <SectionLayout sections={SECTIONS} active={section} onChange={setSection}>
       {section === 'promos' && <PromoCodesPanel />}
+      {section === 'abtest' && (
+        <PriceAbTestingCard pages={pages} onUpdateProduct={onUpdateProduct} />
+      )}
       {section === 'partners' && <PartnersPanel pages={pages} />}
       {section === 'pixels' && <TrackingPixelsCard />}
       {section === 'annonce' && <AnnouncementPanel pages={pages} />}

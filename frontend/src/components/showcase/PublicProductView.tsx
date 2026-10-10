@@ -19,6 +19,7 @@ import {
   trackProductEvent,
   type CheckoutDraftFields,
 } from '@/lib/store/visitor-analytics';
+import { applyAbVariantToConfig, decideAbVariant } from '@/lib/store/ab-testing';
 import type { FunnelPageConfig, OrderLead } from '@/types/juula';
 
 interface PublicProductViewProps {
@@ -48,14 +49,44 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
   const pendingPurchases = useRef(
     new Map<string, { reference: string; quantity: number; total: number }>(),
   );
+
+  // A/B Testing 50/50 Split
+  const assignedVariant = useMemo<'A' | 'B' | null>(() => {
+    if (!config.abTest?.enabled || config.abTest.status !== 'running') return null;
+    if (typeof window === 'undefined') return 'A';
+    const params = new URLSearchParams(window.location.search);
+    const queryVariant = params.get('ab')?.toUpperCase();
+    if (queryVariant === 'A' || queryVariant === 'B') return queryVariant;
+    const key = `juula_ab_${config.id}`;
+    const stored = localStorage.getItem(key);
+    if (stored === 'A' || stored === 'B') return stored;
+    const chosen = decideAbVariant(config.abTest, getVisitorId());
+    try {
+      localStorage.setItem(key, chosen);
+    } catch {
+      // ignore storage access error
+    }
+    return chosen;
+  }, [config.abTest, config.id]);
+
+  const effectiveConfig = useMemo(() => {
+    if (!assignedVariant) return config;
+    return applyAbVariantToConfig(config, assignedVariant);
+  }, [config, assignedVariant]);
+
   const product: TrackedProduct = useMemo(
     () => ({
-      id: config.id,
-      name: config.productTitle,
-      price: config.price,
-      currency: config.currency,
+      id: effectiveConfig.id,
+      name: effectiveConfig.productTitle,
+      price: effectiveConfig.price,
+      currency: effectiveConfig.currency,
     }),
-    [config.id, config.productTitle, config.price, config.currency],
+    [
+      effectiveConfig.id,
+      effectiveConfig.productTitle,
+      effectiveConfig.price,
+      effectiveConfig.currency,
+    ],
   );
 
   useEffect(() => {
@@ -102,6 +133,7 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
           ...(order.promoCode ? { promoCode: order.promoCode } : {}),
           ...(order.extras && order.extras.length > 0 ? { extras: order.extras } : {}),
           ...(storedReferral() ? { partnerRef: storedReferral() } : {}),
+          ...(assignedVariant ? { abVariant: assignedVariant } : {}),
         }),
       });
       const body = (await res.json().catch(() => null)) as {
@@ -205,9 +237,21 @@ export const PublicProductView: React.FC<PublicProductViewProps> = ({
             'Paiement annulé. Vous pouvez réessayer ou payer à la livraison.'}
         </div>
       )}
+      {isPreview && assignedVariant && (
+        <div className="w-full bg-[#235BF7] text-white text-xs font-black py-2 px-4 flex items-center justify-center gap-2">
+          <span>
+            Mode Test A/B : Version {assignedVariant} (
+            {effectiveConfig.price.toLocaleString('fr-FR')} FCFA ·{' '}
+            {effectiveConfig.deliveryFree
+              ? 'Livraison offerte'
+              : `Livraison +${effectiveConfig.deliveryFee.toLocaleString('fr-FR')} FCFA`}
+            )
+          </span>
+        </div>
+      )}
       <ImmersiveShowcase
-        key={currencyTick}
-        config={config}
+        key={`${currencyTick}-${assignedVariant ?? 'default'}`}
+        config={effectiveConfig}
         submitOrder={submitOrder}
         confirmPayment={confirmPayment}
         onCheckoutOpened={({ quantity, value }) => {

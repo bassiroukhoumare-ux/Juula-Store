@@ -57,6 +57,7 @@ const Body = z.object({
     .optional(),
   promoCode: z.string().trim().max(40).optional(),
   partnerRef: z.string().trim().max(60).optional(),
+  abVariant: z.enum(['A', 'B']).optional(),
 });
 
 export async function POST(
@@ -138,6 +139,7 @@ export async function POST(
       input.quantity,
       input.selectedColor,
       input.extras ?? [],
+      input.abVariant,
     );
     if (!priced.ok) {
       return NextResponse.json(
@@ -240,6 +242,42 @@ export async function POST(
     if (input.visitorId) {
       const visitorId = input.visitorId;
       after(() => clearCheckoutDraft(product.id, visitorId));
+    }
+    if (input.abVariant && config.abTest?.enabled) {
+      const variant = input.abVariant;
+      const orderTotal = order.totalAmount;
+      after(async () => {
+        try {
+          const fresh = await prisma.product.findUnique({
+            where: { id: product.id },
+          });
+          if (fresh) {
+            const cfg = productConfig(fresh);
+            if (cfg.abTest?.enabled) {
+              const stats = { ...cfg.abTest.stats };
+              if (variant === 'A') {
+                stats.ordersA += 1;
+                stats.revenueA += orderTotal;
+              } else {
+                stats.ordersB += 1;
+                stats.revenueB += orderTotal;
+              }
+              const updatedTest = { ...cfg.abTest, stats };
+              await prisma.product.update({
+                where: { id: product.id },
+                data: {
+                  config: {
+                    ...((fresh.config as Prisma.JsonObject) ?? {}),
+                    abTest: updatedTest as unknown as Prisma.InputJsonValue,
+                  },
+                },
+              });
+            }
+          }
+        } catch {
+          // ignore non-critical stats update error
+        }
+      });
     }
 
     return NextResponse.json(

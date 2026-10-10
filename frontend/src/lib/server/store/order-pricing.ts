@@ -9,6 +9,7 @@ import { productConfig } from '@/lib/server/store/products';
 import { shopSellableSlugs } from '@/lib/server/store/storefront';
 import { computeDeliveryFee, computeOrderPricing } from '@/lib/store/pricing';
 import { bundleDiscountFor, bundlePrice, parseCrossSell } from '@/lib/store/marketing';
+import { applyAbVariantToConfig } from '@/lib/store/ab-testing';
 import type { OrderItem } from '@/types/juula';
 
 export interface PricingFail {
@@ -121,8 +122,12 @@ export async function priceProductOrder(
   quantity: number,
   color: string | undefined,
   extras: { slug: string; color?: string | undefined }[],
+  abVariant?: 'A' | 'B' | undefined,
 ): Promise<PricedOrder | PricingFail> {
-  const config = productConfig(product);
+  let config = productConfig(product);
+  if (config.abTest?.enabled && (abVariant === 'A' || abVariant === 'B')) {
+    config = applyAbVariantToConfig(config, abVariant);
+  }
   const pricing = computeOrderPricing(config, quantity);
   const main: OrderItem = {
     ...lineOf(product, quantity, color, config.price),
