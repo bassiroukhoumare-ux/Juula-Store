@@ -44,6 +44,8 @@ interface ProductsListViewProps {
   onDelete: (id: string) => void;
   /** Incremented by the dashboard header's « Créer » button: opens the create dialog. */
   createSignal?: number;
+  /** Called once the signal opened the dialog, so the dashboard resets it to 0. */
+  onCreateSignalHandled?: () => void;
   /**
    * 'catalog' (onglet Produits): every product, with its shop visibility and
    * sales page switches. 'pages' (onglet Pages de vente): sales pages.
@@ -91,6 +93,7 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
   onSetStatus,
   onDelete,
   createSignal = 0,
+  onCreateSignalHandled,
   mode = 'pages',
   onSetShopVisibility,
 }) => {
@@ -102,9 +105,14 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
   const [statsFor, setStatsFor] = useState<FunnelPageItem | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // The header button asks for the dialog once: consume the request, otherwise
+  // every later visit to this tab would pop it open again.
   useEffect(() => {
-    if (createSignal > 0) setCreating(true);
-  }, [createSignal]);
+    if (createSignal > 0) {
+      setCreating(true);
+      onCreateSignalHandled?.();
+    }
+  }, [createSignal, onCreateSignalHandled]);
 
   const [range] = useState(last30Days);
   const { data } = useStoreAnalytics(range);
@@ -233,8 +241,8 @@ export const ProductsListView: React.FC<ProductsListViewProps> = ({
             className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[14px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
-            <span className="hidden min-[400px]:inline">Nouveau produit</span>
-            <span className="min-[400px]:hidden">Nouveau</span>
+            <span className="hidden min-[400px]:inline">Ajouter un produit</span>
+            <span className="min-[400px]:hidden">Ajouter</span>
           </button>
         }
       />

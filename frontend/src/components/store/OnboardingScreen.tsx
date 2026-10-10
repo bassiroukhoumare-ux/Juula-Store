@@ -35,14 +35,6 @@ export interface StoreProfile {
   acquisitionSource?: string | null;
 }
 
-export interface AiBrandingResult {
-  nom_boutique_propose: string;
-  slogan_accrocheur: string;
-  couleur_hexadecimale: string;
-  description_a_propos: string;
-  categories_produits_suggerees: string[];
-}
-
 export const EMPTY_PROFILE: StoreProfile = {
   name: null,
   subdomain: null,
@@ -157,37 +149,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Assistant IA Branding
-  const [aiIdea, setAiIdea] = useState('');
-  const [aiGenerating, setAiGenerating] = useState(false);
-  const [brandingResult, setBrandingResult] = useState<AiBrandingResult | null>(null);
-  const [showAiAssistant, setShowAiAssistant] = useState(false);
-
-  const handleGenerateBranding = async () => {
-    if (!aiIdea.trim()) return;
-    setAiGenerating(true);
-    try {
-      const res = await fetch('/api/store/ai/branding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userIdea: aiIdea.trim() }),
-      });
-      const data = await res.json();
-      if (res.ok && data.branding) {
-        setBrandingResult(data.branding);
-      }
-    } catch {
-      // Ignorer l'erreur réseau silencieusement
-    } finally {
-      setAiGenerating(false);
-    }
-  };
-
-  const handleApplyBranding = (b: AiBrandingResult) => {
-    handleName(b.nom_boutique_propose);
-    setShowAiAssistant(false);
-  };
 
   const onStatusChange = useCallback((s: SubdomainStatus) => setStatus(s), []);
   const sub = normalizeSubdomain(subdomain);
@@ -370,99 +331,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                     <p className="mt-1.5 text-xs text-[#6B7280]">
                       Ce nom apparaîtra sur toutes vos factures, reçus et pages produits.
                     </p>
-                  </div>
-
-                  {/* Assistant IA Branding */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-blue-50/70 border border-blue-200/80 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-[#235BF7] text-white flex items-center justify-center shadow-xs">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                        </div>
-                        <span className="text-[13px] font-black text-slate-900">
-                          Trouvez un nom et une marque avec l'IA
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowAiAssistant(!showAiAssistant)}
-                        className="text-xs font-bold text-[#235BF7] hover:underline cursor-pointer"
-                      >
-                        {showAiAssistant ? 'Fermer' : 'Générer avec l’IA'}
-                      </button>
-                    </div>
-
-                    {showAiAssistant && (
-                      <div className="space-y-3 pt-1 animate-in fade-in duration-200">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={aiIdea}
-                            onChange={(e) => setAiIdea(e.target.value)}
-                            placeholder="Ex : Vente de cosmétiques et sérums à Dakar"
-                            className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#235BF7]"
-                          />
-                          <button
-                            type="button"
-                            disabled={aiGenerating || !aiIdea.trim()}
-                            onClick={handleGenerateBranding}
-                            className="px-4 py-2.5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] text-white text-[13px] font-black transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
-                          >
-                            {aiGenerating ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Sparkles className="w-4 h-4" />
-                            )}
-                            <span>Générer</span>
-                          </button>
-                        </div>
-
-                        {brandingResult && (
-                          <div className="p-3.5 rounded-xl bg-white border border-blue-200/80 space-y-2 animate-in fade-in duration-200">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <span className="text-[10px] font-black uppercase tracking-wider text-[#235BF7] block">
-                                  Nom suggéré
-                                </span>
-                                <span className="text-base font-black text-slate-900">
-                                  {brandingResult.nom_boutique_propose}
-                                </span>
-                                <span className="text-xs text-slate-500 italic block mt-0.5">
-                                  « {brandingResult.slogan_accrocheur} »
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleApplyBranding(brandingResult)}
-                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all cursor-pointer shadow-2xs"
-                              >
-                                Utiliser ce nom
-                              </button>
-                            </div>
-
-                            <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-[11px]">
-                              <span className="font-bold text-slate-400">Couleur :</span>
-                              <span
-                                className="w-3.5 h-3.5 rounded-full border border-black/10 inline-block align-middle"
-                                style={{ backgroundColor: brandingResult.couleur_hexadecimale }}
-                              />
-                              <span className="font-mono text-slate-600 font-bold mr-2">
-                                {brandingResult.couleur_hexadecimale}
-                              </span>
-                              <span className="font-bold text-slate-400">Catégories :</span>
-                              {brandingResult.categories_produits_suggerees.map((c, i) => (
-                                <span
-                                  key={i}
-                                  className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium"
-                                >
-                                  {c}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               )}

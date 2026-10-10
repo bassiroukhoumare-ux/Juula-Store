@@ -1,3 +1,4 @@
+import { geminiGenerateContent } from '@/lib/server/ai/gemini';
 // Google Gemini Copywriting Engine — E-commerce Africain
 // Générateur de pages de vente ultra-persuasives orienté Cash on Delivery (COD) & WhatsApp.
 // Référence automatique des configurations de la boutique et de la page produit.
@@ -131,15 +132,11 @@ export async function generateCopywritingWithGemini(
   const prompt = buildGeminiCopywritingPrompt(input);
 
   if (apiKey) {
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro'];
-
-    for (const model of modelsToTry) {
+    // One attempt: geminiGenerateContent already falls back across models.
+    for (let attempt = 0; attempt < 1; attempt++) {
       try {
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const res = await geminiGenerateContent(
+          {
             contents: [
               {
                 parts: [{ text: prompt }],
@@ -149,8 +146,9 @@ export async function generateCopywritingWithGemini(
               responseMimeType: 'application/json',
               temperature: 0.7,
             },
-          }),
-        });
+          },
+          apiKey,
+        );
 
         if (res.ok) {
           const data = (await res.json()) as {

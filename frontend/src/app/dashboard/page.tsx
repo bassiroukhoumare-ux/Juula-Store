@@ -338,6 +338,7 @@ export default function JuulaStoreApp() {
   // Pages de vente: product list first; the editor opens on « Modifier ».
   const [isEditingProduct, setIsEditingProduct] = useState(false);
   const [createSignal, setCreateSignal] = useState(0);
+  const resetCreateSignal = useCallback(() => setCreateSignal(0), []);
   const [settingsSection, setSettingsSection] = useState<SettingsSection | undefined>(undefined);
   useEffect(() => {
     if (activeTab !== 'settings') setSettingsSection(undefined);
@@ -911,6 +912,7 @@ export default function JuulaStoreApp() {
                         pages={funnelPages}
                         subdomain={storeProfile.subdomain}
                         createSignal={createSignal}
+                        onCreateSignalHandled={resetCreateSignal}
                         onCreate={async (name, configPatch) => {
                           if (await handleCreateNewPage(name, configPatch))
                             setIsEditingProduct(true);

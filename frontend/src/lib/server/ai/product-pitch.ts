@@ -1,3 +1,4 @@
+import { geminiGenerateContent } from '@/lib/server/ai/gemini';
 // Google Gemini Product Pitch & Art Direction Engine — E-commerce Africain Cash on Delivery
 // Choix du template visuel adapté et rédaction d'un argumentaire orienté achat impulsif.
 
@@ -170,15 +171,11 @@ export async function generateProductTemplateAndCopyWithGemini(
   const prompt = buildGeminiProductPitchPrompt(input.productName, input.price);
 
   if (apiKey) {
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro'];
-
-    for (const model of modelsToTry) {
+    // One attempt: geminiGenerateContent already falls back across models.
+    for (let attempt = 0; attempt < 1; attempt++) {
       try {
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const res = await geminiGenerateContent(
+          {
             contents: [
               {
                 parts: [{ text: prompt }],
@@ -188,8 +185,9 @@ export async function generateProductTemplateAndCopyWithGemini(
               responseMimeType: 'application/json',
               temperature: 0.5,
             },
-          }),
-        });
+          },
+          apiKey,
+        );
 
         if (res.ok) {
           const data = (await res.json()) as {

@@ -4,6 +4,7 @@
 
 import type { FaqItem, ProductComparison } from '@/lib/store/product-content';
 import type { CustomerReview } from '@/types/juula';
+import { geminiGenerateContent } from '@/lib/server/ai/gemini';
 
 export interface GenerateNamesInput {
   baseIdea: string;
@@ -58,15 +59,13 @@ RÉPONDS UNIQUEMENT avec un tableau JSON valide de 5 chaînes de caractères, sa
 
   if (apiKey) {
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const res = await geminiGenerateContent(
+        {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
-        }),
-      });
+        },
+        apiKey,
+      );
 
       if (res.ok) {
         const data = (await res.json()) as {
@@ -206,15 +205,13 @@ Génère le contenu complet d'une page de vente irrésistible au format JSON str
 
   if (apiKey) {
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const res = await geminiGenerateContent(
+        {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { responseMimeType: 'application/json', temperature: 0.6 },
-        }),
-      });
+        },
+        apiKey,
+      );
 
       if (res.ok) {
         const data = (await res.json()) as {

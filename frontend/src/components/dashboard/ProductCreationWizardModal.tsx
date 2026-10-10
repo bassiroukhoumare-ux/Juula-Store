@@ -1,26 +1,44 @@
 'use client';
 
-import React, { useState } from 'react';
+// « Nouveau produit » — guided creation in 4 steps: name (with AI name ideas),
+// photos & video (uploaded from the device), price & delivery, then the sales
+// copy written by AI (optional). Full-screen sheet on phones, dialog on desktop.
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Sparkles,
   ArrowRight,
-  X,
-  Video,
+  BadgePercent,
+  Banknote,
   Check,
-  CheckCircle2,
-  Truck,
-  RotateCw,
-  Wand2,
-  HelpCircle,
-  Scale,
-  Star,
+  ChevronLeft,
+  Film,
+  Gift,
+  ImagePlus,
+  Images,
+  Lightbulb,
+  Link2,
+  ListChecks,
+  MessagesSquare,
+  Pencil,
   Plus,
+  ShieldCheck,
+  Loader2,
+  PackagePlus,
+  PenLine,
+  RefreshCw,
+  Scale,
+  FileText,
   Trash2,
+  Truck,
+  X,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { useToast } from '@/contexts/ToastContext';
 import type { FunnelPageConfig } from '@/types/juula';
 import type { FullProductGenerationOutput } from '@/lib/server/ai/product-page-wizard';
+import type { ComparisonRow, ComparisonValue, FaqItem } from '@/lib/store/product-content';
+import { postAi } from '@/lib/ai-client';
+import { uploadMedia } from '@/lib/upload';
+import { formatNumber } from '@/lib/orderUtils';
+import { AiIcon } from '@/components/ui/AiIcon';
 
 interface ProductCreationWizardModalProps {
   isOpen: boolean;
@@ -32,6 +50,165 @@ interface ProductCreationWizardModalProps {
   storeName?: string | undefined;
 }
 
+type Step = 1 | 2 | 3 | 4;
+
+const STEPS: { id: Step; label: string; icon: React.ReactNode }[] = [
+  { id: 1, label: 'Nom', icon: <PenLine className="w-[18px] h-[18px]" /> },
+  { id: 2, label: 'Photos & vidéo', icon: <Images className="w-[18px] h-[18px]" /> },
+  { id: 3, label: 'Prix & livraison', icon: <Banknote className="w-[18px] h-[18px]" /> },
+  { id: 4, label: 'Texte de vente', icon: <AiIcon className="w-[18px] h-[18px]" tone="white" /> },
+];
+
+const MAX_PHOTOS = 5;
+
+const input =
+  'w-full min-h-12 px-4 rounded-2xl border-2 border-[#E2E8F0] bg-white text-[16px] text-[#201D1D] placeholder:text-[#9AA0AB] focus:outline-none focus:border-[#235BF7] focus:ring-4 focus:ring-[#235BF7]/15 transition-all';
+const btnPrimary =
+  'min-h-12 px-5 rounded-xl bg-[#235BF7] hover:bg-[#1B4AD6] disabled:opacity-50 disabled:cursor-not-allowed text-white text-[15px] font-semibold inline-flex items-center justify-center gap-2 cursor-pointer transition-colors';
+const btnGhost =
+  'min-h-12 px-5 rounded-xl border border-[#E3E7EE] bg-white hover:bg-[#F6F7F9] disabled:opacity-50 text-[#3F4654] text-[15px] font-semibold inline-flex items-center justify-center gap-2 cursor-pointer transition-colors';
+
+const numberOrZero = (v: string) => {
+  const n = Number(v.replace(/[^\d]/g, ''));
+  return Number.isFinite(n) ? n : 0;
+};
+
+function IconTile({
+  children,
+  tone = 'blue',
+}: {
+  children: React.ReactNode;
+  tone?: 'blue' | 'dark';
+}) {
+  return (
+    <span
+      className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center ${
+        tone === 'dark' ? 'bg-[#201D1D] text-white' : 'bg-[#EEF3FF] text-[#235BF7]'
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function StepTitle({ title, text }: { title: string; text: string }) {
+  return (
+    <div>
+      <h3 className="text-[19px] sm:text-[20px] font-extrabold text-[#201D1D]">{title}</h3>
+      <p className="mt-1 text-[14px] text-[#7A808C] leading-relaxed">{text}</p>
+    </div>
+  );
+}
+
+function MoneyField({
+  id,
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  id: string;
+  label: React.ReactNode;
+  value: number;
+  onChange: (n: number) => void;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-[14px] font-semibold text-[#201D1D]">
+        {label}
+      </label>
+      <div className="mt-1.5 flex items-stretch rounded-2xl border-2 border-[#E2E8F0] bg-white focus-within:border-[#235BF7] focus-within:ring-4 focus-within:ring-[#235BF7]/15 transition-all overflow-hidden">
+        <input
+          id={id}
+          inputMode="numeric"
+          value={value ? formatNumber(value) : ''}
+          onChange={(e) => onChange(numberOrZero(e.target.value))}
+          placeholder="0"
+          className="flex-1 min-w-0 min-h-12 px-4 text-[16px] font-semibold text-[#201D1D] bg-transparent focus:outline-none"
+        />
+        <span className="flex items-center px-2.5 sm:px-4 bg-[#F4F6FB] border-l border-[#E6EAF2] text-[13px] sm:text-[14px] font-bold text-[#6B7280]">
+          FCFA
+        </span>
+      </div>
+      {hint && <p className="mt-1.5 text-[13px] text-[#7A808C]">{hint}</p>}
+    </div>
+  );
+}
+
+function cellText(v: ComparisonValue): string {
+  return v.kind === 'text' ? v.text : v.kind === 'yes' ? 'Oui' : 'Non';
+}
+
+function CopySection({
+  icon,
+  title,
+  editing,
+  onToggle,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  editing: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className={`p-4 rounded-2xl border bg-white transition-colors ${
+        editing ? 'border-[#BFD0FD] ring-4 ring-[#235BF7]/10' : 'border-[#ECEFF4]'
+      }`}
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2.5">
+          <span className="w-9 h-9 rounded-xl bg-[#EEF3FF] text-[#235BF7] flex items-center justify-center">
+            {icon}
+          </span>
+          <span className="text-[15px] font-extrabold text-[#201D1D]">{title}</span>
+        </span>
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`min-h-10 px-3 rounded-lg text-[13px] font-semibold inline-flex items-center gap-1.5 cursor-pointer transition-colors ${
+            editing
+              ? 'bg-[#235BF7] text-white hover:bg-[#1B4AD6]'
+              : 'border border-[#E3E7EE] text-[#3F4654] hover:bg-[#F6F7F9]'
+          }`}
+        >
+          {editing ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+          {editing ? 'Terminé' : 'Modifier'}
+        </button>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function RemoveButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="w-12 h-12 shrink-0 rounded-xl border border-[#F3D4D4] text-[#DC2626] hover:bg-[#FEF2F2] flex items-center justify-center cursor-pointer"
+    >
+      <Trash2 className="w-4 h-4" />
+    </button>
+  );
+}
+
+function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full min-h-11 rounded-xl border-2 border-dashed border-[#BFD0FD] text-[14px] font-semibold text-[#235BF7] hover:bg-[#F7F9FF] inline-flex items-center justify-center gap-1.5 cursor-pointer"
+    >
+      <Plus className="w-4 h-4" /> {label}
+    </button>
+  );
+}
+
 export const ProductCreationWizardModal: React.FC<ProductCreationWizardModalProps> = ({
   isOpen,
   onClose,
@@ -39,710 +216,1058 @@ export const ProductCreationWizardModal: React.FC<ProductCreationWizardModalProp
   storeName,
 }) => {
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<Step>(1);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
-  // Étape 1 : Nom du produit
+  // 1 · Nom
   const [productName, setProductName] = useState('');
-  const [baseIdea, setBaseIdea] = useState('');
-  const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
-  const [isGeneratingNames, setIsGeneratingNames] = useState(false);
+  const [idea, setIdea] = useState('');
+  const [names, setNames] = useState<string[]>([]);
+  const [namesBusy, setNamesBusy] = useState(false);
+  const [namesError, setNamesError] = useState<string | null>(null);
 
-  // Étape 2 : Médias
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [newImageUrl, setNewImageUrl] = useState('');
+  // 2 · Médias
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [photoProgress, setPhotoProgress] = useState<number | null>(null);
+  const [photoLink, setPhotoLink] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [videoProgress, setVideoProgress] = useState<number | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
 
-  // Étape 3 : Prix & Livraison
-  const [price, setPrice] = useState<number>(15000);
-  const [originalPrice, setOriginalPrice] = useState<number>(25000);
-  const [isFreeShipping, setIsFreeShipping] = useState<boolean>(true);
-  const [deliveryFee, setDeliveryFee] = useState<number>(2000);
+  // 3 · Prix & livraison
+  const [price, setPrice] = useState(15000);
+  const [originalPrice, setOriginalPrice] = useState(0);
+  const [freeShipping, setFreeShipping] = useState(true);
+  const [deliveryFee, setDeliveryFee] = useState(2000);
 
-  // Étape 4 : Contenu IA complet
-  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState<FullProductGenerationOutput | null>(
-    null,
-  );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // 4 · Texte de vente
+  const [content, setContent] = useState<FullProductGenerationOutput | null>(null);
+  const [contentBusy, setContentBusy] = useState(false);
+  const [contentError, setContentError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Set<string>>(new Set());
+  const [edited, setEdited] = useState(false);
+  const [confirmRegen, setConfirmRegen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const busy =
+    namesBusy || contentBusy || submitting || photoProgress !== null || videoProgress !== null;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !busy && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, busy, onClose]);
+
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0 });
+  }, [step]);
 
   if (!isOpen) return null;
 
-  // 1. Suggestions de noms par IA
-  const handleGenerateNameSuggestions = async () => {
-    if (!baseIdea.trim() && !productName.trim()) {
-      toast('Saisissez une idée de base (ex: montre luxe, sérum éclat...)', 'error');
-      return;
-    }
+  const discount =
+    originalPrice > price && price > 0 ? Math.round((1 - price / originalPrice) * 100) : 0;
+  const canContinue = step === 1 ? productName.trim().length >= 2 : step === 3 ? price > 0 : true;
 
-    setIsGeneratingNames(true);
+  // ───────────────────────────── actions
+  const suggestNames = async () => {
+    const base = (idea || productName).trim();
+    if (!base) return;
+    setNamesBusy(true);
+    setNamesError(null);
     try {
-      const res = await fetch('/api/store/ai/product-names', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseIdea: (baseIdea || productName).trim() }),
+      const res = await postAi<{ suggestions?: string[] }>('/api/store/ai/product-names', {
+        baseIdea: base,
       });
-      const data = await res.json();
-      if (res.ok && Array.isArray(data.suggestions)) {
-        setNameSuggestions(data.suggestions);
-        toast('5 suggestions de noms ultra-vendeurs générées !', 'success');
+      if (res.ok && Array.isArray(res.data.suggestions) && res.data.suggestions.length > 0) {
+        setNames(res.data.suggestions.slice(0, 5));
       } else {
-        throw new Error(data.message || 'Erreur');
+        setNamesError(res.data.message || 'Aucune proposition pour le moment. Réessayez.');
       }
     } catch {
-      toast('Impossible de générer des suggestions pour le moment.', 'error');
+      setNamesError('Connexion impossible. Vérifiez votre réseau.');
     } finally {
-      setIsGeneratingNames(false);
+      setNamesBusy(false);
     }
   };
 
-  // Ajout d'image
-  const handleAddImage = () => {
-    if (!newImageUrl.trim()) return;
-    if (imageUrls.length >= 5) {
-      toast('Maximum 5 images autorisées.', 'error');
-      return;
+  const addPhotoFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setMediaError(null);
+    const room = MAX_PHOTOS - photos.length;
+    for (const file of Array.from(files).slice(0, room)) {
+      setPhotoProgress(0);
+      try {
+        const url = await uploadMedia(file, 'image', { onProgress: setPhotoProgress });
+        setPhotos((p) => [...p, url].slice(0, MAX_PHOTOS));
+      } catch (e) {
+        setMediaError(e instanceof Error ? e.message : 'L’envoi de la photo a échoué.');
+      }
     }
-    setImageUrls([...imageUrls, newImageUrl.trim()]);
-    setNewImageUrl('');
+    setPhotoProgress(null);
   };
 
-  // 2. Génération automatique IA intégrale
-  const handleGenerateFullAI = async () => {
-    if (!productName.trim()) {
-      toast('Le nom du produit est requis.', 'error');
+  const addPhotoLink = () => {
+    const url = photoLink.trim();
+    if (!/^https:\/\/\S+$/i.test(url)) {
+      setMediaError('Collez un lien d’image qui commence par https://');
       return;
     }
+    setMediaError(null);
+    setPhotos((p) => [...p, url].slice(0, MAX_PHOTOS));
+    setPhotoLink('');
+  };
 
-    setIsGeneratingContent(true);
+  const uploadVideo = async (file: File | undefined) => {
+    if (!file) return;
+    setMediaError(null);
+    setVideoProgress(0);
     try {
-      const res = await fetch('/api/store/ai/product-full', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      setVideoUrl(await uploadMedia(file, 'video', { onProgress: setVideoProgress }));
+    } catch (e) {
+      setMediaError(e instanceof Error ? e.message : 'L’envoi de la vidéo a échoué.');
+    } finally {
+      setVideoProgress(null);
+    }
+  };
+
+  const generateContent = async () => {
+    setContentBusy(true);
+    setContentError(null);
+    try {
+      const res = await postAi<{ generated?: FullProductGenerationOutput }>(
+        '/api/store/ai/product-full',
+        {
           productName: productName.trim(),
           price,
-          deliveryFree: isFreeShipping,
-          deliveryFee: isFreeShipping ? 0 : deliveryFee,
-          storeName,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.generated) {
-        setGeneratedContent(data.generated);
-        toast('Page de vente rédigée avec succès par l’IA !', 'success');
+          deliveryFree: freeShipping,
+          deliveryFee: freeShipping ? 0 : deliveryFee,
+          ...(storeName ? { storeName } : {}),
+        },
+      );
+      if (res.ok && res.data.generated) {
+        setContent(res.data.generated);
+        setEditing(new Set());
+        setEdited(false);
       } else {
-        throw new Error(data.message || 'Erreur');
+        // A failed regeneration keeps the current text.
+        setContentError(res.data.message || 'La rédaction a échoué. Réessayez.');
       }
     } catch {
-      toast('Erreur lors de la génération. Réessayez.', 'error');
+      setContentError('Connexion impossible. Vérifiez votre réseau.');
     } finally {
-      setIsGeneratingContent(false);
+      setContentBusy(false);
     }
   };
 
-  // Finalisation et création du produit
-  const handleFinalSubmit = async () => {
-    if (!productName.trim()) {
-      toast('Le nom du produit est obligatoire.', 'error');
-      return;
-    }
+  // ── manual edits of the generated copy
+  const patchContent = (p: Partial<FullProductGenerationOutput>) => {
+    setContent((c) => (c ? { ...c, ...p } : c));
+    setEdited(true);
+  };
+  const toggleEdit = (key: string) =>
+    setEditing((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const patchRow = (i: number, p: Partial<ComparisonRow>) => {
+    if (!content) return;
+    const rows = content.comparison.rows.map((r, j) => (j === i ? { ...r, ...p } : r));
+    patchContent({ comparison: { ...content.comparison, rows } });
+  };
+  const removeRow = (i: number) => {
+    if (!content) return;
+    const rows = content.comparison.rows.filter((_, j) => j !== i);
+    patchContent({ comparison: { ...content.comparison, rows } });
+  };
+  const addRow = () => {
+    if (!content) return;
+    const row: ComparisonRow = {
+      id: `row-${Date.now()}`,
+      criterion: '',
+      ours: { kind: 'text', text: '' },
+      others: { kind: 'text', text: '' },
+    };
+    patchContent({
+      comparison: { ...content.comparison, rows: [...content.comparison.rows, row] },
+    });
+  };
+  const patchFaq = (i: number, p: Partial<FaqItem>) => {
+    if (!content) return;
+    patchContent({ faqItems: content.faqItems.map((f, j) => (j === i ? { ...f, ...p } : f)) });
+  };
 
-    setIsSubmitting(true);
+  const submit = async () => {
+    if (productName.trim().length < 2) return setStep(1);
+    setSubmitting(true);
     try {
-      const mediaItems = imageUrls.map((url, i) => ({
-        id: `img-${Date.now()}-${i}`,
-        type: 'image' as const,
-        url,
-        isPrimary: i === 0,
-      }));
-
-      const patch: Record<string, unknown> = {
+      const patch: Partial<FunnelPageConfig> & Record<string, unknown> = {
         productTitle: productName.trim(),
         price,
-        originalPrice,
-        deliveryFree: isFreeShipping,
-        deliveryFee: isFreeShipping ? 0 : deliveryFee,
-        deliveryPricingType: isFreeShipping ? 'free' : 'fixed',
-        fixedDeliveryFee: isFreeShipping ? 0 : deliveryFee,
+        originalPrice: originalPrice > price ? originalPrice : price,
+        deliveryFree: freeShipping,
+        deliveryFee: freeShipping ? 0 : deliveryFee,
+        deliveryPricingType: freeShipping ? 'free' : 'fixed',
+        fixedDeliveryFee: freeShipping ? 0 : deliveryFee,
         hasVideo: Boolean(videoUrl.trim()),
+        ...(videoUrl.trim() ? { videoUrl: videoUrl.trim() } : {}),
+        ...(photos.length
+          ? {
+              mediaItems: photos.map((url, i) => ({
+                id: `img-${Date.now()}-${i}`,
+                type: 'image' as const,
+                url,
+                isPrimary: i === 0,
+              })),
+            }
+          : {}),
       };
-      if (videoUrl.trim()) {
-        patch.videoUrl = videoUrl.trim();
+      // AI copy. Customer reviews are NOT taken from the AI: invented reviews
+      // shown as real (« Achat vérifié », star rating) mislead buyers — the
+      // merchant adds the real ones in the page editor.
+      if (content) {
+        Object.assign(patch, {
+          benefits: content.benefits.map((b) => b.trim()).filter(Boolean),
+          description: content.description.trim(),
+          faqItems: content.faqItems.filter((f) => f.question.trim() && f.answer.trim()),
+          comparison: {
+            ...content.comparison,
+            rows: content.comparison.rows.filter((r) => r.criterion.trim()),
+          },
+          urgencyText: content.urgencyText,
+          reassuranceText: content.reassuranceText,
+          ctaButtonText: content.ctaButtonText,
+        });
       }
-      if (mediaItems.length > 0) {
-        patch.mediaItems = mediaItems;
-      }
-
-      if (generatedContent) {
-        patch.benefits = generatedContent.benefits;
-        patch.description = generatedContent.description;
-        patch.faqItems = generatedContent.faqItems;
-        patch.comparison = generatedContent.comparison;
-        patch.reviews = generatedContent.reviews;
-        patch.urgencyText = generatedContent.urgencyText;
-        patch.reassuranceText = generatedContent.reassuranceText;
-        patch.ctaButtonText = generatedContent.ctaButtonText;
-      }
-
       await onCreateProduct(patch, productName.trim());
-      toast('Page produit créée avec succès !', 'success');
+      toast('Produit créé. Vous pouvez maintenant le compléter et le publier.', 'success');
       onClose();
     } catch {
-      toast('Erreur lors de la création du produit.', 'error');
+      toast('La création du produit a échoué. Réessayez.', 'error');
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
+  const current = STEPS[step - 1]!;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white w-full max-w-3xl rounded-[28px] shadow-2xl border border-[#ECEFF4] flex flex-col max-h-[92vh] overflow-hidden">
+    <div
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs sm:p-4"
+      onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wizard-title"
+        className="w-full sm:max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[92vh] bg-white sm:rounded-[28px] sm:border sm:border-[#ECEFF4] shadow-2xl flex flex-col overflow-hidden motion-safe:animate-[rise_300ms_cubic-bezier(.2,.75,.2,1)]"
+      >
         {/* En-tête */}
-        <div className="px-6 py-4.5 border-b border-[#F1F5F9] flex items-center justify-between bg-gradient-to-r from-blue-50/50 via-white to-indigo-50/40">
+        <header className="px-4 sm:px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-4 border-b border-[#ECEFF4]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#235BF7] text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-              <Wand2 className="w-5 h-5 text-amber-300" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-black text-[#201D1D] tracking-tight">
-                  Créateur Intelligent de Page Produit
-                </h3>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                  Étape {currentStep}/4
-                </span>
-              </div>
-              <p className="text-[12px] text-[#7A808C]">
-                Assistant guidé avec génération IA intégrale de conversion
+            <IconTile tone="dark">
+              <PackagePlus className="w-5 h-5" />
+            </IconTile>
+            <div className="min-w-0 flex-1">
+              <h2 id="wizard-title" className="text-[18px] font-extrabold text-[#201D1D]">
+                Nouveau produit
+              </h2>
+              <p className="text-[13px] text-[#7A808C]">
+                Étape {step} sur 4 · {current.label}
               </p>
             </div>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={busy}
+              aria-label="Fermer"
+              className="w-11 h-11 shrink-0 rounded-full text-[#7A808C] hover:bg-[#F1F5F9] flex items-center justify-center cursor-pointer disabled:opacity-40"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-xl text-[#94A3B8] hover:text-[#201D1D] hover:bg-[#F8FAFC] transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Indicateur d'étapes */}
-        <div className="px-6 py-2.5 bg-[#FAFBFD] border-b border-[#F1F5F9] grid grid-cols-4 gap-2 text-center text-xs font-bold">
-          <div
-            className={`py-1.5 rounded-xl transition-all ${
-              currentStep === 1
-                ? 'bg-[#235BF7] text-white'
-                : currentStep > 1
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'text-slate-400'
-            }`}
-          >
-            1. Nom du produit
-          </div>
-          <div
-            className={`py-1.5 rounded-xl transition-all ${
-              currentStep === 2
-                ? 'bg-[#235BF7] text-white'
-                : currentStep > 2
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'text-slate-400'
-            }`}
-          >
-            2. Photos & Vidéo
-          </div>
-          <div
-            className={`py-1.5 rounded-xl transition-all ${
-              currentStep === 3
-                ? 'bg-[#235BF7] text-white'
-                : currentStep > 3
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'text-slate-400'
-            }`}
-          >
-            3. Prix & Livraison
-          </div>
-          <div
-            className={`py-1.5 rounded-xl transition-all ${
-              currentStep === 4 ? 'bg-[#235BF7] text-white' : 'text-slate-400'
-            }`}
-          >
-            4. Conversion IA
-          </div>
-        </div>
-
-        {/* Corps défilable */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* ======================================================== */}
-          {/* ÉTAPE 1 : NOM DU PRODUIT & SUGGESTIONS IA                */}
-          {/* ======================================================== */}
-          {currentStep === 1 && (
-            <div className="space-y-5 animate-in fade-in">
-              <div>
-                <h4 className="text-base font-black text-[#201D1D]">
-                  Quel est le nom de votre produit ?
-                </h4>
-                <p className="text-[13px] text-[#7A808C] mt-0.5">
-                  Choisissez un nom accrocheur ou laissez l'IA vous proposer des titres percutants.
-                </p>
-              </div>
-
-              {/* Générateur de noms IA */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-blue-50/70 border border-blue-200/80 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#235BF7]" />
-                  <span className="text-[13px] font-black text-slate-900">
-                    Générateur d'idées de noms vendeurs avec l'IA
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={baseIdea}
-                    onChange={(e) => setBaseIdea(e.target.value)}
-                    placeholder="Ex: montre quartz, robe en soie, sérum visage..."
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[13px] text-slate-900 focus:outline-none focus:border-[#235BF7]"
-                  />
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    disabled={isGeneratingNames || (!baseIdea.trim() && !productName.trim())}
-                    onClick={handleGenerateNameSuggestions}
-                    className="shrink-0 flex items-center gap-1.5 shadow-sm"
-                  >
-                    {isGeneratingNames ? (
-                      <RotateCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Wand2 className="w-3.5 h-3.5" />
-                    )}
-                    <span>Suggérer des noms</span>
-                  </Button>
-                </div>
-
-                {nameSuggestions.length > 0 && (
-                  <div className="pt-2 border-t border-blue-200/60 space-y-2">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                      Cliquez pour choisir un nom suggéré :
+          {/* Étapes : pastilles reliées par une piste qui se remplit */}
+          <div className="relative mt-5" aria-label="Étapes">
+            <div className="absolute left-5 right-5 top-5 h-1 -translate-y-1/2 rounded-full bg-[#E9EDF3]" />
+            <div
+              className="absolute left-5 top-5 h-1 -translate-y-1/2 rounded-full bg-gradient-to-r from-[#235BF7] to-[#6D4AFF] transition-[width] duration-500 ease-out"
+              style={{ width: `calc((100% - 2.5rem) * ${(step - 1) / 3})` }}
+            />
+            <ol className="relative flex justify-between">
+              {STEPS.map((s) => {
+                const done = s.id < step;
+                const active = s.id === step;
+                return (
+                  <li key={s.id} className="flex flex-col items-center w-10 sm:w-auto">
+                    <button
+                      type="button"
+                      disabled={!done || busy}
+                      onClick={() => setStep(s.id)}
+                      aria-current={active ? 'step' : undefined}
+                      aria-label={`Étape ${s.id} : ${s.label}`}
+                      className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 disabled:cursor-default cursor-pointer ${
+                        active
+                          ? 'bg-[#235BF7] text-white scale-110 shadow-[0_8px_20px_-6px_rgba(35,91,247,0.65)] ring-4 ring-[#235BF7]/15'
+                          : done
+                            ? 'bg-[#235BF7] text-white hover:scale-105'
+                            : 'bg-white text-[#9AA0AB] border-2 border-[#E3E7EE]'
+                      }`}
+                    >
+                      {done ? (
+                        <Check className="w-[18px] h-[18px]" strokeWidth={2.75} />
+                      ) : s.id === 4 ? (
+                        <AiIcon
+                          className="w-[18px] h-[18px]"
+                          tone={active ? 'white' : 'gradient'}
+                        />
+                      ) : (
+                        s.icon
+                      )}
+                      {active && (
+                        <span className="absolute -inset-1 rounded-full ring-2 ring-[#235BF7]/35 motion-safe:animate-pulse" />
+                      )}
+                    </button>
+                    <span
+                      className={`mt-2 hidden sm:block text-[12.5px] font-semibold whitespace-nowrap transition-colors ${
+                        active ? 'text-[#235BF7]' : done ? 'text-[#201D1D]' : 'text-[#9AA0AB]'
+                      }`}
+                    >
+                      {s.label}
                     </span>
-                    <div className="flex flex-wrap gap-2">
-                      {nameSuggestions.map((sug, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => setProductName(sug)}
-                          className={`text-left px-3 py-1.5 rounded-xl text-[12.5px] font-bold border transition-all cursor-pointer ${
-                            productName === sug
-                              ? 'bg-[#235BF7] text-white border-[#235BF7] shadow-xs'
-                              : 'bg-white text-slate-800 border-slate-200 hover:border-[#235BF7]'
-                          }`}
-                        >
-                          {sug}
-                        </button>
-                      ))}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </header>
+
+        {/* Contenu */}
+        <div ref={bodyRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 sm:py-6">
+          <div
+            key={step}
+            className="space-y-5 motion-safe:animate-[rise_380ms_cubic-bezier(.2,.75,.2,1)]"
+          >
+            {step === 1 && (
+              <>
+                <StepTitle
+                  title="Comment s’appelle votre produit ?"
+                  text="Un nom clair et précis aide vos clients à comprendre tout de suite ce que vous vendez."
+                />
+                <div>
+                  <label
+                    htmlFor="p-name"
+                    className="block text-[14px] font-semibold text-[#201D1D]"
+                  >
+                    Nom du produit
+                  </label>
+                  <input
+                    id="p-name"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value.slice(0, 120))}
+                    placeholder="Ex. Montre chronographe acier noir"
+                    autoComplete="off"
+                    className={`mt-1.5 ${input} font-semibold`}
+                  />
+                </div>
+
+                <section className="p-4 sm:p-5 rounded-[22px] bg-[#F6F8FC] border border-[#E6EBF5] space-y-3">
+                  <div className="flex items-start gap-3">
+                    <IconTile>
+                      <Lightbulb className="w-5 h-5" />
+                    </IconTile>
+                    <div>
+                      <p className="text-[15px] font-bold text-[#201D1D]">Besoin d’inspiration ?</p>
+                      <p className="text-[13px] text-[#7A808C]">
+                        Décrivez votre produit en quelques mots, l’IA vous propose 5 noms vendeurs.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      value={idea}
+                      onChange={(e) => setIdea(e.target.value.slice(0, 120))}
+                      onKeyDown={(e) => e.key === 'Enter' && void suggestNames()}
+                      placeholder="Ex. montre homme acier, sérum éclat…"
+                      aria-label="Idée de produit"
+                      className={`${input} sm:flex-1`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void suggestNames()}
+                      disabled={namesBusy || !(idea || productName).trim()}
+                      className={`${btnPrimary} sm:shrink-0`}
+                    >
+                      {namesBusy ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <AiIcon className="w-[18px] h-[18px]" tone="white" />
+                      )}
+                      Proposer des noms
+                    </button>
+                  </div>
+                  {namesError && (
+                    <p role="alert" className="text-[14px] font-semibold text-[#DC2626]">
+                      {namesError}
+                    </p>
+                  )}
+                  {names.length > 0 && (
+                    <div role="radiogroup" aria-label="Noms proposés" className="grid gap-2 pt-1">
+                      {names.map((n) => {
+                        const on = productName === n;
+                        return (
+                          <button
+                            key={n}
+                            type="button"
+                            role="radio"
+                            aria-checked={on}
+                            onClick={() => setProductName(n)}
+                            className={`min-h-12 px-4 py-2.5 rounded-xl border-2 text-left text-[14px] font-semibold flex items-center gap-3 cursor-pointer transition-colors ${
+                              on
+                                ? 'border-[#235BF7] bg-[#EEF3FF] text-[#201D1D]'
+                                : 'border-[#E3E7EE] bg-white text-[#3F4654] hover:border-[#BFD0FD]'
+                            }`}
+                          >
+                            <span
+                              className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
+                                on ? 'border-[#235BF7] bg-[#235BF7] text-white' : 'border-[#CBD2DE]'
+                              }`}
+                            >
+                              {on && <Check className="w-3 h-3" />}
+                            </span>
+                            {n}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <StepTitle
+                  title="Photos et vidéo"
+                  text={`Jusqu’à ${MAX_PHOTOS} photos. La première est la photo principale. Vous pourrez en ajouter d’autres plus tard.`}
+                />
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
+                  {photos.map((url, i) => (
+                    <div
+                      key={url + i}
+                      className="relative aspect-square rounded-2xl overflow-hidden border border-[#E3E7EE] bg-[#F6F7F9]"
+                    >
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      {i === 0 && (
+                        <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-full bg-[#201D1D]/85 text-white text-[11px] font-bold">
+                          Principale
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setPhotos((p) => p.filter((_, j) => j !== i))}
+                        aria-label="Retirer la photo"
+                        className="absolute top-1.5 right-1.5 w-9 h-9 rounded-full bg-white/95 text-[#DC2626] shadow-sm flex items-center justify-center cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {photos.length < MAX_PHOTOS && (
+                    <button
+                      type="button"
+                      onClick={() => photoInput.current?.click()}
+                      disabled={photoProgress !== null}
+                      className="aspect-square rounded-2xl border-2 border-dashed border-[#BFD0FD] hover:border-[#235BF7] hover:bg-[#F7F9FF] text-[#235BF7] flex flex-col items-center justify-center gap-1.5 cursor-pointer disabled:cursor-wait transition-colors"
+                    >
+                      {photoProgress !== null ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span className="text-[12px] font-bold">{photoProgress} %</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImagePlus className="w-6 h-6" />
+                          <span className="text-[12px] font-bold">Ajouter</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={photoInput}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
+                  onChange={(e) => {
+                    void addPhotoFiles(e.target.files);
+                    e.target.value = '';
+                  }}
+                />
+
+                {photos.length < MAX_PHOTOS && (
+                  <div>
+                    <label
+                      htmlFor="p-link"
+                      className="flex items-center gap-1.5 text-[14px] font-semibold text-[#201D1D]"
+                    >
+                      <Link2 className="w-4 h-4 text-[#7A808C]" /> Ou collez le lien d’une image
+                    </label>
+                    <div className="mt-1.5 flex gap-2">
+                      <input
+                        id="p-link"
+                        type="url"
+                        inputMode="url"
+                        value={photoLink}
+                        onChange={(e) => setPhotoLink(e.target.value)}
+                        placeholder="https://…"
+                        className={`${input} flex-1`}
+                      />
+                      <button
+                        type="button"
+                        onClick={addPhotoLink}
+                        disabled={!photoLink.trim()}
+                        className={btnGhost}
+                      >
+                        Ajouter
+                      </button>
                     </div>
                   </div>
                 )}
-              </div>
 
-              {/* Champ final Nom du produit */}
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-black text-[#201D1D] uppercase tracking-wider block">
-                  Nom sélectionné pour votre page de vente <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  placeholder="Ex : Montre Chronographe Royale Saphir Noire"
-                  className="w-full px-4 py-3 rounded-xl bg-white border border-[#CBD5E1] text-[15px] font-bold text-[#201D1D] focus:outline-none focus:border-[#235BF7]"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ======================================================== */}
-          {/* ÉTAPE 2 : PHOTOS ET VIDÉO DU PRODUIT                    */}
-          {/* ======================================================== */}
-          {currentStep === 2 && (
-            <div className="space-y-5 animate-in fade-in">
-              <div>
-                <h4 className="text-base font-black text-[#201D1D]">
-                  Photos & Vidéo Démo du produit
-                </h4>
-                <p className="text-[13px] text-[#7A808C] mt-0.5">
-                  Ajoutez les visuels pour donner envie aux visiteurs de commander immédiatement.
-                </p>
-              </div>
-
-              {/* Galerie Images */}
-              <div className="space-y-3">
-                <label className="text-[13px] font-black text-[#201D1D] uppercase tracking-wider block">
-                  Photos du produit ({imageUrls.length}/5)
-                </label>
-                <div className="flex gap-2">
+                <section className="p-4 sm:p-5 rounded-[22px] bg-[#F6F8FC] border border-[#E6EBF5] space-y-3">
+                  <div className="flex items-start gap-3">
+                    <IconTile>
+                      <Film className="w-5 h-5" />
+                    </IconTile>
+                    <div>
+                      <p className="text-[15px] font-bold text-[#201D1D]">
+                        Vidéo de démonstration{' '}
+                        <span className="font-normal text-[#7A808C]">(facultatif)</span>
+                      </p>
+                      <p className="text-[13px] text-[#7A808C]">
+                        Une vidéo verticale rassure et fait vendre davantage sur mobile.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="Lien TikTok, YouTube ou MP4"
+                      aria-label="Lien de la vidéo"
+                      className={`${input} sm:flex-1`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => videoInput.current?.click()}
+                      disabled={videoProgress !== null}
+                      className={`${btnGhost} sm:shrink-0`}
+                    >
+                      {videoProgress !== null ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> {videoProgress} %
+                        </>
+                      ) : (
+                        <>
+                          <Film className="w-4 h-4" /> Importer une vidéo
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <input
-                    type="url"
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    placeholder="URL de l'image (ex: https://...)"
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[13px] text-slate-900 focus:outline-none focus:border-[#235BF7]"
+                    ref={videoInput}
+                    type="file"
+                    accept="video/*"
+                    hidden
+                    onChange={(e) => {
+                      void uploadVideo(e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
                   />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleAddImage}
-                    disabled={!newImageUrl.trim() || imageUrls.length >= 5}
-                    className="shrink-0 flex items-center gap-1.5"
-                  >
-                    <Plus className="w-4 h-4" /> Ajouter
-                  </Button>
+                </section>
+                {mediaError && (
+                  <p role="alert" className="text-[14px] font-semibold text-[#DC2626]">
+                    {mediaError}
+                  </p>
+                )}
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <StepTitle
+                  title="Prix et livraison"
+                  text="Un prix barré montre l’économie réalisée ; la livraison offerte rassure vos clients."
+                />
+                <div className="grid grid-cols-2 items-end gap-3 sm:gap-4">
+                  <MoneyField
+                    id="p-price"
+                    label="Prix de vente"
+                    value={price}
+                    onChange={setPrice}
+                  />
+                  <MoneyField
+                    id="p-old"
+                    label={
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        Prix barré{' '}
+                        <span className="hidden sm:inline font-normal text-[#7A808C]">
+                          (facultatif)
+                        </span>
+                        {discount > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[12px] font-bold">
+                            <BadgePercent className="w-3.5 h-3.5" /> -{discount} %
+                          </span>
+                        )}
+                      </span>
+                    }
+                    value={originalPrice}
+                    onChange={setOriginalPrice}
+                    {...(originalPrice > 0 && originalPrice <= price
+                      ? { hint: 'Doit être plus élevé que le prix de vente pour s’afficher.' }
+                      : {})}
+                  />
                 </div>
 
-                {imageUrls.length > 0 && (
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 pt-2">
-                    {imageUrls.map((url, idx) => (
-                      <div
-                        key={idx}
-                        className="relative rounded-xl overflow-hidden aspect-square border border-slate-200 group"
+                <fieldset>
+                  <legend className="text-[14px] font-semibold text-[#201D1D]">Livraison</legend>
+                  <div role="radiogroup" className="mt-2 grid grid-cols-2 gap-2.5 sm:gap-3">
+                    {[
+                      {
+                        on: freeShipping,
+                        set: () => setFreeShipping(true),
+                        icon: <Gift className="w-5 h-5" />,
+                        title: 'Livraison offerte',
+                        text: 'Le client ne paie que le produit.',
+                      },
+                      {
+                        on: !freeShipping,
+                        set: () => setFreeShipping(false),
+                        icon: <Truck className="w-5 h-5" />,
+                        title: 'Livraison payante',
+                        text: 'Des frais fixes s’ajoutent au total.',
+                      },
+                    ].map((o) => (
+                      <button
+                        key={o.title}
+                        type="button"
+                        role="radio"
+                        aria-checked={o.on}
+                        onClick={o.set}
+                        className={`relative min-h-16 p-3 sm:p-3.5 rounded-2xl border-2 text-left flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-3 cursor-pointer transition-colors ${
+                          o.on
+                            ? 'border-[#235BF7] bg-[#F7F9FF]'
+                            : 'border-[#E3E7EE] bg-white hover:border-[#BFD0FD]'
+                        }`}
                       >
-                        <img src={url} alt="" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setImageUrls(imageUrls.filter((_, i) => i !== idx))}
-                          className="absolute top-1 right-1 p-1 bg-black/60 rounded-md text-white hover:bg-rose-600 transition-colors cursor-pointer"
+                        <span
+                          className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${
+                            o.on ? 'bg-[#235BF7] text-white' : 'bg-[#F1F3F6] text-[#3F4654]'
+                          }`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                          {o.icon}
+                        </span>
+                        <span>
+                          <span className="block text-[14px] sm:text-[15px] font-bold text-[#201D1D] leading-tight">
+                            {o.title}
+                          </span>
+                          <span className="mt-0.5 block text-[12.5px] sm:text-[13px] text-[#7A808C] leading-snug">
+                            {o.text}
+                          </span>
+                        </span>
+                      </button>
                     ))}
                   </div>
-                )}
-              </div>
-
-              {/* Vidéo verticale / démonstration */}
-              <div className="space-y-1.5 pt-3 border-t border-slate-100">
-                <label className="text-[13px] font-black text-[#201D1D] uppercase tracking-wider flex items-center gap-2">
-                  <Video className="w-4 h-4 text-[#235BF7]" />
-                  Lien Vidéo de démonstration (TikTok / YouTube / MP4)
-                </label>
-                <input
-                  type="text"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="Ex : https://www.tiktok.com/@boutique/video/... ou https://youtube.com/..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[13px] text-slate-900 focus:outline-none focus:border-[#235BF7]"
-                />
-                <p className="text-[12px] text-slate-500">
-                  La vidéo verticale augmente les conversions jusqu'à 3x sur mobile.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ======================================================== */}
-          {/* ÉTAPE 3 : PRIX & LIVRAISON (GRATUITE OU PAYANTE)         */}
-          {/* ======================================================== */}
-          {currentStep === 3 && (
-            <div className="space-y-6 animate-in fade-in">
-              <div>
-                <h4 className="text-base font-black text-[#201D1D]">Tarification & Livraison</h4>
-                <p className="text-[13px] text-[#7A808C] mt-0.5">
-                  Définissez votre offre tarifaire et la politique de livraison pour rassurer
-                  l'acheteur.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[13px] font-black text-[#201D1D] uppercase tracking-wider block">
-                    Prix de vente (FCFA) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={price}
-                    onChange={(e) => setPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[15px] font-bold text-[#201D1D] focus:outline-none focus:border-[#235BF7]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[13px] font-black text-slate-500 uppercase tracking-wider block">
-                    Prix barré avant promo (FCFA)
-                  </label>
-                  <input
-                    type="number"
-                    value={originalPrice}
-                    onChange={(e) => setOriginalPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[15px] font-semibold text-slate-500 focus:outline-none focus:border-[#235BF7]"
-                  />
-                </div>
-              </div>
-
-              {/* Question Livraison Gratuite ou Payante */}
-              <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-3">
-                <label className="text-[13px] font-black text-[#201D1D] uppercase tracking-wider flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-[#235BF7]" />
-                  La livraison est-elle offerte ou payante ?
-                </label>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsFreeShipping(true)}
-                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                      isFreeShipping
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-950 shadow-xs'
-                        : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                    }`}
-                  >
-                    <span className="font-extrabold text-[14px] block">Livraison GRATUITE</span>
-                    <span className="text-[12px] text-emerald-800 block mt-0.5">
-                      0 FCFA (Offerte au client)
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsFreeShipping(false)}
-                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                      !isFreeShipping
-                        ? 'bg-blue-50 border-[#235BF7] text-blue-950 shadow-xs'
-                        : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                    }`}
-                  >
-                    <span className="font-extrabold text-[14px] block">Livraison PAYANTE</span>
-                    <span className="text-[12px] text-blue-800 block mt-0.5">
-                      Frais de livraison ajoutés
-                    </span>
-                  </button>
-                </div>
-
-                {!isFreeShipping && (
-                  <div className="pt-2 animate-in fade-in space-y-1.5">
-                    <label className="text-[12px] font-bold text-slate-700 block">
-                      Montant des frais de livraison (FCFA)
-                    </label>
-                    <input
-                      type="number"
+                </fieldset>
+                {!freeShipping && (
+                  <div className="sm:max-w-xs">
+                    <MoneyField
+                      id="p-fee"
+                      label="Frais de livraison"
                       value={deliveryFee}
-                      onChange={(e) => setDeliveryFee(Number(e.target.value))}
-                      placeholder="Ex : 2000"
-                      className="w-full max-w-xs px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] text-[14px] font-bold text-slate-900 focus:outline-none focus:border-[#235BF7]"
+                      onChange={setDeliveryFee}
                     />
                   </div>
                 )}
-              </div>
-            </div>
-          )}
+              </>
+            )}
 
-          {/* ======================================================== */}
-          {/* ÉTAPE 4 : GÉNÉRATION IA INTÉGRALE DE CONVERSION           */}
-          {/* ======================================================== */}
-          {currentStep === 4 && (
-            <div className="space-y-6 animate-in fade-in">
-              <div>
-                <h4 className="text-base font-black text-[#201D1D]">
-                  Génération IA du Contenu de Vente
-                </h4>
-                <p className="text-[13px] text-[#7A808C] mt-0.5">
-                  L'IA va générer les arguments, la description, la FAQ, le comparatif "Nous vs Les
-                  autres" et les avis clients selon votre produit.
-                </p>
-              </div>
+            {step === 4 && (
+              <>
+                <StepTitle
+                  title="Texte de vente"
+                  text="L’IA rédige la description, les points forts, un comparatif et une FAQ. Relisez, modifiez ce que vous voulez, puis créez le produit."
+                />
 
-              <div className="flex justify-center">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="lg"
-                  disabled={isGeneratingContent || !productName.trim()}
-                  onClick={handleGenerateFullAI}
-                  className="px-8 shadow-lg shadow-blue-500/25 flex items-center gap-2"
-                >
-                  {isGeneratingContent ? (
-                    <>
-                      <RotateCw className="w-4 h-4 animate-spin" />
-                      Étude de marché et rédaction IA en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="w-4 h-4 text-amber-300" />
-                      {generatedContent
-                        ? 'Régénérer le contenu IA'
-                        : 'Générer Tout le Contenu de Vente avec l’IA'}
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {generatedContent && (
-                <div className="space-y-4 pt-3 border-t border-slate-100 animate-in fade-in duration-300">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-black uppercase text-emerald-600 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4" /> Contenu complet prêt à l'emploi
+                {!content && (
+                  <section className="relative overflow-hidden p-5 sm:p-7 rounded-[24px] border border-[#DCE3FF] bg-[radial-gradient(120%_120%_at_0%_0%,#EEF3FF_0%,#F7F5FF_45%,#FFFFFF_100%)] text-center">
+                    <span className="mx-auto w-16 h-16 rounded-[20px] bg-white border border-[#E4E9FF] shadow-[0_14px_30px_-14px_rgba(35,91,247,0.55)] flex items-center justify-center">
+                      {contentBusy ? (
+                        <Loader2 className="w-7 h-7 animate-spin text-[#235BF7]" />
+                      ) : (
+                        <AiIcon className="w-8 h-8" />
+                      )}
                     </span>
-                    <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-50 text-[#235BF7]">
-                      {generatedContent.source === 'gemini'
-                        ? '⚡ Gemini 2.5 Flash'
-                        : '🛡️ Moteur Expert Africain'}
-                    </span>
-                  </div>
+                    <p className="mt-4 text-[17px] font-extrabold text-[#201D1D]">
+                      {contentBusy
+                        ? 'Rédaction en cours…'
+                        : 'Votre page de vente, rédigée en quelques secondes'}
+                    </p>
+                    <p className="mt-1.5 mx-auto max-w-md text-[14px] text-[#3F4654] leading-relaxed">
+                      {contentBusy
+                        ? 'Analyse du produit, arguments, comparatif et questions fréquentes…'
+                        : `Pour « ${productName.trim()} ». Facultatif : vous pouvez aussi créer le produit et écrire le texte vous-même.`}
+                    </p>
+                    {contentBusy ? (
+                      <div className="mt-5 mx-auto max-w-sm space-y-2" aria-hidden="true">
+                        {[92, 78, 85].map((w) => (
+                          <span
+                            key={w}
+                            className="block h-2.5 rounded-full bg-gradient-to-r from-[#E3E9FF] via-[#F1EDFF] to-[#E3E9FF] animate-pulse"
+                            style={{ width: `${w}%` }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void generateContent()}
+                        className="mt-5 min-h-12 px-6 rounded-xl bg-gradient-to-r from-[#235BF7] to-[#6D4AFF] hover:brightness-110 text-white text-[15px] font-semibold inline-flex items-center justify-center gap-2 cursor-pointer shadow-[0_10px_24px_-10px_rgba(80,70,255,0.7)] w-full sm:w-auto transition"
+                      >
+                        <AiIcon className="w-[18px] h-[18px]" tone="white" />
+                        Rédiger avec l’IA
+                      </button>
+                    )}
+                  </section>
+                )}
 
-                  {/* 1. Description */}
-                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#235BF7] block">
-                      Description persuasive problème / solution
-                    </span>
-                    <p className="text-[12.5px] text-slate-700 whitespace-pre-line leading-relaxed">
-                      {generatedContent.description}
+                {contentError && (
+                  <p role="alert" className="text-[14px] font-semibold text-[#DC2626]">
+                    {contentError}
+                  </p>
+                )}
+
+                {content && (
+                  <div className="space-y-3">
+                    {/* Barre d’état + régénération */}
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-[#F6F8FC] border border-[#E6EBF5] flex flex-wrap items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#201D1D]">
+                        <AiIcon className="w-[18px] h-[18px]" />
+                        {edited ? 'Texte modifié par vous' : 'Rédigé par l’IA · modifiable'}
+                      </span>
+                      {confirmRegen ? (
+                        <span className="inline-flex flex-wrap items-center gap-2">
+                          <span className="text-[13px] text-[#3F4654]">
+                            Remplacer vos modifications ?
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setConfirmRegen(false);
+                              void generateContent();
+                            }}
+                            className="min-h-10 px-3 rounded-lg bg-[#235BF7] text-white text-[13px] font-semibold cursor-pointer"
+                          >
+                            Oui, régénérer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmRegen(false)}
+                            className="min-h-10 px-3 rounded-lg border border-[#E3E7EE] bg-white text-[13px] font-semibold text-[#3F4654] cursor-pointer"
+                          >
+                            Annuler
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => (edited ? setConfirmRegen(true) : void generateContent())}
+                          disabled={contentBusy}
+                          className="min-h-10 px-3 rounded-lg border border-[#DCE3FF] bg-white text-[13px] font-semibold text-[#235BF7] hover:bg-[#EEF3FF] inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+                        >
+                          <RefreshCw className={`w-4 h-4 ${contentBusy ? 'animate-spin' : ''}`} />
+                          {contentBusy ? 'Régénération…' : 'Régénérer'}
+                        </button>
+                      )}
+                    </div>
+
+                    <div
+                      className={`space-y-3 transition-opacity ${contentBusy ? 'opacity-50 pointer-events-none' : ''}`}
+                    >
+                      <CopySection
+                        icon={<FileText className="w-[18px] h-[18px]" />}
+                        title="Description"
+                        editing={editing.has('desc')}
+                        onToggle={() => toggleEdit('desc')}
+                      >
+                        {editing.has('desc') ? (
+                          <textarea
+                            value={content.description}
+                            onChange={(e) => patchContent({ description: e.target.value })}
+                            rows={8}
+                            aria-label="Description"
+                            className={`${input} py-3 leading-relaxed resize-y`}
+                          />
+                        ) : (
+                          <p className="text-[14px] text-[#3F4654] leading-relaxed whitespace-pre-line">
+                            {content.description}
+                          </p>
+                        )}
+                      </CopySection>
+
+                      <CopySection
+                        icon={<ListChecks className="w-[18px] h-[18px]" />}
+                        title="Points forts"
+                        editing={editing.has('benefits')}
+                        onToggle={() => toggleEdit('benefits')}
+                      >
+                        {editing.has('benefits') ? (
+                          <div className="space-y-2">
+                            {content.benefits.map((b, i) => (
+                              <div key={i} className="flex gap-2">
+                                <input
+                                  value={b}
+                                  onChange={(e) =>
+                                    patchContent({
+                                      benefits: content.benefits.map((x, j) =>
+                                        j === i ? e.target.value : x,
+                                      ),
+                                    })
+                                  }
+                                  aria-label={`Point fort ${i + 1}`}
+                                  className={`${input} flex-1`}
+                                />
+                                <RemoveButton
+                                  label="Retirer ce point fort"
+                                  onClick={() =>
+                                    patchContent({
+                                      benefits: content.benefits.filter((_, j) => j !== i),
+                                    })
+                                  }
+                                />
+                              </div>
+                            ))}
+                            <AddButton
+                              label="Ajouter un point fort"
+                              onClick={() => patchContent({ benefits: [...content.benefits, ''] })}
+                            />
+                          </div>
+                        ) : (
+                          <ul className="space-y-2">
+                            {content.benefits.filter(Boolean).map((b) => (
+                              <li
+                                key={b}
+                                className="flex items-start gap-2.5 text-[14px] text-[#201D1D]"
+                              >
+                                <span className="mt-0.5 w-5 h-5 shrink-0 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                  <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                                </span>
+                                {b}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </CopySection>
+
+                      <CopySection
+                        icon={<Scale className="w-[18px] h-[18px]" />}
+                        title="Comparatif"
+                        editing={editing.has('compare')}
+                        onToggle={() => toggleEdit('compare')}
+                      >
+                        {editing.has('compare') ? (
+                          <div className="space-y-3">
+                            {content.comparison.rows.map((row, i) => (
+                              <div key={row.id} className="p-3 rounded-xl bg-[#F6F8FC] space-y-2">
+                                <div className="flex gap-2">
+                                  <input
+                                    value={row.criterion}
+                                    onChange={(e) => patchRow(i, { criterion: e.target.value })}
+                                    placeholder="Critère"
+                                    aria-label={`Critère ${i + 1}`}
+                                    className={`${input} flex-1 font-semibold`}
+                                  />
+                                  <RemoveButton
+                                    label="Retirer cette ligne"
+                                    onClick={() => removeRow(i)}
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <input
+                                    value={cellText(row.ours)}
+                                    onChange={(e) =>
+                                      patchRow(i, { ours: { kind: 'text', text: e.target.value } })
+                                    }
+                                    placeholder={content.comparison.oursLabel}
+                                    aria-label={`${content.comparison.oursLabel}, ligne ${i + 1}`}
+                                    className={input}
+                                  />
+                                  <input
+                                    value={cellText(row.others)}
+                                    onChange={(e) =>
+                                      patchRow(i, {
+                                        others: { kind: 'text', text: e.target.value },
+                                      })
+                                    }
+                                    placeholder={content.comparison.othersLabel}
+                                    aria-label={`${content.comparison.othersLabel}, ligne ${i + 1}`}
+                                    className={input}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                            <AddButton label="Ajouter une ligne" onClick={addRow} />
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-[#ECEFF4] overflow-hidden text-[13px] sm:text-[14px]">
+                            <div className="grid grid-cols-[1.2fr_1fr_1fr] bg-[#F6F8FC] font-bold text-[12px] uppercase tracking-wide">
+                              <span className="px-3 py-2 text-[#7A808C]">Critère</span>
+                              <span className="px-3 py-2 text-emerald-700">
+                                {content.comparison.oursLabel}
+                              </span>
+                              <span className="px-3 py-2 text-rose-600">
+                                {content.comparison.othersLabel}
+                              </span>
+                            </div>
+                            {content.comparison.rows.map((r) => (
+                              <div
+                                key={r.id}
+                                className="grid grid-cols-[1.2fr_1fr_1fr] border-t border-[#F1F3F6]"
+                              >
+                                <span className="px-3 py-2.5 font-semibold text-[#201D1D]">
+                                  {r.criterion}
+                                </span>
+                                <span className="px-3 py-2.5 text-emerald-700">
+                                  {cellText(r.ours)}
+                                </span>
+                                <span className="px-3 py-2.5 text-rose-600">
+                                  {cellText(r.others)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CopySection>
+
+                      <CopySection
+                        icon={<MessagesSquare className="w-[18px] h-[18px]" />}
+                        title="Questions fréquentes"
+                        editing={editing.has('faq')}
+                        onToggle={() => toggleEdit('faq')}
+                      >
+                        {editing.has('faq') ? (
+                          <div className="space-y-3">
+                            {content.faqItems.map((f, i) => (
+                              <div key={f.id} className="p-3 rounded-xl bg-[#F6F8FC] space-y-2">
+                                <div className="flex gap-2">
+                                  <input
+                                    value={f.question}
+                                    onChange={(e) => patchFaq(i, { question: e.target.value })}
+                                    placeholder="Question"
+                                    aria-label={`Question ${i + 1}`}
+                                    className={`${input} flex-1 font-semibold`}
+                                  />
+                                  <RemoveButton
+                                    label="Retirer cette question"
+                                    onClick={() =>
+                                      patchContent({
+                                        faqItems: content.faqItems.filter((_, j) => j !== i),
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <textarea
+                                  value={f.answer}
+                                  onChange={(e) => patchFaq(i, { answer: e.target.value })}
+                                  placeholder="Réponse"
+                                  aria-label={`Réponse ${i + 1}`}
+                                  rows={3}
+                                  className={`${input} py-3 resize-y`}
+                                />
+                              </div>
+                            ))}
+                            <AddButton
+                              label="Ajouter une question"
+                              onClick={() =>
+                                patchContent({
+                                  faqItems: [
+                                    ...content.faqItems,
+                                    { id: `faq-${Date.now()}`, question: '', answer: '' },
+                                  ],
+                                })
+                              }
+                            />
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-[#F1F3F6]">
+                            {content.faqItems.map((f) => (
+                              <div key={f.id} className="py-2.5 first:pt-0 last:pb-0">
+                                <p className="text-[14px] font-bold text-[#201D1D]">{f.question}</p>
+                                <p className="mt-0.5 text-[14px] text-[#3F4654] leading-relaxed">
+                                  {f.answer}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CopySection>
+                    </div>
+
+                    <p className="flex items-start gap-2 text-[13px] text-[#7A808C]">
+                      <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
+                      Les avis clients ne sont pas générés : ajoutez les vrais avis de vos clients
+                      dans l’éditeur de la page.
                     </p>
                   </div>
-
-                  {/* 2. Bénéfices */}
-                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 block">
-                      4 Arguments de Vente Clés
-                    </span>
-                    <ul className="space-y-1 text-[12.5px] text-slate-800">
-                      {generatedContent.benefits.map((b, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                          <span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* 3. Tableau comparatif "Nous vs Les autres" */}
-                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
-                      <Scale className="w-3.5 h-3.5" />
-                      Tableau Comparatif (Étude de marché : Nous vs Les autres)
-                    </span>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-[12px] border-collapse">
-                        <thead>
-                          <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
-                            <th className="py-1.5">Critère</th>
-                            <th className="py-1.5 text-emerald-700">
-                              {generatedContent.comparison.oursLabel}
-                            </th>
-                            <th className="py-1.5 text-rose-700">
-                              {generatedContent.comparison.othersLabel}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {generatedContent.comparison.rows.map((row) => (
-                            <tr key={row.id}>
-                              <td className="py-2 font-bold text-slate-800">{row.criterion}</td>
-                              <td className="py-2 text-emerald-700 font-semibold">
-                                {row.ours.kind === 'text' ? row.ours.text : 'Oui'}
-                              </td>
-                              <td className="py-2 text-rose-600 font-medium">
-                                {row.others.kind === 'text' ? row.others.text : 'Non'}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* 4. FAQ */}
-                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 flex items-center gap-1.5">
-                      <HelpCircle className="w-3.5 h-3.5" />
-                      Foire Aux Questions (FAQ) adaptées
-                    </span>
-                    <div className="space-y-2 text-[12px]">
-                      {generatedContent.faqItems.map((faq) => (
-                        <div
-                          key={faq.id}
-                          className="bg-white p-2.5 rounded-xl border border-slate-200"
-                        >
-                          <p className="font-bold text-slate-900">{faq.question}</p>
-                          <p className="text-slate-600 mt-0.5">{faq.answer}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 5. Avis clients */}
-                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
-                      <Star className="w-3.5 h-3.5 text-amber-500" />
-                      Témoignages & Avis Clients Locaux ({generatedContent.reviews.length})
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[12px]">
-                      {generatedContent.reviews.map((rev) => (
-                        <div
-                          key={rev.id}
-                          className="bg-white p-2.5 rounded-xl border border-slate-200 space-y-1"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-900">{rev.authorName}</span>
-                            <span className="text-amber-500 font-bold">5★</span>
-                          </div>
-                          <span className="text-[10px] text-slate-400 block">{rev.city}</span>
-                          <p className="text-slate-600 text-[11px] leading-tight">
-                            « {rev.comment} »
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Pied de page modal */}
-        <div className="px-6 py-4 bg-[#F8FAFC] border-t border-[#F1F5F9] flex items-center justify-between">
-          <Button
+        {/* Pied */}
+        <footer className="px-4 sm:px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-4 border-t border-[#ECEFF4] bg-white flex items-center gap-2">
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (currentStep > 1) setCurrentStep((s) => (s - 1) as 1 | 2 | 3 | 4);
-              else onClose();
-            }}
+            onClick={() => (step > 1 ? setStep((s) => (s - 1) as Step) : onClose())}
+            disabled={busy}
+            className={`${btnGhost} px-4`}
           >
-            {currentStep === 1 ? 'Annuler' : 'Précédent'}
-          </Button>
-
-          {currentStep < 4 ? (
-            <Button
+            {step > 1 && <ChevronLeft className="w-4 h-4" />}
+            {step > 1 ? 'Retour' : 'Annuler'}
+          </button>
+          <div className="flex-1" />
+          {step < 4 ? (
+            <button
               type="button"
-              variant="primary"
-              size="md"
-              disabled={currentStep === 1 && !productName.trim()}
-              onClick={() => setCurrentStep((s) => (s + 1) as 1 | 2 | 3 | 4)}
-              className="flex items-center gap-1.5"
+              onClick={() => setStep((s) => (s + 1) as Step)}
+              disabled={!canContinue || busy}
+              className={`${btnPrimary} min-w-[140px]`}
             >
-              <span>Continuer</span>
-              <ArrowRight className="w-4 h-4" />
-            </Button>
+              Continuer <ArrowRight className="w-4 h-4" />
+            </button>
           ) : (
-            <Button
+            <button
               type="button"
-              variant="primary"
-              size="md"
-              disabled={isSubmitting || !productName.trim()}
-              onClick={handleFinalSubmit}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 flex items-center gap-2"
+              onClick={() => void submit()}
+              disabled={busy}
+              className={`${btnPrimary} min-w-[160px]`}
             >
-              {isSubmitting ? (
-                <RotateCw className="w-4 h-4 animate-spin" />
+              {submitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Check className="w-4 h-4" />
               )}
-              <span>Créer la page produit finalisée</span>
-            </Button>
+              {content ? 'Créer le produit' : 'Créer sans texte IA'}
+            </button>
           )}
-        </div>
+        </footer>
       </div>
     </div>
   );

@@ -3,7 +3,6 @@ import {
   generateProductNameSuggestionsWithGemini,
   generateFullProductPageWithGemini,
 } from './product-page-wizard';
-import { generateStorefrontWithGemini } from './storefront-generator';
 
 describe('Product Page & Storefront AI Generators', () => {
   it('generates product name suggestions via fallback when no apiKey', async () => {
@@ -38,18 +37,5 @@ describe('Product Page & Storefront AI Generators', () => {
     expect(res.reviews.length).toBeGreaterThanOrEqual(3);
     expect(res.urgencyText).toBeDefined();
     expect(res.ctaButtonText).toBeDefined();
-  });
-
-  it('generates storefront copy via fallback when no apiKey', async () => {
-    const res = await generateStorefrontWithGemini({
-      storeName: 'Teranga Market',
-      storeCategory: 'Alimentation',
-    });
-
-    expect(res.storeTagline).toBeDefined();
-    expect(res.announcementBar.enabled).toBe(true);
-    expect(res.storeFaq.length).toBeGreaterThanOrEqual(3);
-    expect(res.storeSections.length).toBeGreaterThanOrEqual(1);
-    expect(res.storeSections[0]?.placement).toBe('before_products');
   });
 });

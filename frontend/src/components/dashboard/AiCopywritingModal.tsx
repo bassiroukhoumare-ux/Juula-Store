@@ -27,6 +27,7 @@ import { FunnelPageConfig } from '@/types/juula';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/contexts/ToastContext';
 import { DesignTemplateId, ProductPitchOutput } from '@/lib/server/ai/product-pitch';
+import { postAi } from '@/lib/ai-client';
 
 export interface GeneratedCopyResult {
   titre_principal: string;
@@ -111,21 +112,19 @@ export const AiCopywritingModal: React.FC<AiCopywritingModalProps> = ({
 
     setIsLoading(true);
     try {
-      const res = await fetch('/api/store/ai/product-pitch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const res = await postAi<{ success?: boolean; pitch?: ProductPitchOutput }>(
+        '/api/store/ai/product-pitch',
+        {
           productName: productName.trim(),
           price: productPrice,
-        }),
-      });
-
-      const data = await res.json();
+        },
+      );
+      const data = res.data;
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Échec de la génération du template');
       }
 
-      setPitchResult(data.pitch);
+      setPitchResult(data.pitch ?? null);
       toast('Template et argumentaire générés avec succès !', 'success');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur inconnue';
@@ -144,10 +143,9 @@ export const AiCopywritingModal: React.FC<AiCopywritingModalProps> = ({
 
     setIsLoading(true);
     try {
-      const res = await fetch('/api/store/ai/copywriting', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const res = await postAi<{ success?: boolean; copy?: GeneratedCopyResult }>(
+        '/api/store/ai/copywriting',
+        {
           productName: productName.trim(),
           storeName: config.storeName,
           category: category.trim(),
@@ -159,15 +157,14 @@ export const AiCopywritingModal: React.FC<AiCopywritingModalProps> = ({
           codEnabled: config.codEnabled,
           whatsapp: config.whatsappSupportNumber,
           city: city.trim(),
-        }),
-      });
-
-      const data = await res.json();
+        },
+      );
+      const data = res.data;
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Échec de la génération');
       }
 
-      setCopyResult(data.copy);
+      setCopyResult(data.copy ?? null);
       toast('Page de vente complète générée avec succès !', 'success');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur inconnue';
